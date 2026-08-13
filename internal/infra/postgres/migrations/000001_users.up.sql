@@ -4,7 +4,6 @@ CREATE EXTENSION IF NOT EXISTS citext;
 CREATE TABLE users (
     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     username      CITEXT       NOT NULL UNIQUE,
-    email         CITEXT       NOT NULL UNIQUE,
     
     display_name  VARCHAR(100),
     avatar_url    TEXT,
