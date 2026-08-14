@@ -6,7 +6,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var logger = pkg.Logger.With()
+var logger = pkg.Logger.With("component", "config")
 
 func New() *Config {
 	var cfg Config
