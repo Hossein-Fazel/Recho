@@ -16,7 +16,7 @@ func New() *Config {
 	}
 
 	if err := env.Parse(&cfg); err != nil {
-		logger.Error("error in parse env", "error", err)
+		logger.Warn("error in parse env", "error", err)
 	}
 
 	return &cfg
