@@ -19,7 +19,7 @@ type UserRepo interface {
 
 type RefreshTokenRepo interface {
 	Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error)
-	GetByHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
+	GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error)
 	Revoke(ctx context.Context, id uuid.UUID) error
-	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error
+	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error 
 }

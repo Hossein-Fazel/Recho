@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	DB    db.Config   `envPrefix:"POSTGRES_"`
-	Token auth.Config `envPrefix:"TOKEN_"`
-	WEB   web.Config  `envPrefix:"SERVER_"`
+	DB     db.Config   `envPrefix:"POSTGRES_"`
+	Token  auth.Config `envPrefix:"TOKEN_"`
+	Server web.Config  `envPrefix:"SERVER_"`
 }

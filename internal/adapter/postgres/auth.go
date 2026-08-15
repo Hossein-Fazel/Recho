@@ -21,7 +21,7 @@ type Auth struct {
 	sql *sqlc.Queries
 }
 
-func NewAuthRepo(sql *sqlc.Queries) *Auth {
+func NewRefreshTokenRepo(sql *sqlc.Queries) *Auth {
 	Alogger.Info("Initializing auth Repository")
 	return &Auth{
 		sql: sql,
