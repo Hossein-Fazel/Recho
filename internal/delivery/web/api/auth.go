@@ -1,0 +1,154 @@
+package api
+
+import (
+	"errors"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/Hossein-Fazel/Recho/internal/delivery/web/dto"
+
+	"github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
+	"github.com/Hossein-Fazel/Recho/internal/usecase"
+	"github.com/labstack/echo/v4"
+)
+
+type AuthHandler struct {
+	authService usecase.AuthService
+	accessToken usecase.AccessToken
+}
+
+func NewAuthHandler(auth usecase.AuthService, accessToken usecase.AccessToken) *AuthHandler {
+	return &AuthHandler{
+		authService: auth,
+		accessToken: accessToken,
+	}
+}
+
+func (h *AuthHandler) RegisterRoutes(g *echo.Group) {
+	g.POST("/login", h.Login)
+	g.GET("/verify", h.Verify, middleware.AccessMiddleware(h.accessToken))
+	g.POST("/logout", h.Logout)
+}
+
+// Login godoc
+// @Summary Login to account
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body dto.LoginRequest true "User ID"
+// @Success 200 {object} dto.LoginResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Router /api/auth/login [post]
+func (h *AuthHandler) Login(c echo.Context) error {
+	var req dto.LoginRequest
+
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrResponse{
+			Error: "invalid request body",
+		})
+	}
+
+	req.Username = strings.TrimSpace(req.Username)
+
+	if req.Username == "" || req.Password == "" {
+		return c.JSON(http.StatusBadRequest, dto.ErrResponse{
+			Error: "username and password is required",
+		})
+	}
+
+	result, err := h.authService.Login(
+		c.Request().Context(),
+		req.Username,
+		req.Password,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, usecase.ErrInvalidLogin):
+			return c.JSON(http.StatusUnauthorized, dto.ErrResponse{
+				Error: "invalid username or password",
+			})
+
+		default:
+			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
+				Error: "internal server error",
+			})
+		}
+	}
+
+	// Set access token cookie
+	c.SetCookie(h.generateCookie(
+		"access_token",
+		result.AccessToken,
+		15*time.Minute,
+	))
+
+	// Set refresh token cookie
+	c.SetCookie(h.generateCookie(
+		"refresh_token",
+		result.RefreshToken,
+		7*24*time.Hour,
+	))
+
+	return c.JSON(http.StatusOK, dto.MessageResponse{
+		Message: "login successful",
+	})
+}
+
+// Verify godoc
+// @Summary Verify authentication
+// @Description Check if user is authenticated
+// @Tags auth
+// @Produce json
+// @Security CookieAuth
+// @Success 200 {object} map[string]string
+// @Failure 401 {object} dto.ErrResponse
+// @Router /api/auth/verify [get]
+func (a *AuthHandler) Verify(c echo.Context) error {
+	return c.JSON(http.StatusOK, dto.MessageResponse{
+		Message: "authenticated",
+	})
+}
+
+// Logout godoc
+// @Summary Logout user
+// @Description Clear authentication cookie
+// @Tags auth
+// @Produce json
+// @Security CookieAuth
+// @Success 200 {object} map[string]string
+// @Router /api/auth/logout [post]
+func (h *AuthHandler) Logout(c echo.Context) error {
+	c.SetCookie(h.deleteCookie("access_token"))
+	c.SetCookie(h.deleteCookie("refresh_token"))
+
+	return c.JSON(http.StatusOK, dto.MessageResponse{
+		Message: "logged out successfully",
+	})
+}
+
+func (h *AuthHandler) deleteCookie(name string) *http.Cookie {
+	return &http.Cookie{
+		Name:     name,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+}
+
+func (h *AuthHandler) generateCookie(name string, token string, maxAge time.Duration) *http.Cookie {
+	return &http.Cookie{
+		Name:     name,
+		Value:    token,
+		Path:     "/",
+		MaxAge:   int(maxAge.Seconds()),
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+}
