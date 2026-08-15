@@ -29,6 +29,7 @@ func NewAuthRepo(sql *sqlc.Queries) *Auth {
 }
 
 func (a *Auth) Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error) {
+	Alogger.Info("Creating refresh token","user id", userID, "tokenHash", tokenHash)
 	if userID == uuid.Nil {
 		return nil, ErrInvalidID
 	}
@@ -50,6 +51,7 @@ func (a *Auth) Create(ctx context.Context, userID uuid.UUID, tokenHash string, e
 }
 
 func (a *Auth) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error) {
+	Alogger.Info("Getting refresh token", "tokenHash", tokenHash)
 	rt, err := a.sql.GetRefreshTokenByHash(ctx, tokenHash)
 
 	return &model.RefreshToken{
@@ -63,6 +65,8 @@ func (a *Auth) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshT
 }
 
 func (a *Auth) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
+	Alogger.Info("Revoking all refresh tokens", "user id", userID)
+
 	if userID == uuid.Nil {
 		return ErrInvalidID
 	}
@@ -71,6 +75,8 @@ func (a *Auth) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
 }
 
 func (a *Auth) Revoke(ctx context.Context, id uuid.UUID) error {
+	Alogger.Info("Revoking refresh token", "id", id)
+
 	if id == uuid.Nil {
 		return ErrInvalidID
 	}
