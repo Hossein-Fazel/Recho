@@ -16,9 +16,9 @@ var (
 
 type Config struct {
 	Secret      []byte        `env:"SECRET"`
-	Issuer      string        `env:"issuer"`
-	Refresh_TTL time.Duration `env:"RT_TTL"`
-	Access_TTL  time.Duration `env:"AT_TTL"`
+	Issuer      string        `env:"ISSUER"`
+	RefreshTTL time.Duration `env:"RT_TTL"`
+	AccessTTL  time.Duration `env:"AT_TTL"`
 }
 
 type JWTService struct {
@@ -31,7 +31,7 @@ func NewJWTService(conf Config) *JWTService {
 	return &JWTService{
 		secret: []byte(conf.Secret),
 		issuer: conf.Issuer,
-		ttl:    conf.Access_TTL,
+		ttl:    conf.AccessTTL,
 	}
 }
 

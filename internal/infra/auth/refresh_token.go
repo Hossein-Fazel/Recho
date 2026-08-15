@@ -15,7 +15,7 @@ type RefreshTokenService struct {
 
 func NewRefreshTokenService(conf Config) *RefreshTokenService {
 	return &RefreshTokenService{
-		ttl: conf.Refresh_TTL,
+		ttl: conf.RefreshTTL,
 	}
 }
 
