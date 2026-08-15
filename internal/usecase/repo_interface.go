@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -14,4 +15,11 @@ type UserRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetForLogin(ctx context.Context, username string) (*UserLogin, error)
 	Exists(ctx context.Context, username string) (bool, error)
+}
+
+type RefreshTokenRepository interface {
+	Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error)
+	GetByHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
+	Revoke(ctx context.Context, id uuid.UUID) error
+	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error
 }
