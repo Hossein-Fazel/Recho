@@ -13,11 +13,11 @@ type UserRepo interface {
 	Create(ctx context.Context, username, passHash string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
-	GetForLogin(ctx context.Context, username string) (*UserLogin, error)
+	GetForLogin(ctx context.Context, username string) (*model.User, error)
 	Exists(ctx context.Context, username string) (bool, error)
 }
 
-type RefreshTokenRepository interface {
+type RefreshTokenRepo interface {
 	Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error)
 	GetByHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
 	Revoke(ctx context.Context, id uuid.UUID) error

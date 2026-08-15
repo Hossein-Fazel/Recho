@@ -9,7 +9,7 @@ import (
 type RefreshToken struct {
 	ID        uuid.UUID
 	UserID    uuid.UUID
-	TokenHash string
+	Hash      string
 	ExpiresAt time.Time
 	RevokedAt *time.Time
 	CreatedAt time.Time

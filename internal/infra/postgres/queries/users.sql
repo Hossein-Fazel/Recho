@@ -10,6 +10,7 @@ VALUES (
 RETURNING
     id,
     username,
+    password_hash,
     display_name,
     avatar_url,
     bio,
@@ -53,12 +54,3 @@ SELECT EXISTS (
     FROM users
     WHERE username = $1
 );
-
--- name: GetUserForLogin :one
-SELECT
-    id,
-    username,
-    password_hash
-FROM users
-WHERE username = $1
-LIMIT 1;

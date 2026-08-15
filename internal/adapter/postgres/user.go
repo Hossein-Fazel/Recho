@@ -2,17 +2,20 @@ package postgres_repo
 
 import (
 	"context"
+	"errors"
+
 	"github.com/google/uuid"
 
-	"github.com/Hossein-Fazel/Recho/internal/usecase"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var URLogger = pkg.Logger.With("component", "userRepo")
+var (
+	URLogger = pkg.Logger.With("component", "userRepo")
 
+	ErrInvalidParams = errors.New("invalid username or password")
+)
 type User struct {
 	sql *sqlc.Queries
 }
@@ -26,12 +29,13 @@ func NewUserRepo(sql *sqlc.Queries) *User {
 
 func (u *User) Create(ctx context.Context, username, passHash string) (*model.User, error) {
 	URLogger.Info("Creating user", "username", username)
+	if username == "" || passHash == "" {
+		return nil, ErrInvalidParams
+	}
+
 	user, err := u.sql.CreateUser(ctx, sqlc.CreateUserParams{
 		Username: username,
-		PasswordHash: pgtype.Text{
-			String: passHash,
-			Valid:  true,
-		},
+		PasswordHash: passHash,
 	})
 
 	return &model.User{
@@ -52,6 +56,7 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 	return &model.User{
 		ID:          user.ID,
 		Username:    user.Username,
+		PassHash:    user.PasswordHash,
 		DisplayName: user.DisplayName.String,
 		AvatarURL:   user.AvatarUrl.String,
 		Bio:         user.Bio.String,
@@ -67,6 +72,7 @@ func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	return &model.User{
 		ID:          user.ID,
 		Username:    user.Username,
+		PassHash:    user.PasswordHash,
 		DisplayName: user.DisplayName.String,
 		AvatarURL:   user.AvatarUrl.String,
 		Bio:         user.Bio.String,
@@ -75,20 +81,20 @@ func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	}, err
 }
 
-func (u *User) GetForLogin(ctx context.Context, username string) (*usecase.UserLogin, error) {
+func (u *User) GetForLogin(ctx context.Context, username string) (*model.User, error) {
 	URLogger.Info("Getting user for login", "username", username)
 
-	user, err := u.sql.GetUserForLogin(ctx, username)
-	
-	id, err1 := uuid.Parse(user.ID.String())
-	if err == nil && err1 != nil {
-		return nil, err1
-	}
+	user, err := u.sql.GetUserByUsername(ctx, username)
 
-	return &usecase.UserLogin{
-		ID: id,
-		Username: user.Username,
-		PasswordHash: user.PasswordHash.String,
+	return &model.User{
+		ID:          user.ID,
+		Username:    user.Username,
+		PassHash:    user.PasswordHash,
+		DisplayName: user.DisplayName.String,
+		AvatarURL:   user.AvatarUrl.String,
+		Bio:         user.Bio.String,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
 	}, err
 }
 

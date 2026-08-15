@@ -1,6 +1,9 @@
 package usecase
 
-import "github.com/google/uuid"
+import (
+	"github.com/Hossein-Fazel/Recho/internal/model"
+	"github.com/google/uuid"
+)
 
 type AccessToken interface {
 	Generate(userID uuid.UUID) (string, error)
@@ -8,5 +11,5 @@ type AccessToken interface {
 }
 
 type RefreshToken interface {
-	Generate() (plain string, hash string, err error)
+	Generate() (*model.RefreshToken, string, error)
 }

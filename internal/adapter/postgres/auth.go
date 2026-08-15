@@ -43,7 +43,7 @@ func (a *Auth) Create(ctx context.Context, userID uuid.UUID, tokenHash string, e
 	return &model.RefreshToken{
 		ID:        rt.ID,
 		UserID:    rt.UserID,
-		TokenHash: rt.TokenHash,
+		Hash: rt.TokenHash,
 		ExpiresAt: rt.ExpiresAt,
 		RevokedAt: &rt.RevokedAt.Time,
 		CreatedAt: rt.CreatedAt,
@@ -57,7 +57,7 @@ func (a *Auth) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshT
 	return &model.RefreshToken{
 		ID:        rt.ID,
 		UserID:    rt.UserID,
-		TokenHash: rt.TokenHash,
+		Hash: rt.TokenHash,
 		ExpiresAt: rt.ExpiresAt,
 		RevokedAt: &rt.RevokedAt.Time,
 		CreatedAt: rt.CreatedAt,
