@@ -27,8 +27,60 @@ func NewAuthHandler(auth usecase.AuthService, accessToken usecase.AccessToken) *
 
 func (h *AuthHandler) RegisterRoutes(g *echo.Group) {
 	g.POST("/login", h.Login)
+	g.POST("/register", h.Register)
 	g.GET("/verify", h.Verify, middleware.AccessMiddleware(h.accessToken))
 	g.POST("/logout", h.Logout)
+}
+
+// Register godoc
+// @Summary Register a new account
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body dto.RegitsterRequest true "User ID"
+// @Success 200 {object} dto.AuthResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/auth/register [post]
+func (h *AuthHandler) Register(c echo.Context) error {
+	var req dto.RegisterRequest
+
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrResponse{
+			Error: "invalid request body",
+		})
+	}
+
+	req.Username = strings.TrimSpace(req.Username)
+
+	if req.Username == "" || req.Password == "" {
+		return c.JSON(http.StatusBadRequest, dto.ErrResponse{
+			Error: "username and password are required",
+		})
+	}
+
+	result, err := h.authService.Register(
+		c.Request().Context(),
+		req.Username,
+		req.Password,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, usecase.ErrUsernameExists):
+			return c.JSON(http.StatusConflict, dto.ErrResponse{
+				Error: "username already exists",
+			})
+
+		default:
+			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
+				Error: "internal server error",
+			})
+		}
+	}
+
+	return c.JSON(http.StatusCreated, result)
 }
 
 // Login godoc
@@ -37,9 +89,10 @@ func (h *AuthHandler) RegisterRoutes(g *echo.Group) {
 // @Accept json
 // @Produce json
 // @Param request body dto.LoginRequest true "User ID"
-// @Success 200 {object} dto.LoginResponse
+// @Success 200 {object} dto.AuthResponse
 // @Failure 400 {object} dto.ErrResponse
 // @Failure 401 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
 // @Router /api/auth/login [post]
 func (h *AuthHandler) Login(c echo.Context) error {
 	var req dto.LoginRequest
@@ -92,8 +145,10 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		7*24*time.Hour,
 	))
 
-	return c.JSON(http.StatusOK, dto.MessageResponse{
-		Message: "login successful",
+	return c.JSON(http.StatusOK, dto.AuthResponse{
+		User:         result.User,
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
 	})
 }
 
@@ -136,7 +191,6 @@ func (h *AuthHandler) deleteCookie(name string) *http.Cookie {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	}
 }
@@ -148,7 +202,6 @@ func (h *AuthHandler) generateCookie(name string, token string, maxAge time.Dura
 		Path:     "/",
 		MaxAge:   int(maxAge.Seconds()),
 		HttpOnly: true,
-		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	}
 }
