@@ -19,11 +19,11 @@ func NewRefreshTokenService(conf Config) *RefreshTokenService {
 	}
 }
 
-func (s *RefreshTokenService) Generate() (*model.RefreshToken, string, error) {
+func (s *RefreshTokenService) Generate() (*model.RefreshToken, *model.UserRefreshToken, error) {
 	raw := make([]byte, 32)
 
 	if _, err := rand.Read(raw); err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	plain := base64.RawURLEncoding.EncodeToString(raw)
@@ -34,7 +34,10 @@ func (s *RefreshTokenService) Generate() (*model.RefreshToken, string, error) {
 	expiresAt := time.Now().Add(s.ttl * 24 * time.Hour)
 
 	return &model.RefreshToken{
-		Hash:      hash,
-		ExpiresAt: expiresAt,
-	}, plain, nil
+			Hash:      hash,
+			ExpiresAt: expiresAt,
+		}, &model.UserRefreshToken{
+			Token: plain,
+			TTL:   s.ttl,
+		}, nil
 }

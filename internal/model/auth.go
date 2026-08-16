@@ -14,3 +14,13 @@ type RefreshToken struct {
 	RevokedAt *time.Time
 	CreatedAt time.Time
 }
+
+type UserRefreshToken struct {
+	Token string
+	TTL   time.Duration
+}
+
+type UserAcccessToken struct {
+	Token string
+	TTL   time.Duration
+}

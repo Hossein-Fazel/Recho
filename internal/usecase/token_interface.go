@@ -6,10 +6,10 @@ import (
 )
 
 type AccessToken interface {
-	Generate(userID uuid.UUID) (string, error)
+	Generate(userID uuid.UUID) (*model.UserAcccessToken, error)
 	Validate(token string) (uuid.UUID, error)
 }
 
 type RefreshToken interface {
-	Generate() (*model.RefreshToken, string, error)
+	Generate() (*model.RefreshToken, *model.UserRefreshToken, error)
 }

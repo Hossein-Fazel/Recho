@@ -80,7 +80,24 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusCreated, result)
+	// Set access token cookie
+	c.SetCookie(h.generateCookie(
+		"access_token",
+		result.AccessToken.Token,
+		result.AccessToken.TTL,
+	))
+
+	// Set refresh token cookie
+	c.SetCookie(h.generateCookie(
+		"refresh_token",
+		result.RefreshToken.Token,
+		result.RefreshToken.TTL,
+	))
+
+	return c.JSON(http.StatusOK, dto.AuthResponse{
+		Message: "register successfully",
+		User:    result.User,
+	})
 }
 
 // Login godoc
@@ -134,21 +151,20 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	// Set access token cookie
 	c.SetCookie(h.generateCookie(
 		"access_token",
-		result.AccessToken,
-		15*time.Minute,
+		result.AccessToken.Token,
+		result.AccessToken.TTL,
 	))
 
 	// Set refresh token cookie
 	c.SetCookie(h.generateCookie(
 		"refresh_token",
-		result.RefreshToken,
-		7*24*time.Hour,
+		result.RefreshToken.Token,
+		result.RefreshToken.TTL,
 	))
 
 	return c.JSON(http.StatusOK, dto.AuthResponse{
-		User:         result.User,
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
+		Message: "login successfully",
+		User:    result.User,
 	})
 }
 

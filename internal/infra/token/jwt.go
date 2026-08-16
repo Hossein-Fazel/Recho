@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -40,7 +41,7 @@ type accessTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (s *JWTService) Generate(userID uuid.UUID) (string, error) {
+func (s *JWTService) Generate(userID uuid.UUID) (*model.UserAcccessToken, error) {
 	now := time.Now()
 
 	claims := accessTokenClaims{
@@ -58,7 +59,15 @@ func (s *JWTService) Generate(userID uuid.UUID) (string, error) {
 		claims,
 	)
 
-	return token.SignedString(s.secret)
+	plain, err := token.SignedString(s.secret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserAcccessToken{
+		Token: plain,
+		TTL: s.ttl,
+	}, nil
 }
 
 func (s *JWTService) Validate(tokenString string) (uuid.UUID, error) {

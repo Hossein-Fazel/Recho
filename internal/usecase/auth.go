@@ -15,9 +15,9 @@ var (
 )
 
 type AuthResult struct {
-	User         *model.User `json:"user"`
-	AccessToken  string      `json:"access_token"`
-	RefreshToken string      `json:"refresh_token"`
+	User         *model.User
+	AccessToken  *model.UserAcccessToken
+	RefreshToken *model.UserRefreshToken
 }
 
 type AuthService interface {
@@ -120,19 +120,19 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	}, nil
 }
 
-func (s *authService) issueTokens(ctx context.Context, userID uuid.UUID) (string, string, error) {
+func (s *authService) issueTokens(ctx context.Context, userID uuid.UUID) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
 	if err := s.refreshTokens.RevokeAllByUser(ctx, userID); err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 
-	accessToken, err := s.at.Generate(userID)
+	userAT, err := s.at.Generate(userID)
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 
-	rt, plainRT, err := s.rt.Generate()
+	rt, userRT, err := s.rt.Generate()
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 	rt, err = s.refreshTokens.Create(
 		ctx,
@@ -142,8 +142,8 @@ func (s *authService) issueTokens(ctx context.Context, userID uuid.UUID) (string
 	)
 
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 
-	return accessToken, plainRT, nil
+	return userAT, userRT, nil
 }
