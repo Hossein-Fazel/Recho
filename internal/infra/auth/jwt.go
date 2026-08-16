@@ -15,8 +15,8 @@ var (
 )
 
 type Config struct {
-	Secret      []byte        `env:"SECRET"`
-	Issuer      string        `env:"ISSUER"`
+	Secret     string        `env:"SECRET"`
+	Issuer     string        `env:"ISSUER"`
 	RefreshTTL time.Duration `env:"RT_TTL"`
 	AccessTTL  time.Duration `env:"AT_TTL"`
 }
