@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/model"
@@ -137,6 +138,7 @@ func (s *authService) Refresh(ctx context.Context, refreshToken string) (*model.
 
 	if oldToken.RevokedAt != nil ||
 		time.Now().After(oldToken.ExpiresAt) {
+		fmt.Println(oldToken.RevokedAt != nil)
 		return nil, nil, ErrInvalidRefreshToken
 	}
 

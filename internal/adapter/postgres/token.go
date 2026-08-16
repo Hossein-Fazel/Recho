@@ -46,7 +46,7 @@ func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, 
 		UserID:    rt.UserID,
 		Hash:      rt.TokenHash,
 		ExpiresAt: rt.ExpiresAt,
-		RevokedAt: &rt.RevokedAt.Time,
+		RevokedAt: nil,
 		CreatedAt: rt.CreatedAt,
 	}, err
 }
@@ -55,12 +55,18 @@ func (a *Token) GetByHash(ctx context.Context, tokenHash string) (*model.Refresh
 	pkg.Logger.Info("Getting refresh token", "tokenHash", tokenHash)
 	rt, err := a.sql.GetRefreshTokenByHash(ctx, tokenHash)
 
+	var revokeTime *time.Time = &rt.RevokedAt.Time
+
+	if !rt.RevokedAt.Valid {
+		revokeTime = nil
+	}
+
 	return &model.RefreshToken{
 		ID:        rt.ID,
 		UserID:    rt.UserID,
 		Hash:      rt.TokenHash,
 		ExpiresAt: rt.ExpiresAt,
-		RevokedAt: &rt.RevokedAt.Time,
+		RevokedAt: revokeTime,
 		CreatedAt: rt.CreatedAt,
 	}, err
 }

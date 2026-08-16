@@ -9,6 +9,5 @@ import (
 
 func main() {
 	pkg.InitLogger(slog.LevelInfo)
-	pkg.Logger.Info("hello")
 	cmd.Run()
 }
