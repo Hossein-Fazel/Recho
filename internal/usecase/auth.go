@@ -10,8 +10,6 @@ import (
 )
 
 var (
-	logger = pkg.Logger.With("component", "auth service")
-
 	ErrUsernameExists = errors.New("username already exists")
 	ErrInvalidLogin   = errors.New("invalid username or password")
 )
@@ -35,7 +33,7 @@ type authService struct {
 }
 
 func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshTokens RefreshTokenRepo) AuthService {
-	logger.Info("Initializing auth service")
+	pkg.Logger.Info("Initializing auth service")
 
 	return &authService{
 		users:         userRepo,
@@ -46,7 +44,7 @@ func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshT
 }
 
 func (s *authService) Register(ctx context.Context, username string, password string) (*AuthResult, error) {
-	logger.Info("Registering user", "username", username)
+	pkg.Logger.Info("Registering user", "username", username)
 	exists, err := s.users.Exists(ctx, username)
 
 	if err != nil {
@@ -90,7 +88,7 @@ func (s *authService) Register(ctx context.Context, username string, password st
 }
 
 func (s *authService) Login(ctx context.Context, username string, password string) (*AuthResult, error) {
-	logger.Info("Loging in user", "username", username)
+	pkg.Logger.Info("Loging in user", "username", username)
 	user, err := s.users.GetByUsername(ctx, username)
 
 	if err != nil {

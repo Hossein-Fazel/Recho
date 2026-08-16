@@ -12,8 +12,6 @@ import (
 )
 
 var (
-	Alogger = pkg.Logger.With("component", "authRepo")
-
 	ErrInvalidID = errors.New("invalid id")
 )
 
@@ -22,14 +20,14 @@ type Auth struct {
 }
 
 func NewRefreshTokenRepo(sql *sqlc.Queries) *Auth {
-	Alogger.Info("Initializing auth Repository")
+	pkg.Logger.Info("Initializing auth Repository")
 	return &Auth{
 		sql: sql,
 	}
 }
 
 func (a *Auth) Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error) {
-	Alogger.Info("Creating refresh token","user id", userID, "tokenHash", tokenHash)
+	pkg.Logger.Info("Creating refresh token","user id", userID, "tokenHash", tokenHash)
 	if userID == uuid.Nil {
 		return nil, ErrInvalidID
 	}
@@ -51,7 +49,7 @@ func (a *Auth) Create(ctx context.Context, userID uuid.UUID, tokenHash string, e
 }
 
 func (a *Auth) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error) {
-	Alogger.Info("Getting refresh token", "tokenHash", tokenHash)
+	pkg.Logger.Info("Getting refresh token", "tokenHash", tokenHash)
 	rt, err := a.sql.GetRefreshTokenByHash(ctx, tokenHash)
 
 	return &model.RefreshToken{
@@ -65,7 +63,7 @@ func (a *Auth) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshT
 }
 
 func (a *Auth) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
-	Alogger.Info("Revoking all refresh tokens", "user id", userID)
+	pkg.Logger.Info("Revoking all refresh tokens", "user id", userID)
 
 	if userID == uuid.Nil {
 		return ErrInvalidID
@@ -75,7 +73,7 @@ func (a *Auth) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
 }
 
 func (a *Auth) Revoke(ctx context.Context, id uuid.UUID) error {
-	Alogger.Info("Revoking refresh token", "id", id)
+	pkg.Logger.Info("Revoking refresh token", "id", id)
 
 	if id == uuid.Nil {
 		return ErrInvalidID
