@@ -9,7 +9,7 @@ CREATE TABLE users (
     avatar_url    TEXT,
     bio           VARCHAR(250),
 
-    password_hash TEXT,
+    password_hash TEXT          NOT NULL,
 
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),

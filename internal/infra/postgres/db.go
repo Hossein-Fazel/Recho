@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,9 +16,8 @@ import (
 )
 
 const (
-	migrationPath = "internal/infra/db/migrations"
+	migrationPath = "internal/infra/postgres/migrations"
 )
-var logger = pkg.Logger.With("component", "auth")
 
 type Config struct {
 	Host     string `env:"HOST"`
@@ -60,17 +58,17 @@ func runMigrations(cfg Config) error {
 		return fmt.Errorf("cannot initialize migrate instance: %w", err)
 	}
 
-	log.Printf(">>> Running database migrations from '%s'...", migrationPath)
+	pkg.Logger.Info(fmt.Sprintf("Running database migrations from '%s'", migrationPath))
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("migration failed: %w", err)
 	}
 
-	logger.Info("Database schema is up to date")
+	pkg.Logger.Info("Database schema is up to date")
 	return nil
 }
 
-func newDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
+func NewDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 	connStr := cfg.buildConnectionString()
 
 	pool, err := pgxpool.New(ctx, connStr)
@@ -83,18 +81,13 @@ func newDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	logger.Info("Successfully connected to the database (pgx pool).")
+	pkg.Logger.Info("Successfully connected to the database (pgx pool).")
 	return pool, nil
 }
 
-func NewQueries(ctx context.Context, cfg Config) *sqlc.Queries {
+func NewQueries(ctx context.Context, db *pgxpool.Pool, cfg Config) *sqlc.Queries {
 	if err := runMigrations(cfg); err != nil {
-		logger.Error("database migration error", "error", err)
-	}
-
-	db, err := newDBTX(ctx, cfg)
-	if err != nil {
-		logger.Error("database connection error", "error" , err)
+		pkg.Logger.Error("database migration error", "error", err)
 	}
 
 	return sqlc.New(db)

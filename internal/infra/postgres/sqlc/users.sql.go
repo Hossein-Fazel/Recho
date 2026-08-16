@@ -25,6 +25,7 @@ VALUES (
 RETURNING
     id,
     username,
+    password_hash,
     display_name,
     avatar_url,
     bio,
@@ -34,17 +35,18 @@ RETURNING
 
 type CreateUserParams struct {
 	Username     string
-	PasswordHash pgtype.Text
+	PasswordHash string
 }
 
 type CreateUserRow struct {
-	ID          uuid.UUID
-	Username    string
-	DisplayName pgtype.Text
-	AvatarUrl   pgtype.Text
-	Bio         pgtype.Text
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           uuid.UUID
+	Username     string
+	PasswordHash string
+	DisplayName  pgtype.Text
+	AvatarUrl    pgtype.Text
+	Bio          pgtype.Text
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
@@ -53,6 +55,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
+		&i.PasswordHash,
 		&i.DisplayName,
 		&i.AvatarUrl,
 		&i.Bio,
@@ -80,7 +83,7 @@ LIMIT 1
 type GetUserByIDRow struct {
 	ID           uuid.UUID
 	Username     string
-	PasswordHash pgtype.Text
+	PasswordHash string
 	DisplayName  pgtype.Text
 	AvatarUrl    pgtype.Text
 	Bio          pgtype.Text
@@ -122,7 +125,7 @@ LIMIT 1
 type GetUserByUsernameRow struct {
 	ID           uuid.UUID
 	Username     string
-	PasswordHash pgtype.Text
+	PasswordHash string
 	DisplayName  pgtype.Text
 	AvatarUrl    pgtype.Text
 	Bio          pgtype.Text
@@ -143,29 +146,6 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
-	return i, err
-}
-
-const getUserForLogin = `-- name: GetUserForLogin :one
-SELECT
-    id,
-    username,
-    password_hash
-FROM users
-WHERE username = $1
-LIMIT 1
-`
-
-type GetUserForLoginRow struct {
-	ID           uuid.UUID
-	Username     string
-	PasswordHash pgtype.Text
-}
-
-func (q *Queries) GetUserForLogin(ctx context.Context, username string) (GetUserForLoginRow, error) {
-	row := q.db.QueryRow(ctx, getUserForLogin, username)
-	var i GetUserForLoginRow
-	err := row.Scan(&i.ID, &i.Username, &i.PasswordHash)
 	return i, err
 }
 

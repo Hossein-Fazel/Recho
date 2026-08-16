@@ -87,3 +87,9 @@ func InitLogger(level slog.Level) {
 		NewPrettyHandler(level),
 	)
 }
+
+func init() {
+    Logger = slog.New(
+        NewPrettyHandler(slog.LevelInfo),
+    )
+}

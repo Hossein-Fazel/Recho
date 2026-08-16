@@ -110,7 +110,7 @@ type User struct {
 	DisplayName  pgtype.Text
 	AvatarUrl    pgtype.Text
 	Bio          pgtype.Text
-	PasswordHash pgtype.Text
+	PasswordHash string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
