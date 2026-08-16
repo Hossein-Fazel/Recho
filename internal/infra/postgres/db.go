@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,8 +16,9 @@ import (
 )
 
 const (
-	migrationPath = "internal/infra/db/migrations"
+	migrationPath = "internal/infra/postgres/migrations"
 )
+
 var logger = pkg.Logger.With("component", "auth")
 
 type Config struct {
@@ -60,7 +60,7 @@ func runMigrations(cfg Config) error {
 		return fmt.Errorf("cannot initialize migrate instance: %w", err)
 	}
 
-	log.Printf(">>> Running database migrations from '%s'...", migrationPath)
+	logger.Info(fmt.Sprintf("Running database migrations from '%s'", migrationPath))
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("migration failed: %w", err)
@@ -94,7 +94,7 @@ func NewQueries(ctx context.Context, cfg Config) *sqlc.Queries {
 
 	db, err := newDBTX(ctx, cfg)
 	if err != nil {
-		logger.Error("database connection error", "error" , err)
+		logger.Error("database connection error", "error", err)
 	}
 
 	return sqlc.New(db)
