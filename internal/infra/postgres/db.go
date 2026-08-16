@@ -68,7 +68,7 @@ func runMigrations(cfg Config) error {
 	return nil
 }
 
-func newDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
+func NewDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 	connStr := cfg.buildConnectionString()
 
 	pool, err := pgxpool.New(ctx, connStr)
@@ -85,14 +85,9 @@ func newDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func NewQueries(ctx context.Context, cfg Config) *sqlc.Queries {
+func NewQueries(ctx context.Context, db *pgxpool.Pool, cfg Config) *sqlc.Queries {
 	if err := runMigrations(cfg); err != nil {
 		pkg.Logger.Error("database migration error", "error", err)
-	}
-
-	db, err := newDBTX(ctx, cfg)
-	if err != nil {
-		pkg.Logger.Error("database connection error", "error", err)
 	}
 
 	return sqlc.New(db)

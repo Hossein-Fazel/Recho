@@ -28,8 +28,7 @@ func (s *RefreshTokenService) Generate() (*model.RefreshToken, *model.UserRefres
 
 	plain := base64.RawURLEncoding.EncodeToString(raw)
 
-	sum := sha256.Sum256([]byte(plain))
-	hash := base64.RawURLEncoding.EncodeToString(sum[:])
+	hash := s.Hash(plain)
 
 	expiresAt := time.Now().Add(s.ttl * 24 * time.Hour)
 
@@ -40,4 +39,9 @@ func (s *RefreshTokenService) Generate() (*model.RefreshToken, *model.UserRefres
 			Token: plain,
 			TTL:   s.ttl,
 		}, nil
+}
+
+func (s *RefreshTokenService) Hash(plainText string) string {
+	sum := sha256.Sum256([]byte(plainText))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
 }

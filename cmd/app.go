@@ -6,8 +6,8 @@ import (
 	postgres_repo "github.com/Hossein-Fazel/Recho/internal/adapter/postgres"
 	"github.com/Hossein-Fazel/Recho/internal/config"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web"
-	"github.com/Hossein-Fazel/Recho/internal/infra/token"
 	db "github.com/Hossein-Fazel/Recho/internal/infra/postgres"
+	"github.com/Hossein-Fazel/Recho/internal/infra/token"
 	"github.com/Hossein-Fazel/Recho/internal/usecase"
 
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -18,10 +18,14 @@ func Run() {
 	conf := config.New()
 
 	pkg.Logger.Info("Initializing database")
-	queries := db.NewQueries(ctx, conf.DB)
+	database, err := db.NewDBTX(ctx, conf.DB)
+	if err != nil {
+		pkg.Logger.Error("error in creating db", "error", err)
+	}
+	queries := db.NewQueries(ctx, database, conf.DB)
 
 	pkg.Logger.Info("Initializing repos")
-	authRepo := postgres_repo.NewRefreshTokenRepo(queries)
+	authRepo := postgres_repo.NewRefreshTokenRepo(queries, database)
 	userRepo := postgres_repo.NewUserRepo(queries)
 
 	pkg.Logger.Info("Initializing services")

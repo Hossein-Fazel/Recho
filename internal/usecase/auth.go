@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -10,8 +11,9 @@ import (
 )
 
 var (
-	ErrUsernameExists = errors.New("username already exists")
-	ErrInvalidLogin   = errors.New("invalid username or password")
+	ErrUsernameExists      = errors.New("username already exists")
+	ErrInvalidLogin        = errors.New("invalid username or password")
+	ErrInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
 type AuthResult struct {
@@ -23,6 +25,7 @@ type AuthResult struct {
 type AuthService interface {
 	Register(ctx context.Context, username string, password string) (*AuthResult, error)
 	Login(ctx context.Context, username string, password string) (*AuthResult, error)
+	Refresh(ctx context.Context, refreshToken string) (*model.UserAcccessToken, *model.UserRefreshToken, error)
 }
 
 type authService struct {
@@ -118,6 +121,48 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (s *authService) Refresh(ctx context.Context, refreshToken string) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
+
+	tokenHash := s.rt.Hash(refreshToken)
+
+	oldToken, err := s.refreshTokens.GetByHash(
+		ctx,
+		tokenHash,
+	)
+	if err != nil {
+		return nil, nil, ErrInvalidRefreshToken
+	}
+
+	if oldToken.RevokedAt != nil ||
+		time.Now().After(oldToken.ExpiresAt) {
+		return nil, nil, ErrInvalidRefreshToken
+	}
+
+	newToken, userRT, err := s.rt.Generate()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	newToken.UserID = oldToken.UserID
+
+	if err := s.refreshTokens.Rotate(
+		ctx,
+		oldToken.ID,
+		newToken,
+	); err != nil {
+		return nil, nil, err
+	}
+
+	userAT, err := s.at.Generate(
+		oldToken.UserID,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return userAT, userRT, nil
 }
 
 func (s *authService) issueTokens(ctx context.Context, userID uuid.UUID) (*model.UserAcccessToken, *model.UserRefreshToken, error) {

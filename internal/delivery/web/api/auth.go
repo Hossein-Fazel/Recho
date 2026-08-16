@@ -28,8 +28,9 @@ func NewAuthHandler(auth usecase.AuthService, accessToken usecase.AccessToken) *
 func (h *AuthHandler) RegisterRoutes(g *echo.Group) {
 	g.POST("/login", h.Login)
 	g.POST("/register", h.Register)
+	g.GET("/refresh", h.Refresh, middleware.RefreshMiddleware())
 	g.GET("/verify", h.Verify, middleware.AccessMiddleware(h.accessToken))
-	g.POST("/logout", h.Logout)
+	g.POST("/logout", h.Logout, middleware.AccessMiddleware(h.accessToken))
 }
 
 // Register godoc
@@ -168,13 +169,63 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	})
 }
 
+// Refresh godoc
+// @Summary Refrsh tokens
+// @Tags auth
+// @Produce json
+// @Security CookieAuth
+// @Success 200 {object} dto.MessageResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Router /api/auth/refresh [get]
+func (h *AuthHandler) Refresh(c echo.Context) error {
+	RefreshToken := strings.TrimSpace(c.Get("refresh_token").(string))
+
+	at, rt, err := h.authService.Refresh(
+		c.Request().Context(),
+		RefreshToken,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, usecase.ErrInvalidLogin):
+			return c.JSON(http.StatusUnauthorized, dto.ErrResponse{
+				Error: "invalid refresh token",
+			})
+
+		default:
+			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
+				Error: "internal server error",
+			})
+		}
+	}
+
+	c.SetCookie(h.deleteCookie("access_token"))
+	c.SetCookie(h.deleteCookie("refresh_token"))
+
+	c.SetCookie(h.generateCookie(
+		"access_token",
+		at.Token,
+		at.TTL,
+	))
+
+	c.SetCookie(h.generateCookie(
+		"refresh_token",
+		rt.Token,
+		rt.TTL,
+	))
+
+	return c.JSON(http.StatusOK, dto.MessageResponse{
+		Message: "tokens refresh successfully",
+	})
+}
+
 // Verify godoc
 // @Summary Verify authentication
 // @Description Check if user is authenticated
 // @Tags auth
 // @Produce json
 // @Security CookieAuth
-// @Success 200 {object} map[string]string
+// @Success 200 {object} dto.MessageResponse
 // @Failure 401 {object} dto.ErrResponse
 // @Router /api/auth/verify [get]
 func (a *AuthHandler) Verify(c echo.Context) error {
@@ -189,7 +240,7 @@ func (a *AuthHandler) Verify(c echo.Context) error {
 // @Tags auth
 // @Produce json
 // @Security CookieAuth
-// @Success 200 {object} map[string]string
+// @Success 200 {object} dto.MessageResponse
 // @Router /api/auth/logout [post]
 func (h *AuthHandler) Logout(c echo.Context) error {
 	c.SetCookie(h.deleteCookie("access_token"))

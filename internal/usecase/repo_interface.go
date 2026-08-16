@@ -21,5 +21,6 @@ type RefreshTokenRepo interface {
 	Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error)
 	GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error)
 	Revoke(ctx context.Context, id uuid.UUID) error
-	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error 
+	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error
+	Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *model.RefreshToken) error
 }

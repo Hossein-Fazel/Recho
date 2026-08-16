@@ -12,4 +12,5 @@ type AccessToken interface {
 
 type RefreshToken interface {
 	Generate() (*model.RefreshToken, *model.UserRefreshToken, error)
+	Hash(plainText string) string
 }

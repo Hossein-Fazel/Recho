@@ -9,25 +9,28 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
 	ErrInvalidID = errors.New("invalid id")
 )
 
-type Auth struct {
+type Token struct {
+	db  *pgxpool.Pool
 	sql *sqlc.Queries
 }
 
-func NewRefreshTokenRepo(sql *sqlc.Queries) *Auth {
-	pkg.Logger.Info("Initializing auth Repository")
-	return &Auth{
+func NewRefreshTokenRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Token {
+	pkg.Logger.Info("Initializing Token Repository")
+	return &Token{
+		db:  db,
 		sql: sql,
 	}
 }
 
-func (a *Auth) Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error) {
-	pkg.Logger.Info("Creating refresh token","user id", userID, "tokenHash", tokenHash)
+func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error) {
+	pkg.Logger.Info("Creating refresh token", "user id", userID, "tokenHash", tokenHash)
 	if userID == uuid.Nil {
 		return nil, ErrInvalidID
 	}
@@ -41,28 +44,28 @@ func (a *Auth) Create(ctx context.Context, userID uuid.UUID, tokenHash string, e
 	return &model.RefreshToken{
 		ID:        rt.ID,
 		UserID:    rt.UserID,
-		Hash: rt.TokenHash,
+		Hash:      rt.TokenHash,
 		ExpiresAt: rt.ExpiresAt,
 		RevokedAt: &rt.RevokedAt.Time,
 		CreatedAt: rt.CreatedAt,
 	}, err
 }
 
-func (a *Auth) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error) {
+func (a *Token) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error) {
 	pkg.Logger.Info("Getting refresh token", "tokenHash", tokenHash)
 	rt, err := a.sql.GetRefreshTokenByHash(ctx, tokenHash)
 
 	return &model.RefreshToken{
 		ID:        rt.ID,
 		UserID:    rt.UserID,
-		Hash: rt.TokenHash,
+		Hash:      rt.TokenHash,
 		ExpiresAt: rt.ExpiresAt,
 		RevokedAt: &rt.RevokedAt.Time,
 		CreatedAt: rt.CreatedAt,
 	}, err
 }
 
-func (a *Auth) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
+func (a *Token) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
 	pkg.Logger.Info("Revoking all refresh tokens", "user id", userID)
 
 	if userID == uuid.Nil {
@@ -72,7 +75,7 @@ func (a *Auth) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
 	return a.sql.RevokeAllUserRefreshTokens(ctx, userID)
 }
 
-func (a *Auth) Revoke(ctx context.Context, id uuid.UUID) error {
+func (a *Token) Revoke(ctx context.Context, id uuid.UUID) error {
 	pkg.Logger.Info("Revoking refresh token", "id", id)
 
 	if id == uuid.Nil {
@@ -80,4 +83,32 @@ func (a *Auth) Revoke(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return a.sql.RevokeRefreshToken(ctx, id)
+}
+
+func (r *Token) Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *model.RefreshToken) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := r.sql.WithTx(tx)
+
+	if err := qtx.RevokeRefreshToken(ctx, oldTokenID); err != nil {
+		return err
+	}
+
+	_, err = qtx.CreateRefreshToken(
+		ctx,
+		sqlc.CreateRefreshTokenParams{
+			UserID:    newToken.UserID,
+			TokenHash: newToken.Hash,
+			ExpiresAt: newToken.ExpiresAt,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
