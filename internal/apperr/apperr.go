@@ -12,15 +12,15 @@ const (
 	ErrInternal     ErrorCode = "INTERNAL_ERROR"
 	ErrInvalidInput ErrorCode = "INVALID_INPUT"
 	ErrNotFound     ErrorCode = "NOT_FOUND"
-	ErrConflict 	ErrorCode = "DUPLICATE_ERROR"
+	ErrConflict     ErrorCode = "DUPLICATE_ERROR"
 )
 
 type AppError struct {
-	Status    int
-	Code      ErrorCode
-	Message   string
-	Module    string
-	Err       error
+	Status  int
+	Code    ErrorCode
+	Message string
+	Module  string
+	Err     error
 }
 
 func (e *AppError) Error() string {
@@ -34,11 +34,11 @@ func (e *AppError) Unwrap() error { return e.Err }
 
 func New(status int, code ErrorCode, module, message string, cause error) *AppError {
 	return &AppError{
-		Status:    status,
-		Code:      code,
-		Module:    module,
-		Message:   message,
-		Err:       cause,
+		Status:  status,
+		Code:    code,
+		Module:  module,
+		Message: message,
+		Err:     cause,
 	}
 }
 
@@ -50,7 +50,7 @@ func NotFound(module, msg string, cause error) *AppError {
 	return New(http.StatusNotFound, ErrNotFound, module, msg, cause)
 }
 
-func Conflict(module, msg string, cause error) *AppError{
+func Conflict(module, msg string, cause error) *AppError {
 	return New(http.StatusConflict, ErrConflict, module, msg, cause)
 }
 

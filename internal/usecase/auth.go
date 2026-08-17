@@ -38,7 +38,7 @@ type authService struct {
 }
 
 func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshTokens RefreshTokenRepo) AuthService {
-	pkg.Logger.Info("Initializing auth service")
+	pkg.Logger.Info().Msg("Initializing auth service")
 
 	return &authService{
 		users:         userRepo,
@@ -49,7 +49,10 @@ func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshT
 }
 
 func (s *authService) Register(ctx context.Context, username string, password string) (*AuthResult, error) {
-	pkg.Logger.Info("Registering user", "username", username)
+	pkg.Logger.Info().
+		Str("username", username).
+		Msg("Registering user")
+
 	exists, err := s.users.Exists(ctx, username)
 
 	if err != nil {
@@ -93,7 +96,10 @@ func (s *authService) Register(ctx context.Context, username string, password st
 }
 
 func (s *authService) Login(ctx context.Context, username string, password string) (*AuthResult, error) {
-	pkg.Logger.Info("Loging in user", "username", username)
+	pkg.Logger.Info().
+		Str("username", username).
+		Msg("Loging in user")
+
 	user, err := s.users.GetByUsername(ctx, username)
 
 	if err != nil {

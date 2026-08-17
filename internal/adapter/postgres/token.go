@@ -15,17 +15,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var (
-	ErrInvalidID = errors.New("invalid id")
-)
-
 type Token struct {
 	db  *pgxpool.Pool
 	sql *sqlc.Queries
 }
 
 func NewRefreshTokenRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Token {
-	pkg.Logger.Info("Initializing Token Repository")
+	pkg.Logger.Info().Msg("Initializing Token Repository")
 	return &Token{
 		db:  db,
 		sql: sql,
@@ -33,7 +29,11 @@ func NewRefreshTokenRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Token {
 }
 
 func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error) {
-	pkg.Logger.Info("Creating refresh token", "user id", userID, "tokenHash", tokenHash)
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Str("tokenHash", tokenHash).
+		Msg("Creating refresh token")
+
 	if userID == uuid.Nil {
 		return nil, apperr.InvalidInput("token repo", "invalid id", nil)
 	}
@@ -79,7 +79,10 @@ func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, 
 }
 
 func (a *Token) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error) {
-	pkg.Logger.Info("Getting refresh token", "tokenHash", tokenHash)
+	pkg.Logger.Info().
+		Str("tokenHash", tokenHash).
+		Msg("Getting refresh token")
+
 	rt, err := a.sql.GetRefreshTokenByHash(ctx, tokenHash)
 
 	if err != nil {
@@ -111,7 +114,9 @@ func (a *Token) GetByHash(ctx context.Context, tokenHash string) (*model.Refresh
 }
 
 func (a *Token) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
-	pkg.Logger.Info("Revoking all refresh tokens", "user id", userID)
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Msg("Revoking all refresh tokens")
 
 	if userID == uuid.Nil {
 		return apperr.InvalidInput("token repo", "invalid id", nil)
@@ -126,7 +131,9 @@ func (a *Token) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
 }
 
 func (a *Token) Revoke(ctx context.Context, id uuid.UUID) error {
-	pkg.Logger.Info("Revoking refresh token", "id", id)
+	pkg.Logger.Info().
+		Str("id", id.String()).
+		Msg("Revoking refresh token")
 
 	if id == uuid.Nil {
 		return apperr.InvalidInput("token repo", "invalid id", nil)

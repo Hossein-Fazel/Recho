@@ -14,23 +14,23 @@ import (
 	"github.com/Hossein-Fazel/Recho/pkg"
 )
 
-var (
-	URLogger = pkg.Logger.With("component", "userRepo")
-)
-
 type User struct {
 	sql *sqlc.Queries
 }
 
 func NewUserRepo(sql *sqlc.Queries) *User {
-	URLogger.Info("Initializing User Repository")
+	pkg.Logger.Info().Msg("Initializing User Repository")
+
 	return &User{
 		sql: sql,
 	}
 }
 
 func (u *User) Create(ctx context.Context, username, passHash string) (*model.User, error) {
-	URLogger.Info("Creating user", "username", username)
+	pkg.Logger.Info().
+		Str("username", username).
+		Msg("Creating user")
+
 	if username == "" || passHash == "" {
 		return nil, apperr.InvalidInput("user repo", "invalid username or password", nil)
 	}
@@ -70,7 +70,10 @@ func (u *User) Create(ctx context.Context, username, passHash string) (*model.Us
 }
 
 func (u *User) GetByUsername(ctx context.Context, username string) (*model.User, error) {
-	URLogger.Info("Getting user by username", "username", username)
+	pkg.Logger.Info().
+		Str("username", username).
+		Msg("Getting user by username")
+
 	user, err := u.sql.GetUserByUsername(ctx, username)
 
 	if err != nil {
@@ -98,7 +101,10 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 }
 
 func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	URLogger.Info("Getting user by id", "id", id)
+	pkg.Logger.Info().
+		Str("id", id.String()).
+		Msg("Getting user by id")
+
 	user, err := u.sql.GetUserByID(ctx, id)
 
 	if err != nil {
@@ -126,7 +132,9 @@ func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 }
 
 func (u *User) Exists(ctx context.Context, username string) (bool, error) {
-	URLogger.Info("Checking username existence", "username", username)
+	pkg.Logger.Info().
+		Str("username", username).
+		Msg("Checking username existence")
 
 	exists, err := u.sql.UsernameExists(ctx, username)
 	if err != nil {

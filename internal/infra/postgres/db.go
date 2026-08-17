@@ -58,13 +58,13 @@ func runMigrations(cfg Config) error {
 		return fmt.Errorf("cannot initialize migrate instance: %w", err)
 	}
 
-	pkg.Logger.Info(fmt.Sprintf("Running database migrations from '%s'", migrationPath))
+	pkg.Logger.Info().Msg(fmt.Sprintf("Running database migrations from '%s'", migrationPath))
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("migration failed: %w", err)
 	}
 
-	pkg.Logger.Info("Database schema is up to date")
+	pkg.Logger.Info().Msg("Database schema is up to date")
 	return nil
 }
 
@@ -81,13 +81,15 @@ func NewDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	pkg.Logger.Info("Successfully connected to the database (pgx pool).")
+	pkg.Logger.Info().Msg("Successfully connected to the database")
 	return pool, nil
 }
 
 func NewQueries(ctx context.Context, db *pgxpool.Pool, cfg Config) *sqlc.Queries {
 	if err := runMigrations(cfg); err != nil {
-		pkg.Logger.Error("database migration error", "error", err)
+		pkg.Logger.Fatal().
+			AnErr("error", err).
+			Msg("database migration error")
 	}
 
 	return sqlc.New(db)

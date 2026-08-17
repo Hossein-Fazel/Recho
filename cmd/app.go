@@ -17,18 +17,20 @@ func Run() {
 	ctx := context.Background()
 	conf := config.New()
 
-	pkg.Logger.Info("Initializing database")
+	pkg.Logger.Info().Msg("Initializing database")
 	database, err := db.NewDBTX(ctx, conf.DB)
 	if err != nil {
-		pkg.Logger.Error("error in creating db", "error", err)
+		pkg.Logger.Error().
+			AnErr("error", err).
+			Msg("error in creating db")
 	}
 	queries := db.NewQueries(ctx, database, conf.DB)
 
-	pkg.Logger.Info("Initializing repos")
+	pkg.Logger.Info().Msg("Initializing repos")
 	authRepo := postgres_repo.NewRefreshTokenRepo(queries, database)
 	userRepo := postgres_repo.NewUserRepo(queries)
 
-	pkg.Logger.Info("Initializing services")
+	pkg.Logger.Info().Msg("Initializing services")
 	accessToken := token.NewJWTService(conf.Token)
 	refreshToken := token.NewRefreshTokenService(conf.Token)
 

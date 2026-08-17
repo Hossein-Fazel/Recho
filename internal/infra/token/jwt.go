@@ -66,7 +66,7 @@ func (s *JWTService) Generate(userID uuid.UUID) (*model.UserAcccessToken, error)
 
 	return &model.UserAcccessToken{
 		Token: plain,
-		TTL: s.ttl,
+		TTL:   s.ttl,
 	}, nil
 }
 

@@ -14,6 +14,6 @@ type MessageResponse struct {
 }
 
 type AuthResponse struct {
-	Message string `json:"message"`
+	Message string      `json:"message"`
 	User    *model.User `json:"user"`
 }
