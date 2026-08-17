@@ -117,7 +117,12 @@ func (a *Token) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
 		return apperr.InvalidInput("token repo", "invalid id", nil)
 	}
 
-	return a.sql.RevokeAllUserRefreshTokens(ctx, userID)
+	err := a.sql.RevokeAllUserRefreshTokens(ctx, userID)
+	if err != nil {
+		return apperr.Internal("token repo", err)
+	}
+
+	return nil
 }
 
 func (a *Token) Revoke(ctx context.Context, id uuid.UUID) error {
