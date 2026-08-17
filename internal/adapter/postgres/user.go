@@ -50,7 +50,7 @@ func (u *User) Create(ctx context.Context, username, passHash string) (*model.Us
 		case "23505": // unique_violation
 			return nil, apperr.Conflict(
 				"user repo",
-				"re already exists",
+				"user already exists",
 				err,
 			)
 		default:
