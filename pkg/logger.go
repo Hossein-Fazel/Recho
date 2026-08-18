@@ -7,14 +7,14 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var Logger zerolog.Logger
+var Logger *zerolog.Logger
 
-func Init() {
+func init() {
 	writer := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: time.RFC3339,
 	}
-	level := zerolog.InfoLevel
+	level := zerolog.DebugLevel
 	zerolog.TimeFieldFormat = "2006-01-02 15:04:05"
 
 	logger := zerolog.New(writer).
@@ -24,5 +24,5 @@ func Init() {
 		Caller().
 		Logger()
 
-	Logger = logger
+	Logger = &logger
 }
