@@ -38,7 +38,7 @@ func (h *AuthHandler) RegisterRoutes(g *echo.Group) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body dto.RegitsterRequest true "User ID"
+// @Param request body dto.RegisterRequest true "User ID"
 // @Success 200 {object} dto.AuthResponse
 // @Failure 400 {object} dto.ErrResponse
 // @Failure 401 {object} dto.ErrResponse
