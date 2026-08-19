@@ -6,18 +6,18 @@ import (
 	"net/http"
 )
 
-type ErrorCode string
+type ErrorType string
 
 const (
-	ErrInternal     ErrorCode = "INTERNAL_ERROR"
-	ErrInvalidInput ErrorCode = "INVALID_INPUT"
-	ErrNotFound     ErrorCode = "NOT_FOUND"
-	ErrConflict     ErrorCode = "DUPLICATE_ERROR"
+	ErrInternal     ErrorType = "INTERNAL_ERROR"
+	ErrInvalidInput ErrorType = "INVALID_INPUT"
+	ErrNotFound     ErrorType = "NOT_FOUND"
+	ErrConflict     ErrorType = "DUPLICATE_ERROR"
 )
 
 type AppError struct {
 	Status  int
-	Code    ErrorCode
+	Type    ErrorType
 	Message string
 	Module  string
 	Err     error
@@ -25,17 +25,17 @@ type AppError struct {
 
 func (e *AppError) Error() string {
 	if e.Err != nil {
-		return fmt.Sprintf("[%s/%s] %s: %v", e.Module, e.Code, e.Message, e.Err)
+		return fmt.Sprintf("[%s/%s] %s: %v", e.Module, e.Type, e.Message, e.Err)
 	}
-	return fmt.Sprintf("[%s/%s] %s", e.Module, e.Code, e.Message)
+	return fmt.Sprintf("[%s/%s] %s", e.Module, e.Type, e.Message)
 }
 
 func (e *AppError) Unwrap() error { return e.Err }
 
-func New(status int, code ErrorCode, module, message string, cause error) *AppError {
+func New(status int, Type ErrorType, module, message string, cause error) *AppError {
 	return &AppError{
 		Status:  status,
-		Code:    code,
+		Type:    Type,
 		Module:  module,
 		Message: message,
 		Err:     cause,
