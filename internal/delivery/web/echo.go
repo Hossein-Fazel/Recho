@@ -6,6 +6,7 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/api"
 	"github.com/Hossein-Fazel/Recho/internal/usecase"
 
+	_ "github.com/Hossein-Fazel/Recho/docs"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

@@ -18,13 +18,21 @@ func Run() {
 	conf := config.New()
 
 	pkg.Logger.Info().Msg("Initializing database")
-	database, err := db.NewDBTX(ctx, conf.DB)
+	database, err := db.NewDBPool(ctx, conf.DB)
 	if err != nil {
-		pkg.Logger.Error().
+		pkg.Logger.Fatal().
 			AnErr("error", err).
 			Msg("error in creating db")
 	}
-	queries := db.NewQueries(ctx, database, conf.DB)
+
+	err = db.RunMigrations(conf.DB)
+	if err != nil {
+		pkg.Logger.Error().
+			AnErr("error", err).
+			Msg("error in running migrations")
+	}
+
+	queries := db.NewQueries(database)
 
 	pkg.Logger.Info().Msg("Initializing repos")
 	authRepo := postgres_repo.NewRefreshTokenRepo(queries, database)
