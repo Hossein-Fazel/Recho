@@ -136,17 +136,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, usecase.ErrInvalidLogin):
-			return c.JSON(http.StatusUnauthorized, dto.ErrResponse{
-				Error: "invalid username or password",
-			})
-
-		default:
-			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
-				Error: "internal server error",
-			})
-		}
+		return err
 	}
 
 	// Set access token cookie
@@ -186,17 +176,7 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 	)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, usecase.ErrInvalidLogin):
-			return c.JSON(http.StatusUnauthorized, dto.ErrResponse{
-				Error: "invalid refresh token",
-			})
-
-		default:
-			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
-				Error: "internal server error",
-			})
-		}
+		return err
 	}
 
 	c.SetCookie(h.deleteCookie("access_token"))

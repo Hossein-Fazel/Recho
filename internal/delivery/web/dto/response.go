@@ -4,9 +4,8 @@ import "github.com/Hossein-Fazel/Recho/internal/model"
 
 type ErrResponse struct {
 	Error  string `json:"error"`
-	Code   string `json:"code,omitempty"`
+	Type   string `json:"type,omitempty"`
 	Module string `json:"module,omitempty"`
-	Meta   string `json:"meta,omitempty"`
 }
 
 type MessageResponse struct {

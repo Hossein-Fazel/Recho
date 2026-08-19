@@ -43,6 +43,8 @@ func Start(authService usecase.AuthService, access usecase.AccessToken, conf Con
 
 	e.Debug = conf.isDebug()
 
+	e.HTTPErrorHandler = HTTPErrorHandler
+
 	e.Use(middleware.RequestLoggerWithConfig(
 		middleware.RequestLoggerConfig{
 			LogStatus:  true,
