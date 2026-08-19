@@ -212,23 +212,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/model.User"
+                    "$ref": "#/definitions/dto.User"
                 }
             }
         },
         "dto.ErrResponse": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "string"
-                },
                 "error": {
                     "type": "string"
                 },
-                "meta": {
+                "module": {
                     "type": "string"
                 },
-                "module": {
+                "type": {
                     "type": "string"
                 }
             }
@@ -263,28 +260,25 @@ const docTemplate = `{
                 }
             }
         },
-        "model.User": {
+        "dto.User": {
             "type": "object",
             "properties": {
-                "avatarURL": {
+                "avatar_url": {
                     "type": "string"
                 },
                 "bio": {
                     "type": "string"
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
-                "displayName": {
+                "display_name": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "passHash": {
-                    "type": "string"
-                },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 },
                 "username": {
@@ -292,17 +286,24 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "CookieAuth": {
+            "type": "apiKey",
+            "name": "access_token",
+            "in": "cookie"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "0.0.0",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Recho",
+	Description:      "Realtime chat application",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

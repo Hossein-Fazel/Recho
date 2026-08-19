@@ -1,20 +1,19 @@
+basePath: /
 definitions:
   dto.AuthResponse:
     properties:
       message:
         type: string
       user:
-        $ref: '#/definitions/model.User'
+        $ref: '#/definitions/dto.User'
     type: object
   dto.ErrResponse:
     properties:
-      code:
-        type: string
       error:
         type: string
-      meta:
-        type: string
       module:
+        type: string
+      type:
         type: string
     type: object
   dto.LoginRequest:
@@ -36,27 +35,28 @@ definitions:
       username:
         type: string
     type: object
-  model.User:
+  dto.User:
     properties:
-      avatarURL:
+      avatar_url:
         type: string
       bio:
         type: string
-      createdAt:
+      created_at:
         type: string
-      displayName:
+      display_name:
         type: string
       id:
         type: string
-      passHash:
-        type: string
-      updatedAt:
+      updated_at:
         type: string
       username:
         type: string
     type: object
 info:
   contact: {}
+  description: Realtime chat application
+  title: Recho
+  version: 0.0.0
 paths:
   /api/auth/login:
     post:
@@ -176,4 +176,9 @@ paths:
       summary: Verify authentication
       tags:
       - auth
+securityDefinitions:
+  CookieAuth:
+    in: cookie
+    name: access_token
+    type: apiKey
 swagger: "2.0"

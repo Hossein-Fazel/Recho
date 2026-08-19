@@ -59,7 +59,7 @@ func Start(authService usecase.AuthService, access usecase.AccessToken, conf Con
 					Str("uri", v.URI).
 					Int("status", v.Status).
 					Dur("latency", v.Latency).
-					Send()
+					Msg("http method")
 
 				return nil
 			},

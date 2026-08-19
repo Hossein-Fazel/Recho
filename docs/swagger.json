@@ -1,8 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Realtime chat application",
+        "title": "Recho",
+        "contact": {},
+        "version": "0.0.0"
     },
+    "basePath": "/",
     "paths": {
         "/api/auth/login": {
             "post": {
@@ -201,23 +205,20 @@
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/model.User"
+                    "$ref": "#/definitions/dto.User"
                 }
             }
         },
         "dto.ErrResponse": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "string"
-                },
                 "error": {
                     "type": "string"
                 },
-                "meta": {
+                "module": {
                     "type": "string"
                 },
-                "module": {
+                "type": {
                     "type": "string"
                 }
             }
@@ -252,34 +253,38 @@
                 }
             }
         },
-        "model.User": {
+        "dto.User": {
             "type": "object",
             "properties": {
-                "avatarURL": {
+                "avatar_url": {
                     "type": "string"
                 },
                 "bio": {
                     "type": "string"
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
-                "displayName": {
+                "display_name": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "passHash": {
-                    "type": "string"
-                },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 },
                 "username": {
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "CookieAuth": {
+            "type": "apiKey",
+            "name": "access_token",
+            "in": "cookie"
         }
     }
 }

@@ -97,7 +97,15 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dto.AuthResponse{
 		Message: "register successfully",
-		User:    result.User,
+		User: &dto.User{
+			ID:          result.User.ID,
+			Username:    result.User.Username,
+			DisplayName: result.User.DisplayName,
+			AvatarURL:   result.User.AvatarURL,
+			Bio:         result.User.Bio,
+			CreatedAt:   result.User.CreatedAt,
+			UpdatedAt:   result.User.UpdatedAt,
+		},
 	})
 }
 
@@ -155,7 +163,15 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dto.AuthResponse{
 		Message: "login successfully",
-		User:    result.User,
+		User: &dto.User{
+			ID:          result.User.ID,
+			Username:    result.User.Username,
+			DisplayName: result.User.DisplayName,
+			AvatarURL:   result.User.AvatarURL,
+			Bio:         result.User.Bio,
+			CreatedAt:   result.User.CreatedAt,
+			UpdatedAt:   result.User.UpdatedAt,
+		},
 	})
 }
 
