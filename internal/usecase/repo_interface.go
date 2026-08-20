@@ -13,7 +13,6 @@ type UserRepo interface {
 	Create(ctx context.Context, username, passHash string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
-	GetForLogin(ctx context.Context, username string) (*model.User, error)
 	Exists(ctx context.Context, username string) (bool, error)
 }
 

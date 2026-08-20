@@ -11,7 +11,9 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.15.4
 	github.com/lib/pq v1.12.3
+	github.com/rs/zerolog v1.35.1
 	github.com/swaggo/echo-swagger v1.5.2
+	github.com/swaggo/swag v1.16.2
 	golang.org/x/crypto v0.53.0
 )
 
@@ -33,7 +35,6 @@ require (
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	github.com/sv-tools/openapi v0.2.1 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
-	github.com/swaggo/swag v1.16.2 // indirect
 	github.com/swaggo/swag/v2 v2.0.0-rc4 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect

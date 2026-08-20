@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -28,67 +29,87 @@ type Config struct {
 	SSLMode  string `env:"SSLMODE"`
 }
 
+const (
+	connectTimeout = 10 * time.Second
+)
+
 func (cfg *Config) buildConnectionString() string {
 	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode,
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s connect_timeout=10",
+		cfg.Host,
+		cfg.Port,
+		cfg.User,
+		cfg.Password,
+		cfg.DBName,
+		cfg.SSLMode,
 	)
 }
 
-func runMigrations(cfg Config) error {
+func RunMigrations(cfg Config) error {
 	connStr := cfg.buildConnectionString()
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return fmt.Errorf("cannot open database for migrations: %w", err)
+		return fmt.Errorf("open migration database: %w", err)
 	}
 	defer db.Close()
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		return fmt.Errorf("cannot create migration driver: %w", err)
+		return fmt.Errorf("create migration driver: %w", err)
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", migrationPath), // Path to migration dir
+		fmt.Sprintf("file://%s", migrationPath),
 		"postgres",
 		driver,
 	)
 	if err != nil {
-		return fmt.Errorf("cannot initialize migrate instance: %w", err)
+		return fmt.Errorf("create migration instance: %w", err)
 	}
 
-	pkg.Logger.Info(fmt.Sprintf("Running database migrations from '%s'", migrationPath))
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("migration failed: %w", err)
+	pkg.Logger.Info().
+		Str("path", migrationPath).
+		Msg("running database migrations")
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("run migrations: %w", err)
 	}
 
-	pkg.Logger.Info("Database schema is up to date")
+	pkg.Logger.Info().
+		Msg("database schema is up to date")
+
 	return nil
 }
 
-func NewDBTX(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
+func NewDBPool(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 	connStr := cfg.buildConnectionString()
 
-	pool, err := pgxpool.New(ctx, connStr)
+	poolCfg, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create connection pool: %w", err)
+		return nil, fmt.Errorf("parse database config: %w", err)
 	}
 
-	if err := pool.Ping(ctx); err != nil {
+	poolCfg.ConnConfig.ConnectTimeout = connectTimeout
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
+	if err != nil {
+		return nil, fmt.Errorf("create database pool: %w", err)
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx, connectTimeout)
+	defer cancel()
+
+	if err := pool.Ping(pingCtx); err != nil {
 		pool.Close()
-		return nil, fmt.Errorf("unable to ping database: %w", err)
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	pkg.Logger.Info("Successfully connected to the database (pgx pool).")
+	pkg.Logger.Info().
+		Msg("database connection established")
+
 	return pool, nil
 }
 
-func NewQueries(ctx context.Context, db *pgxpool.Pool, cfg Config) *sqlc.Queries {
-	if err := runMigrations(cfg); err != nil {
-		pkg.Logger.Error("database migration error", "error", err)
-	}
-
+func NewQueries(db *pgxpool.Pool) *sqlc.Queries {
 	return sqlc.New(db)
 }

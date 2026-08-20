@@ -3,16 +3,15 @@ package web
 import (
 	"fmt"
 
-	"github.com/Hossein-Fazel/Recho/internal/usecase"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/api"
+	"github.com/Hossein-Fazel/Recho/internal/usecase"
 
+	_ "github.com/Hossein-Fazel/Recho/docs"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
-
-var logger = pkg.Logger
 
 type Config struct {
 	Port         string `env:"PORT"`
@@ -32,7 +31,8 @@ func (c *Config) isDebug() bool {
 // @in cookie
 // @name access_token
 func Start(authService usecase.AuthService, access usecase.AccessToken, conf Config) {
-	logger.Info("Initializing server")
+	pkg.Logger.Info().Msg("Initializing server")
+
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{"http://localhost:3000"},
@@ -43,23 +43,28 @@ func Start(authService usecase.AuthService, access usecase.AccessToken, conf Con
 
 	e.Debug = conf.isDebug()
 
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogStatus:  true,
-		LogURI:     true,
-		LogMethod:  true,
-		LogLatency: true,
+	e.HTTPErrorHandler = HTTPErrorHandler
 
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			logger.Info("HTTP request",
-				"method",  v.Method,
-				"uri",     v.URI,
-				"status",  v.Status,
-				"latency", v.Latency,
-			)
+	e.Use(middleware.RequestLoggerWithConfig(
+		middleware.RequestLoggerConfig{
+			LogStatus:  true,
+			LogURI:     true,
+			LogMethod:  true,
+			LogLatency: true,
 
-			return nil
+			LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+
+				pkg.Logger.Info().
+					Str("method", v.Method).
+					Str("uri", v.URI).
+					Int("status", v.Status).
+					Dur("latency", v.Latency).
+					Msg("http method")
+
+				return nil
+			},
 		},
-	}))
+	))
 
 	if e.Debug {
 		swaggerRoute := fmt.Sprintf("/%s/*", conf.SwaggerRoute)
@@ -69,6 +74,7 @@ func Start(authService usecase.AuthService, access usecase.AccessToken, conf Con
 	apiGroup := e.Group("/api")
 	api.Register(apiGroup, authService, access)
 
-	logger.Info("Starting server")
+	pkg.Logger.Info().Msg("Starting server")
+
 	e.Logger.Fatal(e.Start(":" + conf.Port))
 }

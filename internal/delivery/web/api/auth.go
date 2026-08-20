@@ -38,7 +38,7 @@ func (h *AuthHandler) RegisterRoutes(g *echo.Group) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body dto.RegitsterRequest true "User ID"
+// @Param request body dto.RegisterRequest true "User ID"
 // @Success 200 {object} dto.AuthResponse
 // @Failure 400 {object} dto.ErrResponse
 // @Failure 401 {object} dto.ErrResponse
@@ -97,7 +97,15 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dto.AuthResponse{
 		Message: "register successfully",
-		User:    result.User,
+		User: &dto.User{
+			ID:          result.User.ID,
+			Username:    result.User.Username,
+			DisplayName: result.User.DisplayName,
+			AvatarURL:   result.User.AvatarURL,
+			Bio:         result.User.Bio,
+			CreatedAt:   result.User.CreatedAt,
+			UpdatedAt:   result.User.UpdatedAt,
+		},
 	})
 }
 
@@ -136,17 +144,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, usecase.ErrInvalidLogin):
-			return c.JSON(http.StatusUnauthorized, dto.ErrResponse{
-				Error: "invalid username or password",
-			})
-
-		default:
-			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
-				Error: "internal server error",
-			})
-		}
+		return err
 	}
 
 	// Set access token cookie
@@ -165,7 +163,15 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dto.AuthResponse{
 		Message: "login successfully",
-		User:    result.User,
+		User: &dto.User{
+			ID:          result.User.ID,
+			Username:    result.User.Username,
+			DisplayName: result.User.DisplayName,
+			AvatarURL:   result.User.AvatarURL,
+			Bio:         result.User.Bio,
+			CreatedAt:   result.User.CreatedAt,
+			UpdatedAt:   result.User.UpdatedAt,
+		},
 	})
 }
 
@@ -186,17 +192,7 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 	)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, usecase.ErrInvalidLogin):
-			return c.JSON(http.StatusUnauthorized, dto.ErrResponse{
-				Error: "invalid refresh token",
-			})
-
-		default:
-			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
-				Error: "internal server error",
-			})
-		}
+		return err
 	}
 
 	c.SetCookie(h.deleteCookie("access_token"))

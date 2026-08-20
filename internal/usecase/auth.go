@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/apperr"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
@@ -37,7 +38,7 @@ type authService struct {
 }
 
 func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshTokens RefreshTokenRepo) AuthService {
-	pkg.Logger.Info("Initializing auth service")
+	pkg.Logger.Info().Msg("Initializing auth service")
 
 	return &authService{
 		users:         userRepo,
@@ -48,7 +49,10 @@ func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshT
 }
 
 func (s *authService) Register(ctx context.Context, username string, password string) (*AuthResult, error) {
-	pkg.Logger.Info("Registering user", "username", username)
+	pkg.Logger.Info().
+		Str("username", username).
+		Msg("Registering user")
+
 	exists, err := s.users.Exists(ctx, username)
 
 	if err != nil {
@@ -56,13 +60,13 @@ func (s *authService) Register(ctx context.Context, username string, password st
 	}
 
 	if exists {
-		return nil, ErrUsernameExists
+		return nil, apperr.Conflict("auth service", "username already exists", err)
 	}
 
 	hash, err := pkg.HashPassword(password)
 
 	if err != nil {
-		return nil, err
+		return nil, apperr.Internal("auth service", err)
 	}
 
 	user, err := s.users.Create(
@@ -81,7 +85,7 @@ func (s *authService) Register(ctx context.Context, username string, password st
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, apperr.Internal("auth service", err)
 	}
 
 	return &AuthResult{
@@ -92,11 +96,14 @@ func (s *authService) Register(ctx context.Context, username string, password st
 }
 
 func (s *authService) Login(ctx context.Context, username string, password string) (*AuthResult, error) {
-	pkg.Logger.Info("Loging in user", "username", username)
+	pkg.Logger.Info().
+		Str("username", username).
+		Msg("Loging in user")
+
 	user, err := s.users.GetByUsername(ctx, username)
 
 	if err != nil {
-		return nil, ErrInvalidLogin
+		return nil, err
 	}
 
 	err = pkg.CheckPassword(
@@ -105,7 +112,7 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	)
 
 	if err != nil {
-		return nil, ErrInvalidLogin
+		return nil, apperr.InvalidInput("auth service", "invalid username or password", err)
 	}
 
 	accessToken, refreshToken, err := s.issueTokens(
@@ -114,7 +121,7 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, apperr.Internal("auth service", err)
 	}
 
 	return &AuthResult{
@@ -133,18 +140,18 @@ func (s *authService) Refresh(ctx context.Context, refreshToken string) (*model.
 		tokenHash,
 	)
 	if err != nil {
-		return nil, nil, ErrInvalidRefreshToken
+		return nil, nil, err
 	}
 
 	if oldToken.RevokedAt != nil ||
 		time.Now().After(oldToken.ExpiresAt) {
 		fmt.Println(oldToken.RevokedAt != nil)
-		return nil, nil, ErrInvalidRefreshToken
+		return nil, nil, apperr.InvalidInput("auth service", "invalid refresh token", nil)
 	}
 
 	newToken, userRT, err := s.rt.Generate()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, apperr.Internal("auth service", err)
 	}
 
 	newToken.UserID = oldToken.UserID
@@ -161,7 +168,7 @@ func (s *authService) Refresh(ctx context.Context, refreshToken string) (*model.
 		oldToken.UserID,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, apperr.Internal("auth service", err)
 	}
 
 	return userAT, userRT, nil

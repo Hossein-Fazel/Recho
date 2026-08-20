@@ -5,15 +5,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/apperr"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-var (
-	ErrInvalidID = errors.New("invalid id")
 )
 
 type Token struct {
@@ -22,7 +21,7 @@ type Token struct {
 }
 
 func NewRefreshTokenRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Token {
-	pkg.Logger.Info("Initializing Token Repository")
+	pkg.Logger.Info().Msg("Initializing Token Repository")
 	return &Token{
 		db:  db,
 		sql: sql,
@@ -30,9 +29,13 @@ func NewRefreshTokenRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Token {
 }
 
 func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) (*model.RefreshToken, error) {
-	pkg.Logger.Info("Creating refresh token", "user id", userID, "tokenHash", tokenHash)
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Str("tokenHash", tokenHash).
+		Msg("Creating refresh token")
+
 	if userID == uuid.Nil {
-		return nil, ErrInvalidID
+		return nil, apperr.InvalidInput("token repo", "invalid id", nil)
 	}
 
 	rt, err := a.sql.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
@@ -41,6 +44,30 @@ func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, 
 		ExpiresAt: expiresAt,
 	})
 
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) {
+			return nil, apperr.Internal("token repo", err)
+		}
+
+		switch pgErr.Code {
+		case "23505": // unique_violation
+			return nil, apperr.Conflict(
+				"token repo",
+				"token already exists",
+				err,
+			)
+		case "23503":
+			return nil, apperr.InvalidInput(
+				"token repo",
+				"invalid user reference",
+				err,
+			)
+		default:
+			return nil, apperr.Internal("token repo", err)
+		}
+	}
+
 	return &model.RefreshToken{
 		ID:        rt.ID,
 		UserID:    rt.UserID,
@@ -48,12 +75,27 @@ func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, 
 		ExpiresAt: rt.ExpiresAt,
 		RevokedAt: nil,
 		CreatedAt: rt.CreatedAt,
-	}, err
+	}, nil
 }
 
 func (a *Token) GetByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error) {
-	pkg.Logger.Info("Getting refresh token", "tokenHash", tokenHash)
+	pkg.Logger.Info().
+		Str("tokenHash", tokenHash).
+		Msg("Getting refresh token")
+
 	rt, err := a.sql.GetRefreshTokenByHash(ctx, tokenHash)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"token repo",
+				"token not found",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("token repo", err)
+	}
 
 	var revokeTime *time.Time = &rt.RevokedAt.Time
 
@@ -68,40 +110,54 @@ func (a *Token) GetByHash(ctx context.Context, tokenHash string) (*model.Refresh
 		ExpiresAt: rt.ExpiresAt,
 		RevokedAt: revokeTime,
 		CreatedAt: rt.CreatedAt,
-	}, err
+	}, nil
 }
 
 func (a *Token) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
-	pkg.Logger.Info("Revoking all refresh tokens", "user id", userID)
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Msg("Revoking all refresh tokens")
 
 	if userID == uuid.Nil {
-		return ErrInvalidID
+		return apperr.InvalidInput("token repo", "invalid id", nil)
 	}
 
-	return a.sql.RevokeAllUserRefreshTokens(ctx, userID)
+	err := a.sql.RevokeAllUserRefreshTokens(ctx, userID)
+	if err != nil {
+		return apperr.Internal("token repo", err)
+	}
+
+	return nil
 }
 
 func (a *Token) Revoke(ctx context.Context, id uuid.UUID) error {
-	pkg.Logger.Info("Revoking refresh token", "id", id)
+	pkg.Logger.Info().
+		Str("id", id.String()).
+		Msg("Revoking refresh token")
 
 	if id == uuid.Nil {
-		return ErrInvalidID
+		return apperr.InvalidInput("token repo", "invalid id", nil)
 	}
 
-	return a.sql.RevokeRefreshToken(ctx, id)
+	err := a.sql.RevokeRefreshToken(ctx, id)
+	if err != nil {
+		return apperr.Internal("token repo", nil)
+	}
+
+	return nil
 }
 
 func (r *Token) Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *model.RefreshToken) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return err
+		return apperr.Internal("token repo", err)
 	}
 	defer tx.Rollback(ctx)
 
 	qtx := r.sql.WithTx(tx)
 
 	if err := qtx.RevokeRefreshToken(ctx, oldTokenID); err != nil {
-		return err
+		return apperr.Internal("token repo", nil)
 	}
 
 	_, err = qtx.CreateRefreshToken(
@@ -113,8 +169,13 @@ func (r *Token) Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *mode
 		},
 	)
 	if err != nil {
-		return err
+		return apperr.Internal("token repo", nil)
 	}
 
-	return tx.Commit(ctx)
+	err = tx.Commit(ctx)
+	if err != nil {
+		return apperr.Internal("token repo", nil)
+	}
+
+	return nil
 }
