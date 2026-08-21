@@ -21,6 +21,15 @@ type Client struct {
 	Hub    *Hub
 }
 
+func NewClient(userID uuid.UUID, conn *websocket.Conn, hub *Hub) *Client {
+	return &Client{
+		UserID: userID,
+		Conn: conn,
+		Send: make(chan []byte),
+		Hub: hub,
+	}
+}
+
 func (c *Client) ReadPump() {
 	defer func() {
 		pkg.Logger.Debug().
