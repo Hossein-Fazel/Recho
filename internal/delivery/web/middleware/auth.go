@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/Hossein-Fazel/Recho/internal/usecase"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/labstack/echo/v4"
 )
 
@@ -11,7 +11,7 @@ const (
 	RefreshToken = "refresh_token"
 )
 
-func AccessMiddleware(accessToken usecase.AccessToken) echo.MiddlewareFunc {
+func AccessMiddleware(accessToken application.AccessToken) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 

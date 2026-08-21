@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/api"
-	"github.com/Hossein-Fazel/Recho/internal/usecase"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 
 	_ "github.com/Hossein-Fazel/Recho/docs"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -30,7 +30,7 @@ func (c *Config) isDebug() bool {
 // @securityDefinitions.apikey CookieAuth
 // @in cookie
 // @name access_token
-func Start(authService usecase.AuthService, access usecase.AccessToken, conf Config) {
+func Start(authService application.AuthService, access application.AccessToken, conf Config) {
 	pkg.Logger.Info().Msg("Initializing server")
 
 	e := echo.New()

@@ -9,16 +9,16 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/dto"
 
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
-	"github.com/Hossein-Fazel/Recho/internal/usecase"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/labstack/echo/v4"
 )
 
 type AuthHandler struct {
-	authService usecase.AuthService
-	accessToken usecase.AccessToken
+	authService application.AuthService
+	accessToken application.AccessToken
 }
 
-func NewAuthHandler(auth usecase.AuthService, accessToken usecase.AccessToken) *AuthHandler {
+func NewAuthHandler(auth application.AuthService, accessToken application.AccessToken) *AuthHandler {
 	return &AuthHandler{
 		authService: auth,
 		accessToken: accessToken,
@@ -69,7 +69,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	if err != nil {
 		switch {
-		case errors.Is(err, usecase.ErrUsernameExists):
+		case errors.Is(err, application.ErrUsernameExists):
 			return c.JSON(http.StatusConflict, dto.ErrResponse{
 				Error: "username already exists",
 			})

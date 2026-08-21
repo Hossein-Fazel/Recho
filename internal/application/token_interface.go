@@ -1,4 +1,4 @@
-package usecase
+package application
 
 import (
 	"github.com/Hossein-Fazel/Recho/internal/model"
