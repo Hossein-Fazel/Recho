@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	CtxUsername  = "username"
+	CtxUserID    = "user_id"
 	AccessToken  = "access_token"
 	RefreshToken = "refresh_token"
 )
@@ -25,7 +25,7 @@ func AccessMiddleware(accessToken application.AccessToken) echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 
-			c.Set(CtxUsername, id)
+			c.Set(CtxUserID, id)
 
 			return next(c)
 		}
