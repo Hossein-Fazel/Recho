@@ -3,44 +3,44 @@ package websocket
 import "github.com/google/uuid"
 
 type Hub struct {
-	clients    map[uuid.UUID][]*Client
-	register   chan *Client
-	unregister chan *Client
+	Clients    map[uuid.UUID][]*Client
+	Register   chan *Client
+	Unregister chan *Client
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		clients:    make(map[uuid.UUID][]*Client),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		Clients:    make(map[uuid.UUID][]*Client),
+		Register:   make(chan *Client),
+		Unregister: make(chan *Client),
 	}
 }
 
 func (h *Hub) Run() {
 	for {
 		select {
-		case client := <-h.register:
+		case client := <-h.Register:
 			h.registerClient(client)
 
-		case client := <-h.unregister:
+		case client := <-h.Unregister:
 			h.unregisterClient(client)
 		}
 	}
 }
 
 func (h *Hub) registerClient(client *Client) {
-	h.clients[client.UserID] = append(
-		h.clients[client.UserID],
+	h.Clients[client.UserID] = append(
+		h.Clients[client.UserID],
 		client,
 	)
 }
 
 func (h *Hub) unregisterClient(client *Client) {
-	clients := h.clients[client.UserID]
+	clients := h.Clients[client.UserID]
 
 	for i, c := range clients {
 		if c == client {
-			h.clients[client.UserID] = append(
+			h.Clients[client.UserID] = append(
 				clients[:i],
 				clients[i+1:]...,
 			)
@@ -48,8 +48,8 @@ func (h *Hub) unregisterClient(client *Client) {
 		}
 	}
 
-	if len(h.clients[client.UserID]) == 0 {
-		delete(h.clients, client.UserID)
+	if len(h.Clients[client.UserID]) == 0 {
+		delete(h.Clients, client.UserID)
 	}
 
 	close(client.Send)
