@@ -1,0 +1,58 @@
+package websocket
+
+import (
+	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"github.com/labstack/echo/v4"
+)
+
+const (
+	CtxUserID = "user_id"
+)
+
+type WSHandler struct {
+	hub      *Hub
+	upgrader websocket.Upgrader
+}
+
+func NewWSHandler(hub *Hub) *WSHandler {
+	return &WSHandler{
+		hub: hub,
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+
+			CheckOrigin: func(r *http.Request) bool { return true },
+		},
+	}
+}
+
+func (h *WSHandler) RegsiterRoutes(g *echo.Group) {
+	g.GET("/", h.Handler)
+}
+
+func (h *WSHandler) Handler(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	conn, err := h.upgrader.Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+
+	client := NewClient(
+		userID,
+		conn,
+		h.hub,
+	)
+
+	h.hub.Register <- client
+	go client.WritePump()
+	go client.ReadPump()
+
+	return nil
+}

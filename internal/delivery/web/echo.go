@@ -3,8 +3,8 @@ package web
 import (
 	"fmt"
 
-	"github.com/Hossein-Fazel/Recho/internal/delivery/web/api"
 	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/internal/delivery/web/api"
 
 	_ "github.com/Hossein-Fazel/Recho/docs"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -30,22 +30,22 @@ func (c *Config) isDebug() bool {
 // @securityDefinitions.apikey CookieAuth
 // @in cookie
 // @name access_token
-func Start(authService application.AuthService, access application.AccessToken, conf Config) {
+func Init(authService application.AuthService, access application.AccessToken, conf Config) *echo.Echo {
 	pkg.Logger.Info().Msg("Initializing server")
 
-	e := echo.New()
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:3000"},
+	webServer := echo.New()
+	webServer.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 
-	e.Debug = conf.isDebug()
+	webServer.Debug = conf.isDebug()
 
-	e.HTTPErrorHandler = HTTPErrorHandler
+	webServer.HTTPErrorHandler = HTTPErrorHandler
 
-	e.Use(middleware.RequestLoggerWithConfig(
+	webServer.Use(middleware.RequestLoggerWithConfig(
 		middleware.RequestLoggerConfig{
 			LogStatus:  true,
 			LogURI:     true,
@@ -66,15 +66,13 @@ func Start(authService application.AuthService, access application.AccessToken, 
 		},
 	))
 
-	if e.Debug {
+	if webServer.Debug {
 		swaggerRoute := fmt.Sprintf("/%s/*", conf.SwaggerRoute)
-		e.GET(swaggerRoute, echoSwagger.WrapHandler)
+		webServer.GET(swaggerRoute, echoSwagger.WrapHandler)
 	}
 
-	apiGroup := e.Group("/api")
+	apiGroup := webServer.Group("/api")
 	api.Register(apiGroup, authService, access)
 
-	pkg.Logger.Info().Msg("Starting server")
-
-	e.Logger.Fatal(e.Start(":" + conf.Port))
+	return webServer
 }

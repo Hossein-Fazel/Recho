@@ -3,7 +3,6 @@ package postgres_repo
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -78,7 +77,6 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 	user, err := u.sql.GetUserByUsername(ctx, username)
 
 	if err != nil {
-		fmt.Println(err.Error())
 		pkg.Logger.Info().AnErr("err", err)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, apperr.NotFound(

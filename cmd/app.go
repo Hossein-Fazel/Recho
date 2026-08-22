@@ -4,11 +4,13 @@ import (
 	"context"
 
 	postgres_repo "github.com/Hossein-Fazel/Recho/internal/adapter/postgres"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/config"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web"
+	"github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
+	"github.com/Hossein-Fazel/Recho/internal/delivery/websocket"
 	db "github.com/Hossein-Fazel/Recho/internal/infra/postgres"
 	"github.com/Hossein-Fazel/Recho/internal/infra/token"
-	"github.com/Hossein-Fazel/Recho/internal/application"
 
 	"github.com/Hossein-Fazel/Recho/pkg"
 )
@@ -44,5 +46,16 @@ func Run() {
 
 	authService := application.NewAuthService(userRepo, accessToken, refreshToken, authRepo)
 
-	web.Start(authService, accessToken, conf.Server)
+	pkg.Logger.Info().Msg("initialize websocket")
+	hub := websocket.NewHub()
+	go hub.Run()
+	ws := websocket.NewWSHandler(hub)
+
+
+	pkg.Logger.Info().Msg("Starting server")
+	web := web.Init(authService, accessToken, conf.Server)
+
+	wsGroup := web.Group("/ws", middleware.AccessMiddleware(accessToken))
+	ws.RegsiterRoutes(wsGroup)
+	web.Logger.Fatal(web.Start(":" + conf.Server.Port))
 }
