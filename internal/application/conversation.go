@@ -10,15 +10,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type ConverasionService struct {
-	ChatRepo ConversationRepo
+type ConverasionService interface {
+	GetUserChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error)
 }
 
-func NewConverasionService(chatRepo ConversationRepo) *ConverasionService {
+type converasionService struct {
+	chatRepo ConversationRepo
+}
+
+func NewConverasionService(chatRepo ConversationRepo) *converasionService {
 	pkg.Logger.Info().Msg("Initializing Converasion service")
 
-	return &ConverasionService{
-		ChatRepo: chatRepo,
+	return &converasionService{
+		chatRepo: chatRepo,
 	}
 }
 
@@ -29,7 +33,7 @@ type GetUserChatsParams struct {
 	Limit           int32
 }
 
-func (c *ConverasionService) GetUserChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error) {
+func (c *converasionService) GetUserChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error) {
 	pkg.Logger.Info().
 		Str("username", args.UserID.String()).
 		Msg("Get users chats")
@@ -38,5 +42,5 @@ func (c *ConverasionService) GetUserChats(ctx context.Context, args GetUserChats
 		return nil, apperr.InvalidInput("conversation service", "user id required", nil)
 	}
 
-	return c.ChatRepo.GetChats(ctx, args)
+	return c.chatRepo.GetChats(ctx, args)
 }
