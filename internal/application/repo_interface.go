@@ -23,3 +23,7 @@ type RefreshTokenRepo interface {
 	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error
 	Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *model.RefreshToken) error
 }
+
+type ConversationRepo interface {
+	GetChats(ctx context.Context, userID uuid.UUID, cursorUpdatedAt time.Time, cursorID uuid.UUID, limit int32) ([]*model.UserConversation, error)
+}
