@@ -50,11 +50,11 @@ WHERE
         OR gm.user_id IS NOT NULL
     )
     AND (
-        sqlc.arg(cursor_updated_at)::timestamptz IS NULL
-        OR c.updated_at < sqlc.arg(cursor_updated_at)
+        sqlc.narg(cursor_updated_at)::timestamptz IS NULL
+        OR c.updated_at < sqlc.narg(cursor_updated_at)
         OR (
-            c.updated_at = sqlc.arg(cursor_updated_at)
-            AND c.id < sqlc.arg(cursor_id)
+            c.updated_at = sqlc.narg(cursor_updated_at)
+            AND c.id < sqlc.narg(cursor_id)
         )
     )
 
