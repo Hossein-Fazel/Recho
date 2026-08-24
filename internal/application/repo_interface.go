@@ -25,5 +25,5 @@ type RefreshTokenRepo interface {
 }
 
 type ConversationRepo interface {
-	GetChats(ctx context.Context, userID uuid.UUID, cursorUpdatedAt time.Time, cursorID uuid.UUID, limit int32) ([]*model.UserConversation, error)
+	GetChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error)
 }

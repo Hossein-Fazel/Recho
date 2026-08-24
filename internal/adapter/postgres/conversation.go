@@ -3,9 +3,9 @@ package postgres_repo
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -25,22 +25,22 @@ func NewConversationRepo(sql *sqlc.Queries) *Conversation {
 	}
 }
 
-func (c *Conversation) GetChats(ctx context.Context, userID uuid.UUID, cursorUpdatedAt time.Time, cursorID uuid.UUID, limit int32) ([]*model.UserConversation, error) {
+func (c *Conversation) GetChats(ctx context.Context, args application.GetUserChatsParams) ([]*model.UserConversation, error) {
 	pkg.Logger.Info().
-		Str("user id", userID.String()).
-		Str("cursor_update_at", cursorUpdatedAt.String()).
-		Str("cursorID", cursorID.String()).
+		Str("user id", args.UserID.String()).
+		Str("cursor_update_at", args.CursorUpdatedAt.String()).
+		Str("cursorID", args.CursorID.String()).
 		Msg("Getting chat list")
 
-	if userID == uuid.Nil {
+	if args.UserID == uuid.Nil {
 		return nil, apperr.InvalidInput("conversation repo", "invalid id", nil)
 	}
 
 	list, err := c.sql.GetUserConversations(ctx, sqlc.GetUserConversationsParams{
-		UserID:          userID,
-		CursorUpdatedAt: cursorUpdatedAt,
-		CursorID:        cursorID,
-		QueryLimit:      limit,
+		UserID:          args.UserID,
+		CursorUpdatedAt: args.CursorUpdatedAt,
+		CursorID:        args.CursorID,
+		QueryLimit:      args.Limit,
 	})
 
 	if err != nil {
