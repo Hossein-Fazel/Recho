@@ -11,6 +11,7 @@ import (
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Conversation struct {
@@ -36,12 +37,24 @@ func (c *Conversation) GetChats(ctx context.Context, args application.GetUserCha
 		return nil, apperr.InvalidInput("conversation repo", "invalid id", nil)
 	}
 
-	list, err := c.sql.GetUserConversations(ctx, sqlc.GetUserConversationsParams{
-		UserID:          args.UserID,
-		CursorUpdatedAt: args.CursorUpdatedAt,
-		CursorID:        args.CursorID,
-		QueryLimit:      args.Limit,
-	})
+	list, err := c.sql.GetUserConversations(
+		ctx,
+		sqlc.GetUserConversationsParams{
+			UserID: args.UserID,
+
+			CursorUpdatedAt: pgtype.Timestamptz{
+				Time:  args.CursorUpdatedAt,
+				Valid: !args.CursorUpdatedAt.IsZero(),
+			},
+
+			CursorID: pgtype.UUID{
+				Bytes: args.CursorID,
+				Valid: args.CursorID != uuid.Nil,
+			},
+
+			QueryLimit: args.Limit,
+		},
+	)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
