@@ -18,7 +18,7 @@ type converasionService struct {
 	chatRepo ConversationRepo
 }
 
-func NewConverasionService(chatRepo ConversationRepo) *converasionService {
+func NewConverasionService(chatRepo ConversationRepo) ConverasionService {
 	pkg.Logger.Info().Msg("Initializing Converasion service")
 
 	return &converasionService{

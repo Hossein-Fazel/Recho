@@ -39,12 +39,14 @@ func Run() {
 	pkg.Logger.Info().Msg("Initializing repos")
 	authRepo := postgres_repo.NewRefreshTokenRepo(queries, database)
 	userRepo := postgres_repo.NewUserRepo(queries)
+	convRepo := postgres_repo.NewConversationRepo(queries)
 
 	pkg.Logger.Info().Msg("Initializing services")
 	accessToken := token.NewJWTService(conf.Token)
 	refreshToken := token.NewRefreshTokenService(conf.Token)
 
 	authService := application.NewAuthService(userRepo, accessToken, refreshToken, authRepo)
+	convService := application.NewConverasionService(convRepo)
 
 	pkg.Logger.Info().Msg("initialize websocket")
 	hub := websocket.NewHub()
@@ -53,7 +55,7 @@ func Run() {
 
 
 	pkg.Logger.Info().Msg("Starting server")
-	web := web.Init(authService, accessToken, conf.Server)
+	web := web.Init(authService, accessToken, convService, conf.Server)
 
 	wsGroup := web.Group("/ws", middleware.AccessMiddleware(accessToken))
 	ws.RegsiterRoutes(wsGroup)

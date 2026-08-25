@@ -30,7 +30,7 @@ func (c *Config) isDebug() bool {
 // @securityDefinitions.apikey CookieAuth
 // @in cookie
 // @name access_token
-func Init(authService application.AuthService, access application.AccessToken, conf Config) *echo.Echo {
+func Init(authService application.AuthService, access application.AccessToken, convSvc application.ConverasionService, conf Config) *echo.Echo {
 	pkg.Logger.Info().Msg("Initializing server")
 
 	webServer := echo.New()
@@ -72,7 +72,7 @@ func Init(authService application.AuthService, access application.AccessToken, c
 	}
 
 	apiGroup := webServer.Group("/api")
-	api.Register(apiGroup, authService, access)
+	api.Register(apiGroup, authService, access, convSvc)
 
 	return webServer
 }
