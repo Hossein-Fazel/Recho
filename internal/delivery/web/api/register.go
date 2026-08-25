@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
 	"github.com/labstack/echo/v4"
 )
 
@@ -10,7 +11,7 @@ func Register(g *echo.Group, auth application.AuthService, access application.Ac
 	authHandler := NewAuthHandler(auth, access)
 	authHandler.RegisterRoutes(authGroup)
 
-	convGroup := g.Group("/conversation")
+	convGroup := g.Group("/conversation", middleware.AccessMiddleware(access))
 	convHandler := NewConversationHandler(convSvc)
 	convHandler.RegisterRoutes(convGroup)
 

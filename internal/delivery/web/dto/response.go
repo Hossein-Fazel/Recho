@@ -46,7 +46,7 @@ type Conversation struct {
 	UpdatedAt            time.Time `json:"updated_at"`
 }
 
-type UserConversations struct {
+type UserConversationsResponse struct {
 	Conversations []*Conversation `josn:"Conversations"`
 	NextCursor    string          `json:"next_cursor,omitempty"`
 }

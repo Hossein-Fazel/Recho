@@ -7,6 +7,33 @@ definitions:
       user:
         $ref: '#/definitions/dto.User'
     type: object
+  dto.Conversation:
+    properties:
+      avatar_url:
+        type: string
+      conversation_id:
+        type: string
+      conversation_type:
+        type: string
+      display_name:
+        type: string
+      group_avatar_url:
+        type: string
+      group_name:
+        type: string
+      last_message_content:
+        type: string
+      last_message_created_at:
+        type: string
+      last_message_id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
   dto.ErrResponse:
     properties:
       error:
@@ -50,6 +77,15 @@ definitions:
       updated_at:
         type: string
       username:
+        type: string
+    type: object
+  dto.UserConversationsResponse:
+    properties:
+      conversations:
+        items:
+          $ref: '#/definitions/dto.Conversation'
+        type: array
+      next_cursor:
         type: string
     type: object
 info:
@@ -176,6 +212,46 @@ paths:
       summary: Verify authentication
       tags:
       - auth
+  /api/conversations/:
+    get:
+      consumes:
+      - application/json
+      description: Returns a paginated list of conversations belonging to the current
+        user, ordered by most recent activity
+      parameters:
+      - description: 'Number of conversations to return (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor for retrieving the next page. Use the cursor
+          from the previous response to get the next page.
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserConversationsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user conversations
+      tags:
+      - conversations
 securityDefinitions:
   CookieAuth:
     in: cookie

@@ -46,8 +46,8 @@ func decodeCursor(value string) (conversationCursor, error) {
 	return cursor, nil
 }
 
-func convList2convListRes(convs []*model.UserConversation, next string) dto.UserConversations {
-	var res dto.UserConversations
+func convList2convListRes(convs []*model.UserConversation, next string) dto.UserConversationsResponse {
+	var res dto.UserConversationsResponse
 
 	res.NextCursor = next
 	for _, conv := range convs {

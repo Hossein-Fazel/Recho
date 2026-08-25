@@ -21,10 +21,24 @@ func NewConversationHandler(convSvc application.ConverasionService) *Conversatio
 }
 
 func (h *ConversationHandler) RegisterRoutes(g *echo.Group) {
-	g.GET("/", h.GetConversations)
+	g.GET("/", h.GetUserConversations)
 }
 
-func (h *ConversationHandler) GetConversations(c echo.Context) error {
+// GetUserConversations godoc
+// @Summary Get user conversations
+// @Description Returns a paginated list of conversations belonging to the current user, ordered by most recent activity
+// @Tags conversations
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param limit query int false "Number of conversations to return (default: 10)"
+// @Param cursor query string false "Pagination cursor for retrieving the next page. Use the cursor from the previous response to get the next page."
+// @Success 200 {object} dto.UserConversationsResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/conversations/ [get]
+func (h *ConversationHandler) GetUserConversations(c echo.Context) error {
 	userID := c.Get(CtxUserID).(uuid.UUID)
 
 	limit := int32(10)

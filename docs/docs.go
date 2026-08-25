@@ -202,6 +202,66 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/conversations/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of conversations belonging to the current user, ordered by most recent activity",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "conversations"
+                ],
+                "summary": "Get user conversations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of conversations to return (default: 10)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination cursor for retrieving the next page. Use the cursor from the previous response to get the next page.",
+                        "name": "cursor",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserConversationsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -213,6 +273,47 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/dto.User"
+                }
+            }
+        },
+        "dto.Conversation": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "conversation_id": {
+                    "type": "string"
+                },
+                "conversation_type": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "group_avatar_url": {
+                    "type": "string"
+                },
+                "group_name": {
+                    "type": "string"
+                },
+                "last_message_content": {
+                    "type": "string"
+                },
+                "last_message_created_at": {
+                    "type": "string"
+                },
+                "last_message_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
@@ -282,6 +383,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserConversationsResponse": {
+            "type": "object",
+            "properties": {
+                "conversations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.Conversation"
+                    }
+                },
+                "next_cursor": {
                     "type": "string"
                 }
             }
