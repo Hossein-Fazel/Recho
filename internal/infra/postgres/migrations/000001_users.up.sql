@@ -16,3 +16,5 @@ CREATE TABLE users (
 
     CONSTRAINT username_length CHECK (char_length(username) BETWEEN 3 AND 30)
 );
+
+CREATE INDEX users_username_search_idx ON users (username citext_pattern_ops);

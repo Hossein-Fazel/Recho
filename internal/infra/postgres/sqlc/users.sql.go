@@ -149,6 +149,50 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 	return i, err
 }
 
+const searchUsers = `-- name: SearchUsers :many
+SELECT
+    id,
+    username,
+    display_name,
+    avatar_url
+FROM users
+WHERE username LIKE $1 || '%'
+ORDER BY username
+LIMIT 20
+`
+
+type SearchUsersRow struct {
+	ID          uuid.UUID
+	Username    string
+	DisplayName pgtype.Text
+	AvatarUrl   pgtype.Text
+}
+
+func (q *Queries) SearchUsers(ctx context.Context, query pgtype.Text) ([]SearchUsersRow, error) {
+	rows, err := q.db.Query(ctx, searchUsers, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchUsersRow
+	for rows.Next() {
+		var i SearchUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.DisplayName,
+			&i.AvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const usernameExists = `-- name: UsernameExists :one
 SELECT EXISTS (
     SELECT 1
