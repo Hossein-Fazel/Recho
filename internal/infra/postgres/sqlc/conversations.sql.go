@@ -13,6 +13,44 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const findDirectConversation = `-- name: FindDirectConversation :one
+SELECT conversation_id
+FROM direct_conversations
+WHERE user_one_id = $1
+AND user_two_id = $2
+`
+
+type FindDirectConversationParams struct {
+	UserOneID uuid.UUID
+	UserTwoID uuid.UUID
+}
+
+func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConversationParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, findDirectConversation, arg.UserOneID, arg.UserTwoID)
+	var conversation_id uuid.UUID
+	err := row.Scan(&conversation_id)
+	return conversation_id, err
+}
+
+const getDirectConversation = `-- name: GetDirectConversation :one
+SELECT conversation_id
+FROM direct_conversations
+WHERE user_one_id = $1
+AND user_two_id = $2
+`
+
+type GetDirectConversationParams struct {
+	UserOneID uuid.UUID
+	UserTwoID uuid.UUID
+}
+
+func (q *Queries) GetDirectConversation(ctx context.Context, arg GetDirectConversationParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getDirectConversation, arg.UserOneID, arg.UserTwoID)
+	var conversation_id uuid.UUID
+	err := row.Scan(&conversation_id)
+	return conversation_id, err
+}
+
 const getUserConversations = `-- name: GetUserConversations :many
 
 SELECT
@@ -138,4 +176,44 @@ func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversat
 		return nil, err
 	}
 	return items, nil
+}
+
+const insertConversation = `-- name: InsertConversation :one
+INSERT INTO conversations(type)
+VALUES ('direct')
+RETURNING id
+`
+
+func (q *Queries) InsertConversation(ctx context.Context) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertConversation)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertDirectConversation = `-- name: InsertDirectConversation :one
+INSERT INTO direct_conversations(
+    conversation_id,
+    user_one_id,
+    user_two_id
+)
+VALUES(
+    $1,
+    $2,
+    $3
+)
+RETURNING conversation_id
+`
+
+type InsertDirectConversationParams struct {
+	ConversationID uuid.UUID
+	UserOneID      uuid.UUID
+	UserTwoID      uuid.UUID
+}
+
+func (q *Queries) InsertDirectConversation(ctx context.Context, arg InsertDirectConversationParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertDirectConversation, arg.ConversationID, arg.UserOneID, arg.UserTwoID)
+	var conversation_id uuid.UUID
+	err := row.Scan(&conversation_id)
+	return conversation_id, err
 }

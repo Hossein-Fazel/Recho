@@ -63,3 +63,33 @@ ORDER BY
     c.id DESC
 
 LIMIT sqlc.arg(query_limit);
+
+-- name: GetDirectConversation :one
+SELECT conversation_id
+FROM direct_conversations
+WHERE user_one_id = sqlc.arg(user_one_id)
+AND user_two_id = sqlc.arg(user_two_id);
+
+-- name: FindDirectConversation :one
+SELECT conversation_id
+FROM direct_conversations
+WHERE user_one_id = $1
+AND user_two_id = $2;
+
+-- name: InsertConversation :one
+INSERT INTO conversations(type)
+VALUES ('direct')
+RETURNING id;
+
+-- name: InsertDirectConversation :one
+INSERT INTO direct_conversations(
+    conversation_id,
+    user_one_id,
+    user_two_id
+)
+VALUES(
+    $1,
+    $2,
+    $3
+)
+RETURNING conversation_id;
