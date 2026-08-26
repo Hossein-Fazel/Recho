@@ -12,17 +12,20 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Conversation struct {
 	sql *sqlc.Queries
+	db  *pgxpool.Pool
 }
 
-func NewConversationRepo(sql *sqlc.Queries) *Conversation {
+func NewConversationRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Conversation {
 	pkg.Logger.Info().Msg("Initializing Conversation Repository")
 
 	return &Conversation{
 		sql: sql,
+		db:  db,
 	}
 }
 
@@ -89,4 +92,64 @@ func (c *Conversation) GetChats(ctx context.Context, args application.GetUserCha
 	}
 
 	return convList, nil
+}
+
+func (r *Conversation) GetDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
+	conversationID, err := r.sql.GetDirectConversation(ctx, sqlc.GetDirectConversationParams{
+		UserOneID: userOneID,
+		UserTwoID: userTwoID,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, apperr.NotFound(
+				"Conversation repo",
+				"conversation not found",
+				err,
+			)
+		}
+
+		return uuid.Nil, apperr.Internal("Conversation repo", err)
+	}
+
+	return conversationID, nil
+}
+
+func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return uuid.Nil, apperr.Internal("Conversation repo", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		}
+	}()
+
+	q := r.sql.WithTx(tx)
+
+	conversationID, err := q.InsertConversation(ctx)
+
+	if err != nil {
+		return uuid.Nil, apperr.Internal("Conversation repo", err)
+	}
+
+	_, err = q.InsertDirectConversation(
+		ctx,
+		sqlc.InsertDirectConversationParams{
+			ConversationID: conversationID,
+			UserOneID:      userOneID,
+			UserTwoID:      userTwoID,
+		},
+	)
+
+	if err != nil {
+		return uuid.Nil, apperr.Internal("Conversation repo", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return uuid.Nil, apperr.Internal("Conversation repo", err)
+	}
+
+	return conversationID, nil
 }

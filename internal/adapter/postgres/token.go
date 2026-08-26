@@ -152,7 +152,11 @@ func (r *Token) Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *mode
 	if err != nil {
 		return apperr.Internal("token repo", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		}
+	}()
 
 	qtx := r.sql.WithTx(tx)
 

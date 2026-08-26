@@ -39,7 +39,7 @@ func Run() {
 	pkg.Logger.Info().Msg("Initializing repos")
 	authRepo := postgres_repo.NewRefreshTokenRepo(queries, database)
 	userRepo := postgres_repo.NewUserRepo(queries)
-	convRepo := postgres_repo.NewConversationRepo(queries)
+	convRepo := postgres_repo.NewConversationRepo(queries, database)
 
 	pkg.Logger.Info().Msg("Initializing services")
 	accessToken := token.NewJWTService(conf.Token)
