@@ -14,6 +14,7 @@ type UserRepo interface {
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	Exists(ctx context.Context, username string) (bool, error)
+	Search(ctx context.Context, username string) ([]*model.UserSearch, error)
 }
 
 type RefreshTokenRepo interface {

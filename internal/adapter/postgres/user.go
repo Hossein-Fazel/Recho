@@ -3,10 +3,12 @@ package postgres_repo
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
@@ -143,4 +145,34 @@ func (u *User) Exists(ctx context.Context, username string) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+func (u *User) Search(ctx context.Context, username string) ([]*model.UserSearch, error) {
+	if strings.TrimSpace(username) == "" {
+		return []*model.UserSearch{}, apperr.InvalidInput("user repo", "username is required", nil)
+	}
+
+	list, err := u.sql.SearchUsers(ctx, pgtype.Text{
+		String: username,
+		Valid:  true,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []*model.UserSearch{}, apperr.NotFound(
+				"user repo",
+				"no search result",
+				err,
+			)
+		}
+
+		return []*model.UserSearch{}, apperr.Internal("user repo", err)
+	}
+
+	res := []*model.UserSearch{}
+
+	for _, user := range list {
+		res = append(res, pgUserSearch2modeUserSearch(user))
+	}
+	return res, nil
 }
