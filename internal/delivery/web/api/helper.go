@@ -69,3 +69,12 @@ func convList2convListRes(convs []*model.UserConversation, next string) dto.User
 
 	return res
 }
+
+func uSearch2dtoUSearch(user *model.UserSearch) *dto.UserSearch {
+	return &dto.UserSearch{
+		ID:          user.ID,
+		Username:    user.Username,
+		DisplayName: user.DisplayName,
+		AvatarURL:   user.AvatarURL,
+	}
+}

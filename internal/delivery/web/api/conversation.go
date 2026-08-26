@@ -31,7 +31,7 @@ func (h *ConversationHandler) RegisterRoutes(g *echo.Group) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param limit query int false "Number of conversations to return (default: 10)"
+// @Param limit query int true "Number of conversations to return (default: 10)"
 // @Param cursor query string false "Pagination cursor for retrieving the next page. Use the cursor from the previous response to get the next page."
 // @Success 200 {object} dto.UserConversationsResponse
 // @Failure 400 {object} dto.ErrResponse

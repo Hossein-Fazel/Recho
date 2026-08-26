@@ -50,3 +50,14 @@ type UserConversationsResponse struct {
 	Conversations []*Conversation `josn:"Conversations"`
 	NextCursor    string          `json:"next_cursor,omitempty"`
 }
+
+type UserSearch struct {
+	ID          uuid.UUID `json:"id"`
+	Username    string    `json:"username"`
+	DisplayName string    `json:"display_name"`
+	AvatarURL   string    `json:"avatar_url"`
+}
+
+type UserSearchResponse struct {
+	Users []*UserSearch `json:"users"`
+}

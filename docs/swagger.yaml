@@ -88,6 +88,24 @@ definitions:
       next_cursor:
         type: string
     type: object
+  dto.UserSearch:
+    properties:
+      avatar_url:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.UserSearchResponse:
+    properties:
+      users:
+        items:
+          $ref: '#/definitions/dto.UserSearch'
+        type: array
+    type: object
 info:
   contact: {}
   description: Realtime chat application
@@ -222,6 +240,7 @@ paths:
       - description: 'Number of conversations to return (default: 10)'
         in: query
         name: limit
+        required: true
         type: integer
       - description: Pagination cursor for retrieving the next page. Use the cursor
           from the previous response to get the next page.
@@ -252,6 +271,40 @@ paths:
       summary: Get user conversations
       tags:
       - conversations
+  /api/user/search:
+    get:
+      consumes:
+      - application/json
+      description: Returns similar usernames with some info
+      parameters:
+      - description: username
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserSearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Search in users by id
+      tags:
+      - user
 securityDefinitions:
   CookieAuth:
     in: cookie
