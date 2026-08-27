@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
@@ -43,4 +44,35 @@ func (c *converasionService) GetUserChats(ctx context.Context, args GetUserChats
 	}
 
 	return c.chatRepo.GetChats(ctx, args)
+}
+
+func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
+	pkg.Logger.Info().
+		Str("user 1", userOneID.String()).
+		Str("user 2", userTwoID.String()).
+		Msg("Get user chat")
+	
+	if userOneID == uuid.Nil || userTwoID == uuid.Nil {
+		return uuid.Nil, apperr.InvalidInput("conversation service", "user one and two is required", nil)
+	}
+	
+	if userOneID.String() > userTwoID.String() {
+		userTwoID, userOneID = userOneID, userTwoID
+	}
+
+	chatID, err := c.chatRepo.GetDirectConversation(ctx, userOneID, userTwoID)
+
+	if err != nil {
+		var appErr *apperr.AppError
+		if errors.As(err, &appErr) && appErr.Type == apperr.ErrNotFound {
+			chatID, err := c.chatRepo.CreateDirectConversation(ctx, userOneID, userTwoID)
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return chatID, nil
+		}
+		return uuid.Nil, err
+	}
+	
+	return chatID, nil
 }

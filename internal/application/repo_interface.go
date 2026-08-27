@@ -27,4 +27,6 @@ type RefreshTokenRepo interface {
 
 type ConversationRepo interface {
 	GetChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error)
+	GetDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
+	CreateDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
 }
