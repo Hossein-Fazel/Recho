@@ -13,3 +13,14 @@ func pgUserSearch2modeUserSearch(user sqlc.SearchUsersRow) *model.UserSearch {
 		AvatarURL:   user.AvatarUrl.String,
 	}
 }
+
+func toModelMessage(msg sqlc.Message) *model.Message {
+	return &model.Message{
+		ID:             msg.ID,
+		ConversationID: msg.ConversationID,
+		SenderID:       msg.SenderID,
+		Content:        msg.Content,
+		CreatedAt:      msg.CreatedAt,
+		UpdatedAt:      msg.UpdatedAt,
+	}
+}

@@ -77,3 +77,10 @@ func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.U
 
 	return chatID, nil
 }
+
+type GetChatMessagesParams struct {
+	ChatID           uuid.UUID
+	CursorCreatedAt time.Time
+	CursorID         uuid.UUID
+	Limit            int32
+}

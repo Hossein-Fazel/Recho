@@ -157,3 +157,61 @@ func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID u
 
 	return conversationID, nil
 }
+
+func(r *Conversation) IsChatMember(ctx context.Context, userID uuid.UUID, chatID uuid.UUID) (bool, error) {
+	isMember, err := r.sql.IsConversationMember(ctx, sqlc.IsConversationMemberParams{
+		ConversationID: chatID,
+		UserID:         userID,
+	})
+
+	if err != nil {
+		return false, apperr.Internal("Conversation repo", err)
+	}
+
+	return isMember, nil
+}
+
+func(r *Conversation) GetChatMessages(ctx context.Context, params application.GetChatMessagesParams) ([]*model.Message, error) {
+	if params.ChatID == uuid.Nil {
+		return nil, apperr.InvalidInput("conversation repo", "invalid chat id", nil)
+	}
+
+	list, err := r.sql.GetConversationMessages(
+		ctx,
+		sqlc.GetConversationMessagesParams{
+			ConversationID: params.ChatID,
+
+			CursorCreatedAt: pgtype.Timestamptz{
+				Time:  params.CursorCreatedAt,
+				Valid: !params.CursorCreatedAt.IsZero(),
+			},
+
+			CursorID: pgtype.UUID{
+				Bytes: params.CursorID,
+				Valid: params.CursorID != uuid.Nil,
+			},
+
+			QueryLimit: params.Limit,
+		},
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"Conversation repo",
+				"messages not found",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("Conversation repo", err)
+	}
+
+	var res []*model.Message
+
+	for _, msg := range list {
+		res = append(res, toModelMessage(msg))
+	}
+
+	return res, nil
+}
