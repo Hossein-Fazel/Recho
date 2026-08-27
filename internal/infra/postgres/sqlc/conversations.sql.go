@@ -32,6 +32,66 @@ func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConv
 	return conversation_id, err
 }
 
+const getConversationMessages = `-- name: GetConversationMessages :many
+SELECT
+    id,
+    conversation_id,
+    sender_id,
+    content,
+    created_at,
+    updated_at
+FROM messages
+WHERE conversation_id = $1
+  AND (
+      $2::timestamptz IS NULL
+      OR (created_at, id) < (
+          $2::timestamptz,
+          $3::uuid
+      )
+  )
+ORDER BY created_at DESC
+LIMIT $4
+`
+
+type GetConversationMessagesParams struct {
+	ConversationID  uuid.UUID
+	CursorCreatedAt time.Time
+	CursorID        uuid.UUID
+	QueryLimit      int32
+}
+
+func (q *Queries) GetConversationMessages(ctx context.Context, arg GetConversationMessagesParams) ([]Message, error) {
+	rows, err := q.db.Query(ctx, getConversationMessages,
+		arg.ConversationID,
+		arg.CursorCreatedAt,
+		arg.CursorID,
+		arg.QueryLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Message
+	for rows.Next() {
+		var i Message
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConversationID,
+			&i.SenderID,
+			&i.Content,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDirectConversation = `-- name: GetDirectConversation :one
 SELECT conversation_id
 FROM direct_conversations
@@ -216,4 +276,30 @@ func (q *Queries) InsertDirectConversation(ctx context.Context, arg InsertDirect
 	var conversation_id uuid.UUID
 	err := row.Scan(&conversation_id)
 	return conversation_id, err
+}
+
+const isConversationMember = `-- name: IsConversationMember :one
+SELECT EXISTS (
+    SELECT 1
+    FROM direct_conversations dc
+    WHERE dc.conversation_id = $1 AND (dc.user_one_id = $2 OR dc.user_two_id = $2)
+
+    UNION ALL
+
+    SELECT 1
+    FROM group_members gm
+    WHERE gm.group_id = $1 AND gm.user_id = $2
+)
+`
+
+type IsConversationMemberParams struct {
+	ConversationID uuid.UUID
+	UserID         uuid.UUID
+}
+
+func (q *Queries) IsConversationMember(ctx context.Context, arg IsConversationMemberParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isConversationMember, arg.ConversationID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

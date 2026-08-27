@@ -93,3 +93,36 @@ VALUES(
     $3
 )
 RETURNING conversation_id;
+
+-- name: GetConversationMessages :many
+SELECT
+    id,
+    conversation_id,
+    sender_id,
+    content,
+    created_at,
+    updated_at
+FROM messages
+WHERE conversation_id = sqlc.arg(conversation_id)
+  AND (
+      sqlc.arg(cursor_created_at)::timestamptz IS NULL
+      OR (created_at, id) < (
+          sqlc.arg(cursor_created_at)::timestamptz,
+          sqlc.arg(cursor_id)::uuid
+      )
+  )
+ORDER BY created_at DESC
+LIMIT sqlc.arg(query_limit);
+
+-- name: IsConversationMember :one
+SELECT EXISTS (
+    SELECT 1
+    FROM direct_conversations dc
+    WHERE dc.conversation_id = sqlc.arg(conversation_id) AND (dc.user_one_id = sqlc.arg(user_id) OR dc.user_two_id = sqlc.arg(user_id))
+
+    UNION ALL
+
+    SELECT 1
+    FROM group_members gm
+    WHERE gm.group_id = sqlc.arg(conversation_id) AND gm.user_id = sqlc.arg(user_id)
+);
