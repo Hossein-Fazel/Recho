@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/internal/delivery/web/dto"
 	"github.com/labstack/echo/v4"
 )
 
@@ -81,4 +82,43 @@ func (h *ConversationHandler) GetUserConversations(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, convList2convListRes(conversations, newCursor))
+}
+
+func (h *ConversationHandler) CreateDirectConversation(c echo.Context) error {
+	var req dto.CreateDirectConversationRequest
+
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrResponse{
+			Error: "invalid request body",
+		})
+	}
+
+	if req.UserID == uuid.Nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrResponse{
+			Error: "user_id is required",
+		})
+	}
+
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, dto.ErrResponse{
+			Error: "please login first",
+		})
+	}
+
+	conversationID, err := h.convSvc.GetOrCreateDC(
+		c.Request().Context(),
+		userID,
+		req.UserID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		dto.CreateDirectConversationResponse{
+			ConversationID: conversationID,
+		},
+	)
 }

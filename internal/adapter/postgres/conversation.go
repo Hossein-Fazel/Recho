@@ -116,6 +116,10 @@ func (r *Conversation) GetDirectConversation(ctx context.Context, userOneID uuid
 }
 
 func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
+	if userOneID == userTwoID {
+		return uuid.Nil, apperr.InvalidInput("Conversation repo", "cannot create conversation with yourself", nil)
+	}
+
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return uuid.Nil, apperr.Internal("Conversation repo", err)

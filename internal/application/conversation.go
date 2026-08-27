@@ -13,6 +13,7 @@ import (
 
 type ConverasionService interface {
 	GetUserChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error)
+	GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
 }
 
 type converasionService struct {
@@ -51,11 +52,11 @@ func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.U
 		Str("user 1", userOneID.String()).
 		Str("user 2", userTwoID.String()).
 		Msg("Get user chat")
-	
+
 	if userOneID == uuid.Nil || userTwoID == uuid.Nil {
 		return uuid.Nil, apperr.InvalidInput("conversation service", "user one and two is required", nil)
 	}
-	
+
 	if userOneID.String() > userTwoID.String() {
 		userTwoID, userOneID = userOneID, userTwoID
 	}
@@ -73,6 +74,6 @@ func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.U
 		}
 		return uuid.Nil, err
 	}
-	
+
 	return chatID, nil
 }

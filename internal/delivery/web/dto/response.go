@@ -61,3 +61,7 @@ type UserSearch struct {
 type UserSearchResponse struct {
 	Users []*UserSearch `json:"users"`
 }
+
+type CreateDirectConversationResponse struct {
+	ConversationID uuid.UUID `json:"conversation_id"`
+}
