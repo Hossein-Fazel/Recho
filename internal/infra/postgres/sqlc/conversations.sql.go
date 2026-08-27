@@ -55,8 +55,8 @@ LIMIT $4
 
 type GetConversationMessagesParams struct {
 	ConversationID  uuid.UUID
-	CursorCreatedAt time.Time
-	CursorID        uuid.UUID
+	CursorCreatedAt pgtype.Timestamptz
+	CursorID        pgtype.UUID
 	QueryLimit      int32
 }
 

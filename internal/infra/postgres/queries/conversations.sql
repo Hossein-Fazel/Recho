@@ -107,8 +107,8 @@ WHERE conversation_id = sqlc.arg(conversation_id)
   AND (
       sqlc.arg(cursor_created_at)::timestamptz IS NULL
       OR (created_at, id) < (
-          sqlc.arg(cursor_created_at)::timestamptz,
-          sqlc.arg(cursor_id)::uuid
+          sqlc.narg(cursor_created_at)::timestamptz,
+          sqlc.narg(cursor_id)::uuid
       )
   )
 ORDER BY created_at DESC
