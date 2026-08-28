@@ -58,9 +58,9 @@ func (h *ConversationHandler) GetUserConversations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid cursor")
 	}
 
-	conversations, err := h.convSvc.GetUserChats(
+	conversations, err := h.convSvc.GetUserConversations(
 		c.Request().Context(),
-		application.GetUserChatsParams{
+		application.GetUserConversationsParams{
 			UserID:          userID,
 			CursorID:        cursor.ID,
 			CursorUpdatedAt: cursor.UpdatedAt,

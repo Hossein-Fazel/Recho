@@ -29,12 +29,12 @@ func NewConversationRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Conversation {
 	}
 }
 
-func (c *Conversation) GetChats(ctx context.Context, args application.GetUserChatsParams) ([]*model.UserConversation, error) {
+func (c *Conversation) GetConversations(ctx context.Context, args application.GetUserConversationsParams) ([]*model.UserConversation, error) {
 	pkg.Logger.Info().
 		Str("user id", args.UserID.String()).
 		Str("cursor_update_at", args.CursorUpdatedAt.String()).
 		Str("cursorID", args.CursorID.String()).
-		Msg("Getting chat list")
+		Msg("Getting Conversation list")
 
 	if args.UserID == uuid.Nil {
 		return nil, apperr.InvalidInput("conversation repo", "invalid id", nil)
@@ -158,9 +158,9 @@ func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID u
 	return conversationID, nil
 }
 
-func(r *Conversation) IsChatMember(ctx context.Context, userID uuid.UUID, chatID uuid.UUID) (bool, error) {
+func(r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error) {
 	isMember, err := r.sql.IsConversationMember(ctx, sqlc.IsConversationMemberParams{
-		ConversationID: chatID,
+		ConversationID: ConversationID,
 		UserID:         userID,
 	})
 
@@ -171,15 +171,15 @@ func(r *Conversation) IsChatMember(ctx context.Context, userID uuid.UUID, chatID
 	return isMember, nil
 }
 
-func(r *Conversation) GetChatMessages(ctx context.Context, params application.GetChatMessagesParams) ([]*model.Message, error) {
-	if params.ChatID == uuid.Nil {
-		return nil, apperr.InvalidInput("conversation repo", "invalid chat id", nil)
+func(r *Conversation) GetConversationMessages(ctx context.Context, params application.GetConversationMessagesParams) ([]*model.Message, error) {
+	if params.ConversationID == uuid.Nil {
+		return nil, apperr.InvalidInput("conversation repo", "invalid Conversation id", nil)
 	}
 
 	list, err := r.sql.GetConversationMessages(
 		ctx,
 		sqlc.GetConversationMessagesParams{
-			ConversationID: params.ChatID,
+			ConversationID: params.ConversationID,
 
 			CursorCreatedAt: pgtype.Timestamptz{
 				Time:  params.CursorCreatedAt,
