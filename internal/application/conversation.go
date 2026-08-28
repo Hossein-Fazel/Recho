@@ -14,6 +14,7 @@ import (
 type ConverasionService interface {
 	GetUserChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error)
 	GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
+	GetChatMessages(ctx context.Context, userID uuid.UUID, getChatparams GetChatMessagesParams) ([]*model.Message, error)
 }
 
 type converasionService struct {
@@ -79,8 +80,30 @@ func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.U
 }
 
 type GetChatMessagesParams struct {
-	ChatID           uuid.UUID
+	ChatID          uuid.UUID
 	CursorCreatedAt time.Time
-	CursorID         uuid.UUID
-	Limit            int32
+	CursorID        uuid.UUID
+	Limit           int32
+}
+
+func (c *converasionService) GetChatMessages(ctx context.Context, userID uuid.UUID, getChatparams GetChatMessagesParams) ([]*model.Message, error) {
+	if getChatparams.ChatID == uuid.Nil {
+		return []*model.Message{}, apperr.InvalidInput("conversation service", "chat id is required", nil)
+	}
+
+	isMember, err := c.chatRepo.IsChatMember(ctx, userID, getChatparams.ChatID)
+	if err != nil {
+		return []*model.Message{}, err
+	}
+
+	if !isMember {
+		return []*model.Message{}, apperr.InvalidInput("conversation service", "you don't access to this chat", nil)
+	}
+
+	list, err := c.chatRepo.GetChatMessages(ctx, getChatparams)
+	if err != nil {
+		return []*model.Message{}, err
+	}
+
+	return list, nil
 }

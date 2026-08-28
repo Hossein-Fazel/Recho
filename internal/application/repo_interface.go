@@ -29,4 +29,6 @@ type ConversationRepo interface {
 	GetChats(ctx context.Context, args GetUserChatsParams) ([]*model.UserConversation, error)
 	GetDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
 	CreateDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
+	IsChatMember(ctx context.Context, userID uuid.UUID, chatID uuid.UUID) (bool, error)
+	GetChatMessages(ctx context.Context, params GetChatMessagesParams) ([]*model.Message, error)
 }
