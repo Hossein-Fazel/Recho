@@ -62,6 +62,20 @@ type UserSearchResponse struct {
 	Users []*UserSearch `json:"users"`
 }
 
-type CreateDirectConversationResponse struct {
+type GetOrCreateDirectConversationResponse struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
+}
+
+type GetConversationMessagesResponse struct {
+	Messages   []*Message `json:"messages"`
+	NextCursor string    `json:"next_cursor"`
+}
+
+type Message struct {
+	ID             uuid.UUID `json:"id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+	SenderID       uuid.UUID `json:"sender_id"`
+	Content        string    `json:"content"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }

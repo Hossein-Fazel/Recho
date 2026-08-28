@@ -43,6 +43,16 @@ definitions:
       type:
         type: string
     type: object
+  dto.GetOrCreateDirectConversationRequest:
+    properties:
+      user_id:
+        type: string
+    type: object
+  dto.GetOrCreateDirectConversationResponse:
+    properties:
+      conversation_id:
+        type: string
+    type: object
   dto.LoginRequest:
     properties:
       password:
@@ -230,6 +240,40 @@ paths:
       summary: Verify authentication
       tags:
       - auth
+  /api/conversation/:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GetOrCreateDirectConversationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetOrCreateDirectConversationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      summary: if a DC exists between two users return it's id else create a new one
+        and then return it's id
+      tags:
+      - conversation
   /api/conversations/:
     get:
       consumes:
@@ -270,7 +314,47 @@ paths:
       - BearerAuth: []
       summary: Get user conversations
       tags:
-      - conversations
+      - conversation
+  /api/conversations/:id/messages:
+    get:
+      consumes:
+      - application/json
+      description: Returns a paginated list of conversation message
+      parameters:
+      - description: 'Number of messages to return (default: 20)'
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Pagination cursor for retrieving the next page. Use the cursor
+          from the previous response to get the next page.
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserConversationsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get conversation messages
+      tags:
+      - conversation
   /api/user/search:
     get:
       consumes:

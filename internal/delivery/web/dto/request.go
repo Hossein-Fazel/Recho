@@ -16,6 +16,6 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-type CreateDirectConversationRequest struct {
+type GetOrCreateDirectConversationRequest struct {
 	UserID uuid.UUID `json:"user_id"`
 }
