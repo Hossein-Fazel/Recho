@@ -1,9 +1,34 @@
 CREATE TABLE conversations (
-    id UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    last_message_id         UUID
+    last_message_content    TEXT
+    last_message_created_at TIMESTAMPTZ;
+    last_message_id         BIGINT      NOT NULL DEFAULT 0;
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX idx_conversations_updated_at ON conversations(updated_at DESC);
+
+CREATE OR REPLACE FUNCTION update_conversation_on_message()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE conversations
+    SET
+        updated_at = NEW.created_at,
+        last_message_id = NEW.id,
+        last_message_content = NEW.content,
+        last_message_created_at = NEW.created_at
+    WHERE id = NEW.conversation_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_messages_update_conversation
+AFTER INSERT ON messages
+FOR EACH ROW
+EXECUTE FUNCTION update_conversation_on_message();
 
 CREATE TABLE direct_conversations (
     conversation_id UUID        PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE,
