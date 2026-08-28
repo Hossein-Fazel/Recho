@@ -54,3 +54,14 @@ SELECT EXISTS (
     FROM users
     WHERE username = $1
 );
+
+-- name: SearchUsers :many
+SELECT
+    id,
+    username,
+    display_name,
+    avatar_url
+FROM users
+WHERE username LIKE sqlc.arg(query) || '%'
+ORDER BY username
+LIMIT 20;

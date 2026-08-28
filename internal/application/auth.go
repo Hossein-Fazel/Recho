@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -10,12 +9,6 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
-)
-
-var (
-	ErrUsernameExists      = errors.New("username already exists")
-	ErrInvalidLogin        = errors.New("invalid username or password")
-	ErrInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
 type AuthResult struct {

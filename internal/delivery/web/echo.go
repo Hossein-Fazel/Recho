@@ -5,6 +5,7 @@ import (
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/api"
+	rechoMiddleware "github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
 
 	_ "github.com/Hossein-Fazel/Recho/docs"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -23,6 +24,13 @@ func (c *Config) isDebug() bool {
 	return c.Mode != "production" && c.Mode != "prod"
 }
 
+type Services struct {
+	Auth         application.AuthService
+	AccessToken  application.AccessToken
+	Conversation application.ConverasionService
+	User         application.UserService
+}
+
 // @title Recho
 // @version 0.0.0
 // @description Realtime chat application
@@ -30,7 +38,7 @@ func (c *Config) isDebug() bool {
 // @securityDefinitions.apikey CookieAuth
 // @in cookie
 // @name access_token
-func Init(authService application.AuthService, access application.AccessToken, conf Config) *echo.Echo {
+func Init(svcs Services, conf Config) *echo.Echo {
 	pkg.Logger.Info().Msg("Initializing server")
 
 	webServer := echo.New()
@@ -72,7 +80,21 @@ func Init(authService application.AuthService, access application.AccessToken, c
 	}
 
 	apiGroup := webServer.Group("/api")
-	api.Register(apiGroup, authService, access)
+
+	accessMidleware := rechoMiddleware.AccessMiddleware(svcs.AccessToken)
+
+	// Register handlers
+	authGroup := apiGroup.Group("/auth")
+	authHandler := api.NewAuthHandler(svcs.Auth, svcs.AccessToken)
+	authHandler.RegisterRoutes(authGroup)
+
+	convGroup := apiGroup.Group("/conversation", accessMidleware)
+	convHandler := api.NewConversationHandler(svcs.Conversation)
+	convHandler.RegisterRoutes(convGroup)
+
+	userGroup := apiGroup.Group("/user", accessMidleware)
+	userHandler := api.NewUserHandler(svcs.User)
+	userHandler.RegisterRoutes(userGroup)
 
 	return webServer
 }

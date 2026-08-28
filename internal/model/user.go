@@ -16,3 +16,10 @@ type User struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+type UserSearch struct {
+	ID          uuid.UUID
+	Username    string
+	DisplayName string
+	AvatarURL   string
+}

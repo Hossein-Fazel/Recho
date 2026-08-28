@@ -1,15 +1,14 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/dto"
 
-	"github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
 	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
 	"github.com/labstack/echo/v4"
 )
 
@@ -68,17 +67,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, application.ErrUsernameExists):
-			return c.JSON(http.StatusConflict, dto.ErrResponse{
-				Error: "username already exists",
-			})
-
-		default:
-			return c.JSON(http.StatusInternalServerError, dto.ErrResponse{
-				Error: "internal server error",
-			})
-		}
+		return err
 	}
 
 	// Set access token cookie

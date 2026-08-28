@@ -14,6 +14,7 @@ type UserRepo interface {
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	Exists(ctx context.Context, username string) (bool, error)
+	Search(ctx context.Context, username string) ([]*model.UserSearch, error)
 }
 
 type RefreshTokenRepo interface {
@@ -22,4 +23,12 @@ type RefreshTokenRepo interface {
 	Revoke(ctx context.Context, id uuid.UUID) error
 	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error
 	Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *model.RefreshToken) error
+}
+
+type ConversationRepo interface {
+	GetConversations(ctx context.Context, args GetUserConversationsParams) ([]*model.UserConversation, error)
+	GetDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
+	CreateDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
+	IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error)
+	GetConversationMessages(ctx context.Context, params GetConversationMessagesParams) ([]*model.Message, error)
 }
