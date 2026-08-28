@@ -19,9 +19,9 @@ CREATE OR REPLACE FUNCTION set_message_id()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE conversations
-    SET last_message_id = last_message_id + 1
+    SET message_id_counter = message_id_counter + 1
     WHERE id = NEW.conversation_id
-    RETURNING last_message_id INTO NEW.message_id;
+    RETURNING message_id_counter INTO NEW.message_id;
 
     RETURN NEW;
 END;
@@ -31,3 +31,23 @@ CREATE TRIGGER trg_set_message_id
 BEFORE INSERT ON messages
 FOR EACH ROW
 EXECUTE FUNCTION set_message_id();
+
+CREATE OR REPLACE FUNCTION update_conversation_on_message()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE conversations
+    SET
+        updated_at = NEW.created_at,
+        last_message_id = NEW.id,
+        last_message_content = NEW.content,
+        last_message_created_at = NEW.created_at
+    WHERE id = NEW.conversation_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_messages_update_conversation
+AFTER INSERT ON messages
+FOR EACH ROW
+EXECUTE FUNCTION update_conversation_on_message();

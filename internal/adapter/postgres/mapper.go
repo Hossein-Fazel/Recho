@@ -16,7 +16,7 @@ func pgUserSearch2modeUserSearch(user sqlc.SearchUsersRow) *model.UserSearch {
 
 func toModelMessage(msg sqlc.Message) *model.Message {
 	return &model.Message{
-		ID:             msg.ID,
+		ID:             msg.MessageID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
 		Content:        msg.Content,

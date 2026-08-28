@@ -74,7 +74,7 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 	convList := make([]*model.UserConversation, len(list))
 	for _, conv := range list {
 		uID, _ := uuid.Parse(conv.UserID.String())
-		lmID, _ := uuid.Parse(conv.LastMessageID.String())
+		lmID := conv.LastMessageID.Int64
 
 		convList = append(convList, &model.UserConversation{
 			ConversationID:       conv.ConversationID,

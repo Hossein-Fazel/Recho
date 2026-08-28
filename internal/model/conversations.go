@@ -15,7 +15,7 @@ type UserConversation struct {
 	AvatarUrl            string
 	GroupName            string
 	GroupAvatarUrl       string
-	LastMessageID        uuid.UUID
+	LastMessageID        int64
 	LastMessageContent   string
 	LastMessageCreatedAt time.Time
 	UpdatedAt            time.Time

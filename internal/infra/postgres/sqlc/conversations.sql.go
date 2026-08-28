@@ -34,7 +34,7 @@ func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConv
 
 const getConversationMessages = `-- name: GetConversationMessages :many
 SELECT
-    id,
+    message_id,
     conversation_id,
     sender_id,
     content,
@@ -75,7 +75,7 @@ func (q *Queries) GetConversationMessages(ctx context.Context, arg GetConversati
 	for rows.Next() {
 		var i Message
 		if err := rows.Scan(
-			&i.ID,
+			&i.MessageID,
 			&i.ConversationID,
 			&i.SenderID,
 			&i.Content,
@@ -194,7 +194,7 @@ type GetUserConversationsRow struct {
 	AvatarUrl            pgtype.Text
 	GroupName            pgtype.Text
 	GroupAvatarUrl       pgtype.Text
-	LastMessageID        pgtype.UUID
+	LastMessageID        pgtype.Int8
 	LastMessageContent   pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
 	UpdatedAt            time.Time

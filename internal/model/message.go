@@ -7,7 +7,7 @@ import (
 )
 
 type Message struct {
-	ID             uuid.UUID
+	ID             int64
 	ConversationID uuid.UUID
 	SenderID       uuid.UUID
 	Content        string

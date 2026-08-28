@@ -40,7 +40,7 @@ type Conversation struct {
 	AvatarUrl            string    `json:"avatar_url"`
 	GroupName            string    `json:"group_name"`
 	GroupAvatarUrl       string    `json:"group_avatar_url"`
-	LastMessageID        uuid.UUID `json:"last_message_id"`
+	LastMessageID        int64     `json:"last_message_id"`
 	LastMessageContent   string    `json:"last_message_content"`
 	LastMessageCreatedAt time.Time `json:"last_message_created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
@@ -68,11 +68,11 @@ type GetOrCreateDirectConversationResponse struct {
 
 type GetConversationMessagesResponse struct {
 	Messages   []*Message `json:"messages"`
-	NextCursor string    `json:"next_cursor"`
+	NextCursor string     `json:"next_cursor"`
 }
 
 type Message struct {
-	ID             uuid.UUID `json:"id"`
+	ID             int64     `json:"id"`
 	ConversationID uuid.UUID `json:"conversation_id"`
 	SenderID       uuid.UUID `json:"sender_id"`
 	Content        string    `json:"content"`

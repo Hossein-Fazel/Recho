@@ -96,7 +96,7 @@ RETURNING conversation_id;
 
 -- name: GetConversationMessages :many
 SELECT
-    id,
+    message_id,
     conversation_id,
     sender_id,
     content,

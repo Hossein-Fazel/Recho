@@ -58,11 +58,12 @@ func (ns NullGroupMemberRole) Value() (driver.Value, error) {
 
 type Conversation struct {
 	ID                   uuid.UUID
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
-	LastMessageID        pgtype.UUID
+	LastMessageID        pgtype.Int8
 	LastMessageContent   pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
+	MessageIDCounter     int64
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 type DirectConversation struct {
@@ -90,7 +91,7 @@ type GroupMember struct {
 }
 
 type Message struct {
-	ID             uuid.UUID
+	MessageID      int64
 	ConversationID uuid.UUID
 	SenderID       uuid.UUID
 	Content        string
