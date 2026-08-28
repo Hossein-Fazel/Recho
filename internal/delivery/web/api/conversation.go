@@ -53,29 +53,15 @@ func (h *ConversationHandler) GetUserConversations(c echo.Context) error {
 	}
 
 	cursorParam := c.QueryParam("cursor")
-	cursor, err := decodeCursor(cursorParam)
-	if cursorParam == "" && err != nil {
+	if cursorParam == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid cursor")
 	}
 
-	conversations, err := h.convSvc.GetUserConversations(
+	conversations, newCursor, err := h.convSvc.GetUserConversations(
 		c.Request().Context(),
-		application.GetUserConversationsParams{
-			UserID:          userID,
-			CursorID:        cursor.ID,
-			CursorUpdatedAt: cursor.UpdatedAt,
-			Limit:           limit,
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	last := conversations[len(conversations)-1]
-
-	newCursor, err := encodeCursor(
-		last.UpdatedAt,
-		last.ConversationID,
+		userID,
+		cursorParam,
+		limit,
 	)
 	if err != nil {
 		return err

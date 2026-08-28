@@ -12,7 +12,7 @@ import (
 )
 
 type ConverasionService interface {
-	GetUserConversations(ctx context.Context, args GetUserConversationsParams) ([]*model.UserConversation, error)
+	GetUserConversations(ctx context.Context, userID uuid.UUID, cursor string, limit int32) ([]*model.UserConversation, string, error)
 	GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
 	GetConversationMessages(ctx context.Context, userID uuid.UUID, getConversationparams GetConversationMessagesParams) ([]*model.Message, error)
 }
@@ -36,16 +36,44 @@ type GetUserConversationsParams struct {
 	Limit           int32
 }
 
-func (c *converasionService) GetUserConversations(ctx context.Context, args GetUserConversationsParams) ([]*model.UserConversation, error) {
+func (c *converasionService) GetUserConversations(ctx context.Context, userID uuid.UUID, cursor string, limit int32) ([]*model.UserConversation, string, error) {
 	pkg.Logger.Info().
-		Str("username", args.UserID.String()).
+		Str("username", userID.String()).
 		Msg("Get users Conversations")
 
-	if args.UserID == uuid.Nil {
-		return nil, apperr.InvalidInput("conversation service", "user id required", nil)
+	if userID == uuid.Nil {
+		return nil, "", apperr.InvalidInput("conversation service", "user id required", nil)
 	}
 
-	return c.ConversationRepo.GetConversations(ctx, args)
+	cursorItem, err := decodeCursor(cursor)
+	if err != nil {
+		return []*model.UserConversation{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
+	}
+
+	list, err := c.ConversationRepo.GetConversations(ctx, GetUserConversationsParams{
+		UserID:          userID,
+		CursorUpdatedAt: cursorItem.Date,
+		CursorID:        cursorItem.ID,
+		Limit:           limit,
+	})
+
+	if err != nil {
+		return []*model.UserConversation{}, "", err
+	}
+
+	var newCursor string
+
+	if len(list) < int(limit) {
+		newCursor = ""
+	} else {
+		last := list[len(list)-1]
+		newCursor, err = encodeCursor(
+			last.UpdatedAt,
+			last.ConversationID,
+		)
+	}
+
+	return list, newCursor, nil
 }
 
 func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
@@ -80,7 +108,7 @@ func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.U
 }
 
 type GetConversationMessagesParams struct {
-	ConversationID          uuid.UUID
+	ConversationID  uuid.UUID
 	CursorCreatedAt time.Time
 	CursorID        uuid.UUID
 	Limit           int32
