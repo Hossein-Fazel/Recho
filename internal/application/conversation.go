@@ -14,7 +14,7 @@ import (
 type ConverasionService interface {
 	GetUserConversations(ctx context.Context, userID uuid.UUID, cursor string, limit int32) ([]*model.UserConversation, string, error)
 	GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
-	GetConversationMessages(ctx context.Context, userID uuid.UUID, getConversationparams GetConversationMessagesParams) ([]*model.Message, error)
+	GetConversationMessages(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID, cursor string, limit int32) ([]*model.Message, string, error)
 }
 
 type converasionService struct {
@@ -114,24 +114,46 @@ type GetConversationMessagesParams struct {
 	Limit           int32
 }
 
-func (c *converasionService) GetConversationMessages(ctx context.Context, userID uuid.UUID, getConvMessageParams GetConversationMessagesParams) ([]*model.Message, error) {
-	if getConvMessageParams.ConversationID == uuid.Nil {
-		return []*model.Message{}, apperr.InvalidInput("conversation service", "Conversation id is required", nil)
+func (c *converasionService) GetConversationMessages(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID, cursor string, limit int32) ([]*model.Message, string, error) {
+	if conversationID == uuid.Nil {
+		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "Conversation id is required", nil)
 	}
 
-	isMember, err := c.ConversationRepo.IsConversationMember(ctx, userID, getConvMessageParams.ConversationID)
+	isMember, err := c.ConversationRepo.IsConversationMember(ctx, userID, conversationID)
 	if err != nil {
-		return []*model.Message{}, err
+		return []*model.Message{}, "", err
 	}
 
 	if !isMember {
-		return []*model.Message{}, apperr.InvalidInput("conversation service", "you don't access to this Conversation", nil)
+		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "you don't access to this Conversation", nil)
 	}
 
-	list, err := c.ConversationRepo.GetConversationMessages(ctx, getConvMessageParams)
+	CursorItem, err := decodeCursor(cursor)
 	if err != nil {
-		return []*model.Message{}, err
+		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
 	}
 
-	return list, nil
+	list, err := c.ConversationRepo.GetConversationMessages(ctx, GetConversationMessagesParams{
+		ConversationID:  conversationID,
+		CursorCreatedAt: CursorItem.Date,
+		CursorID:        CursorItem.ID,
+		Limit:           limit,
+	})
+	if err != nil {
+		return []*model.Message{}, "", err
+	}
+
+	var newCursor string
+
+	if len(list) < int(limit) {
+		newCursor = ""
+	} else {
+		last := list[len(list)-1]
+		newCursor, err = encodeCursor(
+			last.UpdatedAt,
+			last.ConversationID,
+		)
+	}
+
+	return list, newCursor, nil
 }
