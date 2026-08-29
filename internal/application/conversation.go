@@ -11,20 +11,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type ConverasionService interface {
-	GetUserConversations(ctx context.Context, userID uuid.UUID, cursor string, limit int32) ([]*model.UserConversation, string, error)
-	GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
-	GetConversationMessages(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID, cursor string, limit int32) ([]*model.Message, string, error)
-}
-
-type converasionService struct {
+type ConverasionService struct {
 	ConversationRepo ConversationRepo
 }
 
-func NewConverasionService(ConversationRepo ConversationRepo) ConverasionService {
+func NewConverasionService(ConversationRepo ConversationRepo) *ConverasionService {
 	pkg.Logger.Info().Msg("Initializing Converasion service")
 
-	return &converasionService{
+	return &ConverasionService{
 		ConversationRepo: ConversationRepo,
 	}
 }
@@ -36,7 +30,7 @@ type GetUserConversationsParams struct {
 	Limit           int32
 }
 
-func (c *converasionService) GetUserConversations(ctx context.Context, userID uuid.UUID, cursor string, limit int32) ([]*model.UserConversation, string, error) {
+func (c *ConverasionService) GetUserConversations(ctx context.Context, userID uuid.UUID, cursor string, limit int32) ([]*model.UserConversation, string, error) {
 	pkg.Logger.Info().
 		Str("username", userID.String()).
 		Msg("Get users Conversations")
@@ -76,7 +70,7 @@ func (c *converasionService) GetUserConversations(ctx context.Context, userID uu
 	return list, newCursor, nil
 }
 
-func (c *converasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
+func (c *ConverasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
 	pkg.Logger.Info().
 		Str("user 1", userOneID.String()).
 		Str("user 2", userTwoID.String()).
@@ -114,7 +108,7 @@ type GetConversationMessagesParams struct {
 	Limit           int32
 }
 
-func (c *converasionService) GetConversationMessages(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID, cursor string, limit int32) ([]*model.Message, string, error) {
+func (c *ConverasionService) GetConversationMessages(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID, cursor string, limit int32) ([]*model.Message, string, error) {
 	if conversationID == uuid.Nil {
 		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "Conversation id is required", nil)
 	}

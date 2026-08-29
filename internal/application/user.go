@@ -8,24 +8,19 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 )
-
-type UserService interface {
-	Search(ctx context.Context, username string) ([]*model.UserSearch, error)
-}
-
-type userService struct {
+type UserService struct {
 	userRepo UserRepo
 }
 
-func NewUserService(userRepo UserRepo) UserService {
+func NewUserService(userRepo UserRepo) *UserService {
 	pkg.Logger.Info().Msg("Initializing User service")
 
-	return &userService{
+	return &UserService{
 		userRepo: userRepo,
 	}
 }
 
-func (u *userService) Search(ctx context.Context, username string) ([]*model.UserSearch, error) {
+func (u *UserService) Search(ctx context.Context, username string) ([]*model.UserSearch, error) {
 	if strings.TrimSpace(username) == "" {
 		return []*model.UserSearch{}, apperr.InvalidInput("user service", "username is required", nil)
 	}

@@ -13,11 +13,11 @@ import (
 )
 
 type AuthHandler struct {
-	authService application.AuthService
+	authService *application.AuthService
 	accessToken application.AccessToken
 }
 
-func NewAuthHandler(auth application.AuthService, accessToken application.AccessToken) *AuthHandler {
+func NewAuthHandler(auth *application.AuthService, accessToken application.AccessToken) *AuthHandler {
 	return &AuthHandler{
 		authService: auth,
 		accessToken: accessToken,

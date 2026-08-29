@@ -9,19 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type messageService struct {
+type MessageService struct {
 	msgRepo  MessaageRepo
 	convRepo ConversationRepo
 }
 
-func NewMessageService(msgRepo MessaageRepo, convRepo ConversationRepo) *messageService {
-	return &messageService{
+func NewMessageService(msgRepo MessaageRepo, convRepo ConversationRepo) *MessageService {
+	return &MessageService{
 		msgRepo:  msgRepo,
 		convRepo: convRepo,
 	}
 }
 
-func (m *messageService) Create(ctx context.Context, msg model.Message) (*model.Message, error) {
+func (m *MessageService) Create(ctx context.Context, msg model.Message) (*model.Message, error) {
 	msg.Content = strings.TrimSpace(msg.Content)
 	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil || msg.Content == "" {
 		return nil, apperr.InvalidInput("message repo", "invalid message", nil)
