@@ -44,9 +44,9 @@ FROM messages
 WHERE conversation_id = $1
   AND (
       $2::timestamptz IS NULL
-      OR (created_at, id) < (
+      OR (created_at, message_id) < (
           $2::timestamptz,
-          $3::uuid
+          $3::BIGINT
       )
   )
 ORDER BY created_at DESC
@@ -56,7 +56,7 @@ LIMIT $4
 type GetConversationMessagesParams struct {
 	ConversationID  uuid.UUID
 	CursorCreatedAt pgtype.Timestamptz
-	CursorID        pgtype.UUID
+	CursorID        pgtype.Int8
 	QueryLimit      int32
 }
 

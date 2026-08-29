@@ -8,13 +8,13 @@ import (
 	"github.com/google/uuid"
 )
 
-type CursorItem struct {
+type ConvCursor struct {
 	Date time.Time
 	ID   uuid.UUID
 }
 
-func encodeCursor(date time.Time, id uuid.UUID) (string, error) {
-	data, err := json.Marshal(CursorItem{
+func encodeConvCursor(date time.Time, id uuid.UUID) (string, error) {
+	data, err := json.Marshal(ConvCursor{
 		Date: date,
 		ID:   id,
 	})
@@ -25,16 +25,48 @@ func encodeCursor(date time.Time, id uuid.UUID) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(data), nil
 }
 
-func decodeCursor(value string) (CursorItem, error) {
+func decodeConvCursor(value string) (ConvCursor, error) {
 	data, err := base64.RawURLEncoding.DecodeString(value)
 	if err != nil {
-		return CursorItem{}, err
+		return ConvCursor{}, err
 	}
 
-	var cursor CursorItem
+	var cursor ConvCursor
 
 	if err := json.Unmarshal(data, &cursor); err != nil {
-		return CursorItem{}, err
+		return ConvCursor{}, err
+	}
+
+	return cursor, nil
+}
+
+type MessageCursor struct {
+	Date time.Time
+	ID   int64
+}
+
+func encodeMessageCursor(date time.Time, id int64) (string, error) {
+	data, err := json.Marshal(MessageCursor{
+		Date: date,
+		ID:   id,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(data), nil
+}
+
+func decodeMessageCursor(value string) (MessageCursor, error) {
+	data, err := base64.RawURLEncoding.DecodeString(value)
+	if err != nil {
+		return MessageCursor{}, err
+	}
+
+	var cursor MessageCursor
+
+	if err := json.Unmarshal(data, &cursor); err != nil {
+		return MessageCursor{}, err
 	}
 
 	return cursor, nil

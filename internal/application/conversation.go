@@ -39,7 +39,7 @@ func (c *ConverasionService) GetUserConversations(ctx context.Context, userID uu
 		return nil, "", apperr.InvalidInput("conversation service", "user id required", nil)
 	}
 
-	cursorItem, err := decodeCursor(cursor)
+	cursorItem, err := decodeConvCursor(cursor)
 	if err != nil {
 		return []*model.UserConversation{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
 	}
@@ -61,7 +61,7 @@ func (c *ConverasionService) GetUserConversations(ctx context.Context, userID uu
 		newCursor = ""
 	} else {
 		last := list[len(list)-1]
-		newCursor, err = encodeCursor(
+		newCursor, err = encodeConvCursor(
 			last.UpdatedAt,
 			last.ConversationID,
 		)
@@ -104,7 +104,7 @@ func (c *ConverasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.U
 type GetConversationMessagesParams struct {
 	ConversationID  uuid.UUID
 	CursorCreatedAt time.Time
-	CursorID        uuid.UUID
+	CursorID        int64
 	Limit           int32
 }
 
@@ -122,7 +122,7 @@ func (c *ConverasionService) GetConversationMessages(ctx context.Context, userID
 		return []*model.Message{}, "", apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
-	CursorItem, err := decodeCursor(cursor)
+	CursorItem, err := decodeMessageCursor(cursor)
 	if err != nil {
 		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
 	}
@@ -143,9 +143,9 @@ func (c *ConverasionService) GetConversationMessages(ctx context.Context, userID
 		newCursor = ""
 	} else {
 		last := list[len(list)-1]
-		newCursor, err = encodeCursor(
+		newCursor, err = encodeMessageCursor(
 			last.UpdatedAt,
-			last.ConversationID,
+			last.ID,
 		)
 	}
 

@@ -186,9 +186,9 @@ func (r *Conversation) GetConversationMessages(ctx context.Context, params appli
 				Valid: !params.CursorCreatedAt.IsZero(),
 			},
 
-			CursorID: pgtype.UUID{
-				Bytes: params.CursorID,
-				Valid: params.CursorID != uuid.Nil,
+			CursorID: pgtype.Int8{
+				Int64: params.CursorID,
+				Valid: params.CursorID != 0,
 			},
 
 			QueryLimit: params.Limit,

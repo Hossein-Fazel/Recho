@@ -106,9 +106,9 @@ FROM messages
 WHERE conversation_id = sqlc.arg(conversation_id)
   AND (
       sqlc.arg(cursor_created_at)::timestamptz IS NULL
-      OR (created_at, id) < (
+      OR (created_at, message_id) < (
           sqlc.narg(cursor_created_at)::timestamptz,
-          sqlc.narg(cursor_id)::uuid
+          sqlc.narg(cursor_id)::BIGINT
       )
   )
 ORDER BY created_at DESC
