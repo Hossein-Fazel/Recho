@@ -125,7 +125,7 @@ func (c *converasionService) GetConversationMessages(ctx context.Context, userID
 	}
 
 	if !isMember {
-		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "you don't access to this Conversation", nil)
+		return []*model.Message{}, "", apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
 	CursorItem, err := decodeCursor(cursor)
