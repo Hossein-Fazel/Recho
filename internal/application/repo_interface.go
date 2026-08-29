@@ -32,3 +32,7 @@ type ConversationRepo interface {
 	IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error)
 	GetConversationMessages(ctx context.Context, params GetConversationMessagesParams) ([]*model.Message, error)
 }
+
+type MessaageRepo interface {
+	Create(ctx context.Context, msg model.Message) (*model.Message, error)
+}
