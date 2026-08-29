@@ -239,8 +239,8 @@ func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversat
 }
 
 const insertConversation = `-- name: InsertConversation :one
-INSERT INTO conversations(type)
-VALUES ('direct')
+INSERT INTO conversations(message_id_counter)
+VALUES (0)
 RETURNING id
 `
 

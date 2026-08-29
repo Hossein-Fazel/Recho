@@ -77,8 +77,8 @@ WHERE user_one_id = $1
 AND user_two_id = $2;
 
 -- name: InsertConversation :one
-INSERT INTO conversations(type)
-VALUES ('direct')
+INSERT INTO conversations(message_id_counter)
+VALUES (0)
 RETURNING id;
 
 -- name: InsertDirectConversation :one
