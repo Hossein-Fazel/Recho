@@ -24,9 +24,9 @@ type Client struct {
 func NewClient(userID uuid.UUID, conn *websocket.Conn, hub *Hub) *Client {
 	return &Client{
 		UserID: userID,
-		Conn: conn,
-		Send: make(chan []byte),
-		Hub: hub,
+		Conn:   conn,
+		Send:   make(chan []byte),
+		Hub:    hub,
 	}
 }
 

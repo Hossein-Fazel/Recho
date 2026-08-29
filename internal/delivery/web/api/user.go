@@ -23,7 +23,7 @@ func (h *UserHandler) RegisterRoutes(g *echo.Group) {
 }
 
 // Search godoc
-// @Summary Search in users by id 
+// @Summary Search in users by id
 // @Description Returns similar usernames with some info
 // @Tags user
 // @Accept json

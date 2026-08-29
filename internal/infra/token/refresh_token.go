@@ -33,12 +33,12 @@ func (s *RefreshTokenService) Generate() (*model.RefreshToken, *model.UserRefres
 	expiresAt := time.Now().Add(s.ttl * 24 * time.Hour)
 
 	return &model.RefreshToken{
-			Hash:      hash,
-			ExpiresAt: expiresAt,
-		}, &model.UserRefreshToken{
-			Token: plain,
-			TTL:   s.ttl,
-		}, nil
+		Hash:      hash,
+		ExpiresAt: expiresAt,
+	}, &model.UserRefreshToken{
+		Token: plain,
+		TTL:   s.ttl,
+	}, nil
 }
 
 func (s *RefreshTokenService) Hash(plainText string) string {

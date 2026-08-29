@@ -158,7 +158,7 @@ func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID u
 	return conversationID, nil
 }
 
-func(r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error) {
+func (r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error) {
 	isMember, err := r.sql.IsConversationMember(ctx, sqlc.IsConversationMemberParams{
 		ConversationID: ConversationID,
 		UserID:         userID,
@@ -171,7 +171,7 @@ func(r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUID
 	return isMember, nil
 }
 
-func(r *Conversation) GetConversationMessages(ctx context.Context, params application.GetConversationMessagesParams) ([]*model.Message, error) {
+func (r *Conversation) GetConversationMessages(ctx context.Context, params application.GetConversationMessagesParams) ([]*model.Message, error) {
 	if params.ConversationID == uuid.Nil {
 		return nil, apperr.InvalidInput("conversation repo", "invalid Conversation id", nil)
 	}
