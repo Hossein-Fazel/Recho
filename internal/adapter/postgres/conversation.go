@@ -215,3 +215,24 @@ func (r *Conversation) GetConversationMessages(ctx context.Context, params appli
 
 	return res, nil
 }
+
+func (r *Conversation) GetConversationUsers(ctx context.Context, convID uuid.UUID) ([]uuid.UUID, error) {
+	if convID == uuid.Nil {
+		return []uuid.UUID{}, apperr.InvalidInput("Conversation repo", "cconversation id is required", nil)
+	}
+
+	uIDs, err := r.sql.GetConvUsers(ctx, convID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"Conversation repo",
+				"users not found",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("Conversation repo", err)
+	}
+
+	return uIDs, nil
+}

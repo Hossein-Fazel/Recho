@@ -1,8 +1,13 @@
 package websocket
 
 import (
+	"encoding/json"
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/apperr"
+	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/internal/delivery/websocket/dto"
+	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -19,14 +24,18 @@ type Client struct {
 	Conn   *websocket.Conn
 	Send   chan []byte
 	Hub    *Hub
+
+	MessageDelivery *application.MessageDelivery
 }
 
-func NewClient(userID uuid.UUID, conn *websocket.Conn, hub *Hub) *Client {
+func NewClient(userID uuid.UUID, conn *websocket.Conn, hub *Hub, msgDelivery *application.MessageDelivery) *Client {
 	return &Client{
 		UserID: userID,
 		Conn:   conn,
 		Send:   make(chan []byte),
 		Hub:    hub,
+
+		MessageDelivery: msgDelivery,
 	}
 }
 
@@ -58,8 +67,29 @@ func (c *Client) ReadPump() {
 			return
 		}
 
-		// TODO: handle message
-		_ = message
+		var income dto.Incomming
+
+		if err := json.Unmarshal(message, &income); err != nil {
+			continue
+		}
+
+		switch income.Type {
+		case "message.create":
+			var msg dto.MessageCreateRequest
+			var ok bool
+			if msg, ok = income.Payload.(dto.MessageCreateRequest); !ok {
+				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", nil))
+			}
+
+			c.MessageDelivery.HandleMessage(model.Message{
+				ConversationID: msg.ConversationID,
+				SenderID:       msg.SenderID,
+				Content:        msg.Content,
+			})
+
+		default:
+			continue
+		}
 	}
 }
 
@@ -120,4 +150,16 @@ func (c *Client) WritePump() {
 			}
 		}
 	}
+}
+
+func makeError(err apperr.AppError) []byte {
+	var response dto.WSResponse
+	response.Type = "error"
+
+	response.Data = dto.ErrorResponse{
+		Code:    err.Status,
+		Message: err.Message,
+	}
+	data, _ := json.Marshal(response)
+	return data
 }

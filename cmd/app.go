@@ -40,6 +40,7 @@ func Run() {
 	authRepo := postgres_repo.NewRefreshTokenRepo(queries, database)
 	userRepo := postgres_repo.NewUserRepo(queries)
 	convRepo := postgres_repo.NewConversationRepo(queries, database)
+	msgRepo := postgres_repo.NewMessageRepo(queries)
 
 	pkg.Logger.Info().Msg("Initializing services")
 	accessToken := token.NewJWTService(conf.Token)
@@ -48,11 +49,13 @@ func Run() {
 	authService := application.NewAuthService(userRepo, accessToken, refreshToken, authRepo)
 	convService := application.NewConverasionService(convRepo)
 	userService := application.NewUserService(userRepo)
+	msgService := application.NewMessageService(msgRepo, convRepo)
+	msgDelivery := application.NewMessageDelivery(msgService)
 
 	pkg.Logger.Info().Msg("initialize websocket")
 	hub := websocket.NewHub()
 	go hub.Run()
-	ws := websocket.NewWSHandler(hub)
+	ws := websocket.NewWSHandler(hub, msgDelivery)
 
 	pkg.Logger.Info().Msg("Starting server")
 

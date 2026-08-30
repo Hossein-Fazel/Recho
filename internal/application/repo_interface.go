@@ -31,6 +31,7 @@ type ConversationRepo interface {
 	CreateDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error)
 	IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error)
 	GetConversationMessages(ctx context.Context, params GetConversationMessagesParams) ([]*model.Message, error)
+	GetConversationUsers(ctx context.Context, convID uuid.UUID) ([]uuid.UUID, error)
 }
 
 type MessaageRepo interface {

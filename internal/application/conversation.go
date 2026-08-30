@@ -151,3 +151,20 @@ func (c *ConverasionService) GetConversationMessages(ctx context.Context, userID
 
 	return list, newCursor, nil
 }
+
+func (c *ConverasionService) GetConversationUsers(ctx context.Context, userID uuid.UUID, convID uuid.UUID) ([]uuid.UUID, error) {
+	if convID == uuid.Nil {
+		return []uuid.UUID{}, apperr.InvalidInput("conversation service", "Conversation id is required", nil)
+	}
+
+	isMember, err := c.ConversationRepo.IsConversationMember(ctx, userID, convID)
+	if err != nil {
+		return []uuid.UUID{}, err
+	}
+
+	if !isMember {
+		return []uuid.UUID{}, apperr.NotFound("conversation service", "Conversation not found", nil)
+	}
+
+	return  c.ConversationRepo.GetConversationUsers(ctx, convID)
+}

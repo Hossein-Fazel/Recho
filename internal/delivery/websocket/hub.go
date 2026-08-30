@@ -1,6 +1,12 @@
 package websocket
 
-import "github.com/google/uuid"
+import (
+	"encoding/json"
+
+	"github.com/Hossein-Fazel/Recho/internal/delivery/websocket/dto"
+	"github.com/Hossein-Fazel/Recho/internal/model"
+	"github.com/google/uuid"
+)
 
 type Hub struct {
 	Clients    map[uuid.UUID][]*Client
@@ -53,4 +59,23 @@ func (h *Hub) unregisterClient(client *Client) {
 	}
 
 	close(client.Send)
+}
+
+func (h *Hub) Send(v any, users uuid.UUIDs) {
+	response := createResponse(v)
+	for _, user := range users {
+		for _, client := range h.Clients[user] {
+			client.Send <- response
+		}
+	}
+}
+
+func createResponse(v any) []byte {
+	var response dto.WSResponse
+	if msg, ok := v.(model.Message); ok {
+		response.Data = dto.ToMessageCreatedResponse(msg)
+	}
+
+	res, _ := json.Marshal(response)
+	return res
 }

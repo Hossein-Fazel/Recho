@@ -3,6 +3,7 @@ package websocket
 import (
 	"net/http"
 
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -13,13 +14,15 @@ const (
 )
 
 type WSHandler struct {
-	hub      *Hub
-	upgrader websocket.Upgrader
+	hub             *Hub
+	MessageDelivery *application.MessageDelivery
+	upgrader        websocket.Upgrader
 }
 
-func NewWSHandler(hub *Hub) *WSHandler {
+func NewWSHandler(hub *Hub, messageDelivery *application.MessageDelivery) *WSHandler {
 	return &WSHandler{
-		hub: hub,
+		hub:             hub,
+		MessageDelivery: messageDelivery,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -48,6 +51,7 @@ func (h *WSHandler) Handler(c echo.Context) error {
 		userID,
 		conn,
 		h.hub,
+		h.MessageDelivery,
 	)
 
 	h.hub.Register <- client
