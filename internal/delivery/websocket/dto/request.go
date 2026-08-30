@@ -1,12 +1,14 @@
 package dto
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 )
 
 type Incomming struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
+	Type    string          `json:"type"`
+	Payload json.RawMessage `json:"payload"`
 }
 
 type MessageCreateRequest struct {

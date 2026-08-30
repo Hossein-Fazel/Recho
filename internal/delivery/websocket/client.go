@@ -32,7 +32,7 @@ func NewClient(userID uuid.UUID, conn *websocket.Conn, hub *Hub, msgDelivery *ap
 	return &Client{
 		UserID: userID,
 		Conn:   conn,
-		Send:   make(chan []byte),
+		Send:   make(chan []byte, 256),
 		Hub:    hub,
 
 		MessageDelivery: msgDelivery,
@@ -76,16 +76,22 @@ func (c *Client) ReadPump() {
 		switch income.Type {
 		case "message.create":
 			var msg dto.MessageCreateRequest
-			var ok bool
-			if msg, ok = income.Payload.(dto.MessageCreateRequest); !ok {
-				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", nil))
+			if err := json.Unmarshal(income.Payload, &msg); err != nil {
+				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", err))
+				continue
 			}
 
-			c.MessageDelivery.HandleMessage(model.Message{
+			if err := c.MessageDelivery.HandleMessage(model.Message{
 				ConversationID: msg.ConversationID,
-				SenderID:       msg.SenderID,
+				SenderID:       c.UserID,
 				Content:        msg.Content,
-			})
+			}); err != nil {
+				if appErr, ok := err.(*apperr.AppError); ok {
+					c.Send <- makeError(*appErr)
+				} else {
+					c.Send <- makeError(*apperr.Internal("websocket", err))
+				}
+			}
 
 		default:
 			continue

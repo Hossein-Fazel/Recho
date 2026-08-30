@@ -50,11 +50,11 @@ func Run() {
 	convService := application.NewConverasionService(convRepo)
 	userService := application.NewUserService(userRepo)
 	msgService := application.NewMessageService(msgRepo, convRepo)
-	msgDelivery := application.NewMessageDelivery(msgService)
 
 	pkg.Logger.Info().Msg("initialize websocket")
 	hub := websocket.NewHub()
 	go hub.Run()
+	msgDelivery := application.NewMessageDelivery(msgService, convService, hub)
 	ws := websocket.NewWSHandler(hub, msgDelivery)
 
 	pkg.Logger.Info().Msg("Starting server")

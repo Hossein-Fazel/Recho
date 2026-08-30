@@ -47,7 +47,7 @@ type Conversation struct {
 }
 
 type UserConversationsResponse struct {
-	Conversations []*Conversation `josn:"Conversations"`
+	Conversations []*Conversation `json:"conversations"`
 	NextCursor    string          `json:"next_cursor,omitempty"`
 }
 

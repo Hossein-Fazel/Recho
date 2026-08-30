@@ -71,7 +71,7 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 		return nil, apperr.Internal("Conversation repo", err)
 	}
 
-	convList := make([]*model.UserConversation, len(list))
+	convList := make([]*model.UserConversation, 0, len(list))
 	for _, conv := range list {
 		uID, _ := uuid.Parse(conv.UserID.String())
 		lmID := conv.LastMessageID.Int64
@@ -88,6 +88,7 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 			LastMessageID:        lmID,
 			LastMessageContent:   conv.LastMessageContent.String,
 			LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
+			UpdatedAt:            conv.UpdatedAt,
 		})
 	}
 

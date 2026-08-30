@@ -8,10 +8,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type deliverModel struct {
+	content   any
+	receivers uuid.UUIDs
+}
+
 type Hub struct {
 	Clients    map[uuid.UUID][]*Client
 	Register   chan *Client
 	Unregister chan *Client
+	Deliver    chan deliverModel
 }
 
 func NewHub() *Hub {
@@ -19,6 +25,7 @@ func NewHub() *Hub {
 		Clients:    make(map[uuid.UUID][]*Client),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
+		Deliver:    make(chan deliverModel),
 	}
 }
 
@@ -30,6 +37,13 @@ func (h *Hub) Run() {
 
 		case client := <-h.Unregister:
 			h.unregisterClient(client)
+		case deliver := <-h.Deliver:
+			response := createResponse(deliver.content)
+			for _, receiver := range deliver.receivers {
+				for _, client := range h.Clients[receiver] {
+					client.Send <- response
+				}
+			}
 		}
 	}
 }
@@ -61,18 +75,17 @@ func (h *Hub) unregisterClient(client *Client) {
 	close(client.Send)
 }
 
-func (h *Hub) Send(v any, users uuid.UUIDs) {
-	response := createResponse(v)
-	for _, user := range users {
-		for _, client := range h.Clients[user] {
-			client.Send <- response
-		}
+func (h *Hub) Send(v any, receivers uuid.UUIDs) {
+	h.Deliver <- deliverModel{
+		content:   v,
+		receivers: receivers,
 	}
 }
 
 func createResponse(v any) []byte {
 	var response dto.WSResponse
 	if msg, ok := v.(model.Message); ok {
+		response.Type = "message.created"
 		response.Data = dto.ToMessageCreatedResponse(msg)
 	}
 

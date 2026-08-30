@@ -12,9 +12,11 @@ type MessageDelivery struct {
 	Sender      Sender
 }
 
-func NewMessageDelivery(msgService *MessageService) *MessageDelivery {
+func NewMessageDelivery(msgService *MessageService, convService *ConverasionService, sender Sender) *MessageDelivery {
 	return &MessageDelivery{
-		msgService: msgService,
+		msgService:  msgService,
+		convService: convService,
+		Sender:      sender,
 	}
 }
 
@@ -26,6 +28,9 @@ func (d *MessageDelivery) HandleMessage(msg model.Message) error {
 	}
 
 	userIDs, err := d.convService.GetConversationUsers(ctx, msg.SenderID, msg.ConversationID)
+	if err != nil {
+		return err
+	}
 
 	d.Sender.Send(*message, userIDs)
 	return nil
