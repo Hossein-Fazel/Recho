@@ -32,6 +32,44 @@ func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConv
 	return conversation_id, err
 }
 
+const getConvUsers = `-- name: GetConvUsers :many
+SELECT user_one_id AS user_id
+FROM direct_conversations dm
+WHERE dm.conversation_id = $1
+
+UNION ALL
+
+SELECT user_two_id AS user_id
+FROM direct_conversations
+WHERE dm.conversation_id = $1
+
+UNION ALL
+
+SELECT user_id
+FROM group_members
+WHERE group_id = $1
+`
+
+func (q *Queries) GetConvUsers(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getConvUsers, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var user_id uuid.UUID
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getConversationMessages = `-- name: GetConversationMessages :many
 SELECT
     message_id,

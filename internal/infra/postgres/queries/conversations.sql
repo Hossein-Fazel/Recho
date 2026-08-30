@@ -126,3 +126,20 @@ SELECT EXISTS (
     FROM group_members gm
     WHERE gm.group_id = sqlc.arg(conversation_id) AND gm.user_id = sqlc.arg(user_id)
 );
+
+-- name: GetConvUsers :many
+SELECT user_one_id AS user_id
+FROM direct_conversations dm
+WHERE dm.conversation_id = sqlc.arg(conversation_id)
+
+UNION ALL
+
+SELECT user_two_id AS user_id
+FROM direct_conversations
+WHERE dm.conversation_id = sqlc.arg(conversation_id)
+
+UNION ALL
+
+SELECT user_id
+FROM group_members
+WHERE group_id = sqlc.arg(conversation_id);
