@@ -1,0 +1,397 @@
+basePath: /
+definitions:
+  dto.AuthResponse:
+    properties:
+      message:
+        type: string
+      user:
+        $ref: '#/definitions/dto.User'
+    type: object
+  dto.Conversation:
+    properties:
+      avatar_url:
+        type: string
+      conversation_id:
+        type: string
+      conversation_type:
+        type: string
+      display_name:
+        type: string
+      group_avatar_url:
+        type: string
+      group_name:
+        type: string
+      last_message_content:
+        type: string
+      last_message_created_at:
+        type: string
+      last_message_id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.ErrResponse:
+    properties:
+      error:
+        type: string
+      module:
+        type: string
+      type:
+        type: string
+    type: object
+  dto.GetOrCreateDirectConversationRequest:
+    properties:
+      user_id:
+        type: string
+    type: object
+  dto.GetOrCreateDirectConversationResponse:
+    properties:
+      conversation_id:
+        type: string
+    type: object
+  dto.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.RegisterRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.User:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.UserConversationsResponse:
+    properties:
+      conversations:
+        items:
+          $ref: '#/definitions/dto.Conversation'
+        type: array
+      next_cursor:
+        type: string
+    type: object
+  dto.UserSearch:
+    properties:
+      avatar_url:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.UserSearchResponse:
+    properties:
+      users:
+        items:
+          $ref: '#/definitions/dto.UserSearch'
+        type: array
+    type: object
+info:
+  contact: {}
+  description: Realtime chat application
+  title: Recho
+  version: 0.0.0
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      summary: Login to account
+      tags:
+      - auth
+  /api/auth/logout:
+    post:
+      description: Clear authentication cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+      security:
+      - CookieAuth: []
+      summary: Logout user
+      tags:
+      - auth
+  /api/auth/refresh:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - CookieAuth: []
+      summary: Refrsh tokens
+      tags:
+      - auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      summary: Register a new account
+      tags:
+      - auth
+  /api/auth/verify:
+    get:
+      description: Check if user is authenticated
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - CookieAuth: []
+      summary: Verify authentication
+      tags:
+      - auth
+  /api/conversation/:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GetOrCreateDirectConversationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetOrCreateDirectConversationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      summary: if a DC exists between two users return it's id else create a new one
+        and then return it's id
+      tags:
+      - conversation
+  /api/conversations/:
+    get:
+      consumes:
+      - application/json
+      description: Returns a paginated list of conversations belonging to the current
+        user, ordered by most recent activity
+      parameters:
+      - description: 'Number of conversations to return (default: 10)'
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Pagination cursor for retrieving the next page. Use the cursor
+          from the previous response to get the next page.
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserConversationsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user conversations
+      tags:
+      - conversation
+  /api/conversations/:id/messages:
+    get:
+      consumes:
+      - application/json
+      description: Returns a paginated list of conversation message
+      parameters:
+      - description: 'Number of messages to return (default: 20)'
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Pagination cursor for retrieving the next page. Use the cursor
+          from the previous response to get the next page.
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserConversationsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get conversation messages
+      tags:
+      - conversation
+  /api/user/search:
+    get:
+      consumes:
+      - application/json
+      description: Returns similar usernames with some info
+      parameters:
+      - description: username
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserSearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Search in users by id
+      tags:
+      - user
+securityDefinitions:
+  CookieAuth:
+    in: cookie
+    name: access_token
+    type: apiKey
+swagger: "2.0"

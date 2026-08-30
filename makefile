@@ -44,7 +44,7 @@ dstop: ## delete and stop continer
 	docker rm $(PROJECT_NAME)_$(TEST_TAG)
 
 swag: ## make swagger api's docs
-	swag init -g internal/web/echo.go
+	swag init -g internal/delivery/web/echo.go
 help: ## Show this help
 	@echo "Usage: make [target]"
 	@awk 'BEGIN {FS = ":.*##"; printf "\nAvailable targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)

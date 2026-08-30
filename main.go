@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/Hossein-Fazel/Recho/cmd"
+)
 
 func main() {
-	fmt.Println("I'm Recho.")
+	cmd.Run()
 }
