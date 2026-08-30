@@ -13,10 +13,10 @@ import (
 )
 
 type ConversationHandler struct {
-	convSvc application.ConverasionService
+	convSvc *application.ConverasionService
 }
 
-func NewConversationHandler(convSvc application.ConverasionService) *ConversationHandler {
+func NewConversationHandler(convSvc *application.ConverasionService) *ConversationHandler {
 	return &ConversationHandler{
 		convSvc: convSvc,
 	}

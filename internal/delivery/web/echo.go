@@ -25,10 +25,10 @@ func (c *Config) isDebug() bool {
 }
 
 type Services struct {
-	Auth         application.AuthService
+	Auth         *application.AuthService
 	AccessToken  application.AccessToken
-	Conversation application.ConverasionService
-	User         application.UserService
+	Conversation *application.ConverasionService
+	User         *application.UserService
 }
 
 // @title Recho
@@ -43,7 +43,7 @@ func Init(svcs Services, conf Config) *echo.Echo {
 
 	webServer := echo.New()
 	webServer.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://localhost:5173", "http://127.0.0.1:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

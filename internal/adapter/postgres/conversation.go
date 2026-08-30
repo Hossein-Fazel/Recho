@@ -71,7 +71,7 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 		return nil, apperr.Internal("Conversation repo", err)
 	}
 
-	convList := make([]*model.UserConversation, len(list))
+	convList := make([]*model.UserConversation, 0, len(list))
 	for _, conv := range list {
 		uID, _ := uuid.Parse(conv.UserID.String())
 		lmID := conv.LastMessageID.Int64
@@ -88,6 +88,7 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 			LastMessageID:        lmID,
 			LastMessageContent:   conv.LastMessageContent.String,
 			LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
+			UpdatedAt:            conv.UpdatedAt,
 		})
 	}
 
@@ -158,7 +159,7 @@ func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID u
 	return conversationID, nil
 }
 
-func(r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error) {
+func (r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error) {
 	isMember, err := r.sql.IsConversationMember(ctx, sqlc.IsConversationMemberParams{
 		ConversationID: ConversationID,
 		UserID:         userID,
@@ -171,7 +172,7 @@ func(r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUID
 	return isMember, nil
 }
 
-func(r *Conversation) GetConversationMessages(ctx context.Context, params application.GetConversationMessagesParams) ([]*model.Message, error) {
+func (r *Conversation) GetConversationMessages(ctx context.Context, params application.GetConversationMessagesParams) ([]*model.Message, error) {
 	if params.ConversationID == uuid.Nil {
 		return nil, apperr.InvalidInput("conversation repo", "invalid Conversation id", nil)
 	}
@@ -186,9 +187,9 @@ func(r *Conversation) GetConversationMessages(ctx context.Context, params applic
 				Valid: !params.CursorCreatedAt.IsZero(),
 			},
 
-			CursorID: pgtype.UUID{
-				Bytes: params.CursorID,
-				Valid: params.CursorID != uuid.Nil,
+			CursorID: pgtype.Int8{
+				Int64: params.CursorID,
+				Valid: params.CursorID != 0,
 			},
 
 			QueryLimit: params.Limit,
@@ -214,4 +215,25 @@ func(r *Conversation) GetConversationMessages(ctx context.Context, params applic
 	}
 
 	return res, nil
+}
+
+func (r *Conversation) GetConversationUsers(ctx context.Context, convID uuid.UUID) ([]uuid.UUID, error) {
+	if convID == uuid.Nil {
+		return []uuid.UUID{}, apperr.InvalidInput("Conversation repo", "cconversation id is required", nil)
+	}
+
+	uIDs, err := r.sql.GetConvUsers(ctx, convID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"Conversation repo",
+				"users not found",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("Conversation repo", err)
+	}
+
+	return uIDs, nil
 }

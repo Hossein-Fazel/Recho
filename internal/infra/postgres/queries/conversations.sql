@@ -77,8 +77,8 @@ WHERE user_one_id = $1
 AND user_two_id = $2;
 
 -- name: InsertConversation :one
-INSERT INTO conversations(type)
-VALUES ('direct')
+INSERT INTO conversations(message_id_counter)
+VALUES (0)
 RETURNING id;
 
 -- name: InsertDirectConversation :one
@@ -106,9 +106,9 @@ FROM messages
 WHERE conversation_id = sqlc.arg(conversation_id)
   AND (
       sqlc.arg(cursor_created_at)::timestamptz IS NULL
-      OR (created_at, id) < (
+      OR (created_at, message_id) < (
           sqlc.narg(cursor_created_at)::timestamptz,
-          sqlc.narg(cursor_id)::uuid
+          sqlc.narg(cursor_id)::BIGINT
       )
   )
 ORDER BY created_at DESC
@@ -126,3 +126,20 @@ SELECT EXISTS (
     FROM group_members gm
     WHERE gm.group_id = sqlc.arg(conversation_id) AND gm.user_id = sqlc.arg(user_id)
 );
+
+-- name: GetConvUsers :many
+SELECT user_one_id AS user_id
+FROM direct_conversations
+WHERE conversation_id = sqlc.arg(conversation_id)
+
+UNION ALL
+
+SELECT user_two_id AS user_id
+FROM direct_conversations
+WHERE conversation_id = sqlc.arg(conversation_id)
+
+UNION ALL
+
+SELECT user_id
+FROM group_members
+WHERE group_id = sqlc.arg(conversation_id);

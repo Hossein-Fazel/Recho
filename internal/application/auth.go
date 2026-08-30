@@ -17,23 +17,17 @@ type AuthResult struct {
 	RefreshToken *model.UserRefreshToken
 }
 
-type AuthService interface {
-	Register(ctx context.Context, username string, password string) (*AuthResult, error)
-	Login(ctx context.Context, username string, password string) (*AuthResult, error)
-	Refresh(ctx context.Context, refreshToken string) (*model.UserAcccessToken, *model.UserRefreshToken, error)
-}
-
-type authService struct {
+type AuthService struct {
 	users         UserRepo
 	at            AccessToken
 	rt            RefreshToken
 	refreshTokens RefreshTokenRepo
 }
 
-func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshTokens RefreshTokenRepo) AuthService {
+func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshTokens RefreshTokenRepo) *AuthService {
 	pkg.Logger.Info().Msg("Initializing auth service")
 
-	return &authService{
+	return &AuthService{
 		users:         userRepo,
 		at:            at,
 		rt:            rt,
@@ -41,7 +35,7 @@ func NewAuthService(userRepo UserRepo, at AccessToken, rt RefreshToken, refreshT
 	}
 }
 
-func (s *authService) Register(ctx context.Context, username string, password string) (*AuthResult, error) {
+func (s *AuthService) Register(ctx context.Context, username string, password string) (*AuthResult, error) {
 	pkg.Logger.Info().
 		Str("username", username).
 		Msg("Registering user")
@@ -88,7 +82,7 @@ func (s *authService) Register(ctx context.Context, username string, password st
 	}, nil
 }
 
-func (s *authService) Login(ctx context.Context, username string, password string) (*AuthResult, error) {
+func (s *AuthService) Login(ctx context.Context, username string, password string) (*AuthResult, error) {
 	pkg.Logger.Info().
 		Str("username", username).
 		Msg("Loging in user")
@@ -124,7 +118,7 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	}, nil
 }
 
-func (s *authService) Refresh(ctx context.Context, refreshToken string) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
+func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
 
 	tokenHash := s.rt.Hash(refreshToken)
 
@@ -167,7 +161,7 @@ func (s *authService) Refresh(ctx context.Context, refreshToken string) (*model.
 	return userAT, userRT, nil
 }
 
-func (s *authService) issueTokens(ctx context.Context, userID uuid.UUID) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
+func (s *AuthService) issueTokens(ctx context.Context, userID uuid.UUID) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
 	if err := s.refreshTokens.RevokeAllByUser(ctx, userID); err != nil {
 		return nil, nil, err
 	}

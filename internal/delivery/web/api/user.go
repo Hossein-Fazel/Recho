@@ -9,10 +9,10 @@ import (
 )
 
 type UserHandler struct {
-	userService application.UserService
+	userService *application.UserService
 }
 
-func NewUserHandler(user application.UserService) *UserHandler {
+func NewUserHandler(user *application.UserService) *UserHandler {
 	return &UserHandler{
 		userService: user,
 	}
@@ -23,7 +23,7 @@ func (h *UserHandler) RegisterRoutes(g *echo.Group) {
 }
 
 // Search godoc
-// @Summary Search in users by id 
+// @Summary Search in users by id
 // @Description Returns similar usernames with some info
 // @Tags user
 // @Accept json

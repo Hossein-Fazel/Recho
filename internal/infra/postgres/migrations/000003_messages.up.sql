@@ -38,7 +38,7 @@ BEGIN
     UPDATE conversations
     SET
         updated_at = NEW.created_at,
-        last_message_id = NEW.id,
+        last_message_id = NEW.message_id,
         last_message_content = NEW.content,
         last_message_created_at = NEW.created_at
     WHERE id = NEW.conversation_id;
