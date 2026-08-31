@@ -14,8 +14,19 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(() => getInitialTheme())
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
+    const root = document.documentElement
+    root.classList.add('theme-transition')
+    root.dataset.theme = theme
     localStorage.setItem(STORAGE_KEY, theme)
+
+    const timer = setTimeout(() => {
+      root.classList.remove('theme-transition')
+    }, 400)
+
+    return () => {
+      clearTimeout(timer)
+      root.classList.remove('theme-transition')
+    }
   }, [theme])
 
   const nextTheme = theme === 'light' ? 'dark' : 'light'
