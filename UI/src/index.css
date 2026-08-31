@@ -812,7 +812,10 @@ textarea:focus {
 }
 
 .bubble time {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
   margin-top: 4px;
   color: rgba(248, 250, 252, 0.58);
   font-size: 0.64rem;
@@ -822,6 +825,52 @@ textarea:focus {
 
 :root[data-theme='light'] .bubble:not(.mine) time {
   color: var(--muted-2);
+}
+
+.bubble-time {
+  white-space: nowrap;
+}
+
+.bubble-time-text {
+  color: inherit;
+}
+
+.msg-status {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  align-items: center;
+  justify-content: center;
+  color: rgba(248, 250, 252, 0.78);
+}
+
+.msg-status svg {
+  width: 13px;
+  height: 13px;
+}
+
+.msg-status.sending {
+  color: rgba(248, 250, 252, 0.6);
+}
+
+.msg-status.spinning svg {
+  margin-top: -1px;
+  animation: status-spin 1s linear infinite;
+}
+
+:root[data-theme='light'] .msg-status.sending {
+  color: var(--muted-2);
+}
+
+@keyframes status-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .messages-loading {
@@ -954,6 +1003,7 @@ textarea:focus {
     opacity: 0;
     transform: translateY(8px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: none;

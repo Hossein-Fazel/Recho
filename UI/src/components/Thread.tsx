@@ -7,6 +7,7 @@ type ThreadProps = {
   user: User
   conversation: Conversation | null
   messages: Message[]
+  messageStatuses: Map<number, 'sending' | 'sent'>
   hasMore: boolean
   loading: boolean
   onLoadMore: () => void
@@ -17,6 +18,7 @@ export function Thread({
   user,
   conversation,
   messages,
+  messageStatuses,
   hasMore,
   loading,
   onLoadMore,
@@ -160,6 +162,12 @@ export function Thread({
           Boolean(previous) &&
           previous.sender_id === message.sender_id
 
+        const status = mine
+          ? message.id < 0
+            ? 'sending'
+            : messageStatuses.get(message.id)
+          : undefined
+
         return (
           <article
             key={message.id}
@@ -168,8 +176,49 @@ export function Thread({
           >
             <p>{message.content}</p>
 
-            <time>
-              {formatMessageTime(message.created_at)}
+            <time className="bubble-time">
+              {status !== 'sending' && (
+                <span className="bubble-time-text">
+                  {formatMessageTime(message.created_at)}
+                </span>
+              )}
+
+              {status ? (
+                <span
+                  className={`msg-status ${status} ${status === 'sending' ? 'spinning' : ''
+                    }`}
+                  aria-label={
+                    status === 'sending'
+                      ? 'Sending'
+                      : 'Sent'
+                  }
+                >
+                  {status === 'sending' ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v5l3 2" />
+                    </svg>
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 12.5l5 5L20 6.5" />
+                    </svg>
+                  )}
+                </span>
+              ) : null}
             </time>
           </article>
         )

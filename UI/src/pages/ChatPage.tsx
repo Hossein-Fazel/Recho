@@ -17,6 +17,7 @@ export function ChatPage() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [mobileChat, setMobileChat] = useState(false)
   const [notice, setNotice] = useState('')
+  const [messageStatuses, setMessageStatuses] = useState<Map<number, 'sending' | 'sent'>>(new Map())
 
   const loadedFor = useRef<string | null>(null)
 
@@ -49,6 +50,9 @@ export function ChatPage() {
       const chronological = [...response.messages].reverse()
 
       setMessages(chronological)
+      setMessageStatuses(
+        new Map(chronological.map((m) => [m.id, 'sent' as const])),
+      )
       setNextMessageCursor(response.nextCursor)
       loadedFor.current = conversationId
     } finally {
@@ -60,6 +64,7 @@ export function ChatPage() {
   useEffect(() => {
     if (!activeId) {
       setMessages([])
+      setMessageStatuses(new Map())
       setNextMessageCursor('')
       loadedFor.current = null
       return
@@ -85,6 +90,12 @@ export function ChatPage() {
       )
 
       const older = [...response.messages].reverse()
+
+      setMessageStatuses((statuses) => {
+        const updated = new Map(statuses)
+        older.forEach((m) => updated.set(m.id, 'sent'))
+        return updated
+      })
 
       setMessages((current) => [...older, ...current])
       setNextMessageCursor(response.nextCursor)
@@ -148,6 +159,12 @@ export function ChatPage() {
           ),
           incoming,
         ]
+      })
+
+      setMessageStatuses((statuses) => {
+        const updated = new Map(statuses)
+        updated.set(incoming.id, 'sent')
+        return updated
       })
     },
 
@@ -227,6 +244,12 @@ export function ChatPage() {
       optimisticMessage,
     ])
 
+    setMessageStatuses((statuses) => {
+      const updated = new Map(statuses)
+      updated.set(optimisticMessage.id, 'sending')
+      return updated
+    })
+
     setConversations((current) =>
       current.map((conversation) =>
         conversation.conversation_id === activeId
@@ -273,6 +296,7 @@ export function ChatPage() {
           user={user}
           conversation={active}
           messages={messages}
+          messageStatuses={messageStatuses}
           hasMore={Boolean(nextMessageCursor)}
           loading={loadingMessages}
           onLoadMore={() => void loadMore()}
