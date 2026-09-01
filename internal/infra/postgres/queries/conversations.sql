@@ -129,14 +129,14 @@ SELECT EXISTS (
 
 -- name: GetConvUsers :many
 SELECT user_one_id AS user_id
-FROM direct_conversations
-WHERE conversation_id = sqlc.arg(conversation_id)
+FROM direct_conversations dc
+WHERE dc.conversation_id = sqlc.arg(conversation_id)
 
 UNION ALL
 
 SELECT user_two_id AS user_id
-FROM direct_conversations
-WHERE conversation_id = sqlc.arg(conversation_id)
+FROM direct_conversations dc
+WHERE dc.conversation_id = sqlc.arg(conversation_id)
 
 UNION ALL
 

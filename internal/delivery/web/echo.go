@@ -96,5 +96,13 @@ func Init(svcs Services, conf Config) *echo.Echo {
 	userHandler := api.NewUserHandler(svcs.User)
 	userHandler.RegisterRoutes(userGroup)
 
+	webServer.Static("/assets", "UI/dist/assets")
+	webServer.File("/favicon.svg", "UI/dist/favicon.svg")
+	webServer.File("/icons.svg", "UI/dist/icons.svg")
+
+	webServer.GET("*", func(c echo.Context) error {
+		return c.File("UI/dist/index.html")
+	})
+
 	return webServer
 }
