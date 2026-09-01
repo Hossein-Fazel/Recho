@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -22,7 +23,7 @@ VALUES (
     $2,
     $3
 )
-RETURNING message_id
+RETURNING message_id, created_at, updated_at
 `
 
 type CreateMessageParams struct {
@@ -31,9 +32,15 @@ type CreateMessageParams struct {
 	Content        string
 }
 
-func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (int64, error) {
+type CreateMessageRow struct {
+	MessageID int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (CreateMessageRow, error) {
 	row := q.db.QueryRow(ctx, createMessage, arg.ConversationID, arg.SenderID, arg.Content)
-	var message_id int64
-	err := row.Scan(&message_id)
-	return message_id, err
+	var i CreateMessageRow
+	err := row.Scan(&i.MessageID, &i.CreatedAt, &i.UpdatedAt)
+	return i, err
 }

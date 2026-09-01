@@ -34,14 +34,14 @@ func (q *Queries) FindDirectConversation(ctx context.Context, arg FindDirectConv
 
 const getConvUsers = `-- name: GetConvUsers :many
 SELECT user_one_id AS user_id
-FROM direct_conversations
-WHERE conversation_id = $1
+FROM direct_conversations dc
+WHERE dc.conversation_id = $1
 
 UNION ALL
 
 SELECT user_two_id AS user_id
-FROM direct_conversations
-WHERE conversation_id = $1
+FROM direct_conversations dc
+WHERE dc.conversation_id = $1
 
 UNION ALL
 

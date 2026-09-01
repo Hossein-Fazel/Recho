@@ -81,7 +81,7 @@ func (c *Client) ReadPump() {
 				continue
 			}
 
-			if err := c.MessageDelivery.HandleMessage(model.Message{
+			if err := c.MessageDelivery.HandleMessage(income.RequestID, model.Message{
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
 				Content:        msg.Content,

@@ -30,7 +30,7 @@ func (m *Message) Create(ctx context.Context, msg model.Message) (*model.Message
 		return nil, apperr.InvalidInput("message repo", "invalid message", nil)
 	}
 
-	id, err := m.sql.CreateMessage(ctx, sqlc.CreateMessageParams{
+	res, err := m.sql.CreateMessage(ctx, sqlc.CreateMessageParams{
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
 		Content:        msg.Content,
@@ -40,6 +40,8 @@ func (m *Message) Create(ctx context.Context, msg model.Message) (*model.Message
 		return nil, apperr.Internal("message repo", err)
 	}
 
-	msg.ID = id
+	msg.ID = res.MessageID
+	msg.CreatedAt = res.CreatedAt
+	msg.UpdatedAt = res.UpdatedAt
 	return &msg, nil
 }

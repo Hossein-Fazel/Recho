@@ -9,6 +9,7 @@ import (
 )
 
 type deliverModel struct {
+	reqID     uuid.UUID
 	content   any
 	receivers uuid.UUIDs
 }
@@ -37,8 +38,9 @@ func (h *Hub) Run() {
 
 		case client := <-h.Unregister:
 			h.unregisterClient(client)
+
 		case deliver := <-h.Deliver:
-			response := createResponse(deliver.content)
+			response := createResponse(deliver)
 			for _, receiver := range deliver.receivers {
 				for _, client := range h.Clients[receiver] {
 					client.Send <- response
@@ -75,16 +77,18 @@ func (h *Hub) unregisterClient(client *Client) {
 	close(client.Send)
 }
 
-func (h *Hub) Send(v any, receivers uuid.UUIDs) {
+func (h *Hub) Send(reqID uuid.UUID, v any, receivers uuid.UUIDs) {
 	h.Deliver <- deliverModel{
+		reqID: reqID,
 		content:   v,
 		receivers: receivers,
 	}
 }
 
-func createResponse(v any) []byte {
+func createResponse(v deliverModel) []byte {
 	var response dto.WSResponse
-	if msg, ok := v.(model.Message); ok {
+	response.RequestID = v.reqID
+	if msg, ok := v.content.(model.Message); ok {
 		response.Type = "message.created"
 		response.Data = dto.ToMessageCreatedResponse(msg)
 	}

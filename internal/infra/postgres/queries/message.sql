@@ -9,4 +9,4 @@ VALUES (
     $2,
     $3
 )
-RETURNING message_id;
+RETURNING message_id, created_at, updated_at;
