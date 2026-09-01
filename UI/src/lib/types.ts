@@ -54,6 +54,7 @@ export type Message = {
   content: string
   created_at: string
   updated_at: string
+  request_id?: string
 }
 
 export type GetConversationMessagesResponse = {
@@ -63,6 +64,7 @@ export type GetConversationMessagesResponse = {
 
 export type WSResponse = {
   type: string
+  request_id: string
   data: unknown
 }
 

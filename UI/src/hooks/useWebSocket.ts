@@ -80,7 +80,10 @@ export function useWebSocket({ onMessage, enabled }: Handlers) {
             data?.conversation_id &&
             data.content
           ) {
-            onMessageRef.current(data)
+            onMessageRef.current({
+              ...data,
+              request_id: payload.request_id,
+            })
           }
         } catch {
           // Ignore malformed WebSocket frames.
@@ -132,6 +135,7 @@ export function useWebSocket({ onMessage, enabled }: Handlers) {
   function sendMessage(
     conversationId: string,
     content: string,
+    requestId: string,
   ): boolean {
     const socket = socketRef.current
 
@@ -142,6 +146,7 @@ export function useWebSocket({ onMessage, enabled }: Handlers) {
     socket.send(
       JSON.stringify({
         type: 'message.create',
+        request_id: requestId,
         payload: {
           content,
           conversation_id: conversationId,

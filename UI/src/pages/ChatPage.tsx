@@ -151,8 +151,14 @@ export function ChatPage() {
           return current
         }
 
+        const withoutPending = incoming.request_id
+          ? current.filter(
+              (message) => message.request_id !== incoming.request_id,
+            )
+          : current
+
         return [
-          ...current.filter(
+          ...withoutPending.filter(
             (message) =>
               message.id > 0 ||
               message.content !== incoming.content,
@@ -221,7 +227,9 @@ export function ChatPage() {
       return
     }
 
-    const sent = sendMessage(activeId, content)
+    const requestId = crypto.randomUUID()
+
+    const sent = sendMessage(activeId, content, requestId)
 
     if (!sent) {
       setNotice('Connecting to Recho…')
@@ -237,6 +245,7 @@ export function ChatPage() {
       content,
       created_at: now,
       updated_at: now,
+      request_id: requestId,
     }
 
     setMessages((current) => [

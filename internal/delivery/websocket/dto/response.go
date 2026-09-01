@@ -8,8 +8,9 @@ import (
 )
 
 type WSResponse struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
+	Type      string    `json:"type"`
+	RequestID uuid.UUID `json:"request_id"`
+	Data      any       `json:"data"`
 }
 
 type ErrorResponse struct {
