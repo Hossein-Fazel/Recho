@@ -1,0 +1,18 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Go
+Recho
+recho
+*.test
+
+# Frontend
+UI/node_modules
+UI/dist
+
+# Misc
+*.md
+LICENSE
