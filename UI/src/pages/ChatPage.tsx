@@ -20,6 +20,7 @@ export function ChatPage() {
   const [messageStatuses, setMessageStatuses] = useState<Map<number, 'sending' | 'sent'>>(new Map())
 
   const loadedFor = useRef<string | null>(null)
+  const pendingConvFetches = useRef<Set<string>>(new Set())
 
   const active = useMemo(
     () =>
@@ -106,40 +107,101 @@ export function ChatPage() {
 
   }, [activeId, nextMessageCursor, loadingMessages])
 
+  const applyIncomingToList = useCallback(
+    (list: Conversation[], incoming: Message) => {
+      const next = list.map((conversation) =>
+        conversation.conversation_id ===
+          incoming.conversation_id
+          ? {
+            ...conversation,
+            last_message_id: incoming.id,
+            last_message_content: incoming.content,
+            last_message_created_at:
+              incoming.created_at,
+            updated_at:
+              incoming.updated_at ||
+              incoming.created_at,
+          }
+          : conversation,
+      )
+
+      next.sort((a, b) => {
+        const timeA = new Date(
+          a.updated_at || a.last_message_created_at,
+        ).getTime()
+
+        const timeB = new Date(
+          b.updated_at || b.last_message_created_at,
+        ).getTime()
+
+        return timeB - timeA
+      })
+
+      return next
+    },
+    [],
+  )
+
+  // A message for a conversation we don't have cached yet (e.g. the very
+  // first message from someone new) can't be spliced into the sidebar with
+  // just the data the WS event carries — we don't know the sender's name,
+  // avatar, or whether it's a group. Fetch that conversation's info once,
+  // then prepend it to the list.
+  const hydrateUnknownConversation = useCallback(
+    (incoming: Message) => {
+      const conversationId = incoming.conversation_id
+
+      if (pendingConvFetches.current.has(conversationId)) {
+        return
+      }
+
+      pendingConvFetches.current.add(conversationId)
+
+      api
+        .conversation(conversationId)
+        .then((conversation) => {
+          setConversations((latest) => {
+            if (
+              latest.some(
+                (c) => c.conversation_id === conversationId,
+              )
+            ) {
+              return applyIncomingToList(latest, incoming)
+            }
+
+            return applyIncomingToList(
+              [conversation, ...latest],
+              incoming,
+            )
+          })
+        })
+        .catch(() => {
+          setNotice('Could not load the new conversation')
+        })
+        .finally(() => {
+          pendingConvFetches.current.delete(conversationId)
+        })
+    },
+    [applyIncomingToList],
+  )
+
   const { sendMessage } = useWebSocket({
     enabled: Boolean(user),
 
     onMessage: (incoming) => {
       setConversations((current) => {
-        const next = current.map((conversation) =>
-          conversation.conversation_id ===
-            incoming.conversation_id
-            ? {
-              ...conversation,
-              last_message_id: incoming.id,
-              last_message_content: incoming.content,
-              last_message_created_at:
-                incoming.created_at,
-              updated_at:
-                incoming.updated_at ||
-                incoming.created_at,
-            }
-            : conversation,
+        const exists = current.some(
+          (conversation) =>
+            conversation.conversation_id ===
+            incoming.conversation_id,
         )
 
-        next.sort((a, b) => {
-          const timeA = new Date(
-            a.updated_at || a.last_message_created_at,
-          ).getTime()
+        if (!exists) {
+          hydrateUnknownConversation(incoming)
+          return current
+        }
 
-          const timeB = new Date(
-            b.updated_at || b.last_message_created_at,
-          ).getTime()
-
-          return timeB - timeA
-        })
-
-        return next
+        return applyIncomingToList(current, incoming)
       })
 
       if (incoming.conversation_id !== loadedFor.current) {

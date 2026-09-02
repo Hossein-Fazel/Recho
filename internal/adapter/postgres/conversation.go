@@ -95,6 +95,49 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 	return convList, nil
 }
 
+func (r *Conversation) GetConversationByID(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID) (*model.UserConversation, error) {
+	if userID == uuid.Nil || conversationID == uuid.Nil {
+		return nil, apperr.InvalidInput("conversation repo", "invalid id", nil)
+	}
+
+	conv, err := r.sql.GetConversationByID(
+		ctx,
+		sqlc.GetConversationByIDParams{
+			UserID:         userID,
+			ConversationID: conversationID,
+		},
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"Conversation repo",
+				"conversation not found",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("Conversation repo", err)
+	}
+
+	uID, _ := uuid.Parse(conv.UserID.String())
+
+	return &model.UserConversation{
+		ConversationID:       conv.ConversationID,
+		ConversationType:     conv.ConversationType,
+		UserID:               uID,
+		Username:             conv.Username.String,
+		DisplayName:          conv.DisplayName.String,
+		AvatarUrl:            conv.AvatarUrl.String,
+		GroupName:            conv.GroupName.String,
+		GroupAvatarUrl:       conv.GroupAvatarUrl.String,
+		LastMessageID:        conv.LastMessageID.Int64,
+		LastMessageContent:   conv.LastMessageContent.String,
+		LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
+		UpdatedAt:            conv.UpdatedAt,
+	}, nil
+}
+
 func (r *Conversation) GetDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
 	conversationID, err := r.sql.GetDirectConversation(ctx, sqlc.GetDirectConversationParams{
 		UserOneID: userOneID,
