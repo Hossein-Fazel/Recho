@@ -2,7 +2,6 @@ package websocket
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/websocket/dto"
@@ -39,7 +38,6 @@ func (h *Hub) Run() {
 			response := createResponse(deliver)
 			for _, reciever := range deliver.Recievers {
 				for _, client := range h.Clients[reciever] {
-					fmt.Print("message sent to user ", client.UserID, deliver)
 					client.Send <- response
 				}
 			}

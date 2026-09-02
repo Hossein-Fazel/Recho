@@ -64,7 +64,7 @@ func (q *Queries) DeleteMessage(ctx context.Context, arg DeleteMessageParams) er
 const updateMessage = `-- name: UpdateMessage :one
 UPDATE messages
 SET content = $1,
-    update_at = NOW()
+    updated_at = NOW()
 WHERE message_id = $2 and conversation_id = $3 and sender_id = $4
 RETURNING updated_at
 `

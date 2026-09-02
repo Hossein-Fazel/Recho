@@ -75,7 +75,7 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 }
 
 func (m *Message) Delete(ctx context.Context, msg model.Message) error {
-	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil || msg.Content == "" {
+	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil {
 		return apperr.InvalidInput("message repo", "invalid message", nil)
 	}
 

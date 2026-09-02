@@ -113,6 +113,25 @@ func (c *Client) ReadPump() {
 				}
 			}
 
+		case string(model.MessageDeleteEvent):
+			var msg dto.MessageDeleteRequest
+			if err := json.Unmarshal(income.Payload, &msg); err != nil {
+				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", err))
+				continue
+			}
+
+			if err := c.MessageDelivery.HandleDeleteMessage(income.RequestID, model.Message{
+				ID:             msg.MessageID,
+				ConversationID: msg.ConversationID,
+				SenderID:       c.UserID,
+			}); err != nil {
+				if appErr, ok := err.(*apperr.AppError); ok {
+					c.Send <- makeError(*appErr)
+				} else {
+					c.Send <- makeError(*apperr.Internal("websocket", err))
+				}
+			}
+
 		default:
 			continue
 		}

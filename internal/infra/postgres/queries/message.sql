@@ -14,7 +14,7 @@ RETURNING message_id, created_at, updated_at;
 -- name: UpdateMessage :one
 UPDATE messages
 SET content = sqlc.arg(msgText),
-    update_at = NOW()
+    updated_at = NOW()
 WHERE message_id = sqlc.arg(message_id) and conversation_id = sqlc.arg(conversation_id) and sender_id = sqlc.arg(user_id)
 RETURNING updated_at;
 
