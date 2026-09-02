@@ -26,7 +26,7 @@ definitions:
       last_message_created_at:
         type: string
       last_message_id:
-        type: string
+        type: integer
       updated_at:
         type: string
       user_id:
@@ -272,6 +272,49 @@ paths:
             $ref: '#/definitions/dto.ErrResponse'
       summary: if a DC exists between two users return it's id else create a new one
         and then return it's id
+      tags:
+      - conversation
+  /api/conversation/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 'Returns info about one conversation the caller belongs to: for
+        a direct chat this includes the other user''s username, display name and avatar;
+        for a group it includes the group name and avatar. Useful when a client receives
+        a message for a conversation it doesn''t have cached yet (e.g. a first message
+        from a new person) and needs to render it in the chat list.'
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Conversation'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a single conversation's info
       tags:
       - conversation
   /api/conversations/:
