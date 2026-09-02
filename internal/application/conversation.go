@@ -70,6 +70,19 @@ func (c *ConverasionService) GetUserConversations(ctx context.Context, userID uu
 	return list, newCursor, nil
 }
 
+func (c *ConverasionService) GetConversationByID(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID) (*model.UserConversation, error) {
+	if userID == uuid.Nil || conversationID == uuid.Nil {
+		return nil, apperr.InvalidInput("conversation service", "conversation id is required", nil)
+	}
+
+	conv, err := c.ConversationRepo.GetConversationByID(ctx, userID, conversationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return conv, nil
+}
+
 func (c *ConverasionService) GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
 	pkg.Logger.Info().
 		Str("user 1", userOneID.String()).
