@@ -86,7 +86,12 @@ func createResponse(v application.SendItems) []byte {
 	switch v.Event {
 	case model.MessageCreateEvent:
 		if msg, ok := v.Content.(model.Message); ok {
-			response.Data = dto.ToMessageCreatedResponse(msg)
+			response.Data = dto.ToMessageCreateResponse(msg)
+		}
+	
+	case model.MessageEditEvent:
+		if msg, ok := v.Content.(model.Message); ok {
+			response.Data = dto.ToMessageEditResponse(msg)
 		}
 	}
 

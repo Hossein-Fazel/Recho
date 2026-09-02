@@ -17,3 +17,10 @@ type MessageCreateRequest struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
 	SenderID       uuid.UUID `json:"sender_id"`
 }
+
+type MessageUpdateRequest struct {
+	MessageID      int64     `json:"message_id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+	SenderID       uuid.UUID `json:"sender_id"`
+	Content        string    `json:"content"`
+}

@@ -44,3 +44,30 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (C
 	err := row.Scan(&i.MessageID, &i.CreatedAt, &i.UpdatedAt)
 	return i, err
 }
+
+const updateMessage = `-- name: UpdateMessage :one
+UPDATE messages
+SET content = $1,
+    update_at = NOW()
+WHERE message_id = $2 and conversation_id = $3 and sender_id = $4
+RETURNING updated_at
+`
+
+type UpdateMessageParams struct {
+	Msgtext        string
+	MessageID      int64
+	ConversationID uuid.UUID
+	UserID         uuid.UUID
+}
+
+func (q *Queries) UpdateMessage(ctx context.Context, arg UpdateMessageParams) (time.Time, error) {
+	row := q.db.QueryRow(ctx, updateMessage,
+		arg.Msgtext,
+		arg.MessageID,
+		arg.ConversationID,
+		arg.UserID,
+	)
+	var updated_at time.Time
+	err := row.Scan(&updated_at)
+	return updated_at, err
+}

@@ -74,7 +74,7 @@ func (c *Client) ReadPump() {
 		}
 
 		switch income.Type {
-		case "message.create":
+		case string(model.MessageCreateEvent):
 			var msg dto.MessageCreateRequest
 			if err := json.Unmarshal(income.Payload, &msg); err != nil {
 				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", err))
@@ -82,6 +82,26 @@ func (c *Client) ReadPump() {
 			}
 
 			if err := c.MessageDelivery.HandleCreateMessage(income.RequestID, model.Message{
+				ConversationID: msg.ConversationID,
+				SenderID:       c.UserID,
+				Content:        msg.Content,
+			}); err != nil {
+				if appErr, ok := err.(*apperr.AppError); ok {
+					c.Send <- makeError(*appErr)
+				} else {
+					c.Send <- makeError(*apperr.Internal("websocket", err))
+				}
+			}
+
+		case string(model.MessageEditEvent):
+			var msg dto.MessageUpdateRequest
+			if err := json.Unmarshal(income.Payload, &msg); err != nil {
+				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", err))
+				continue
+			}
+
+			if err := c.MessageDelivery.HandleEditMessage(income.RequestID, model.Message{
+				ID:             msg.MessageID,
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
 				Content:        msg.Content,
