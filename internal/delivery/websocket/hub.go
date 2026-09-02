@@ -2,23 +2,19 @@ package websocket
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/websocket/dto"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/google/uuid"
 )
 
-type deliverModel struct {
-	reqID     uuid.UUID
-	content   any
-	receivers uuid.UUIDs
-}
-
 type Hub struct {
 	Clients    map[uuid.UUID][]*Client
 	Register   chan *Client
 	Unregister chan *Client
-	Deliver    chan deliverModel
+	Deliver    chan application.SendItems
 }
 
 func NewHub() *Hub {
@@ -26,7 +22,7 @@ func NewHub() *Hub {
 		Clients:    make(map[uuid.UUID][]*Client),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
-		Deliver:    make(chan deliverModel),
+		Deliver:    make(chan application.SendItems),
 	}
 }
 
@@ -41,8 +37,9 @@ func (h *Hub) Run() {
 
 		case deliver := <-h.Deliver:
 			response := createResponse(deliver)
-			for _, receiver := range deliver.receivers {
-				for _, client := range h.Clients[receiver] {
+			for _, reciever := range deliver.Recievers {
+				for _, client := range h.Clients[reciever] {
+					fmt.Print("message sent to user ", client.UserID, deliver)
 					client.Send <- response
 				}
 			}
@@ -77,20 +74,20 @@ func (h *Hub) unregisterClient(client *Client) {
 	close(client.Send)
 }
 
-func (h *Hub) Send(reqID uuid.UUID, v any, receivers uuid.UUIDs) {
-	h.Deliver <- deliverModel{
-		reqID: reqID,
-		content:   v,
-		receivers: receivers,
-	}
+func (h *Hub) Send(params application.SendItems) {
+	h.Deliver <- params
 }
 
-func createResponse(v deliverModel) []byte {
+func createResponse(v application.SendItems) []byte {
 	var response dto.WSResponse
-	response.RequestID = v.reqID
-	if msg, ok := v.content.(model.Message); ok {
-		response.Type = "message.created"
-		response.Data = dto.ToMessageCreatedResponse(msg)
+	response.RequestID = v.RequestID
+	response.Type = string(v.Event)
+
+	switch v.Event {
+	case model.MessageCreateEvent:
+		if msg, ok := v.Content.(model.Message); ok {
+			response.Data = dto.ToMessageCreatedResponse(msg)
+		}
 	}
 
 	res, _ := json.Marshal(response)
