@@ -25,6 +25,7 @@ func NewConversationHandler(convSvc *application.ConverasionService) *Conversati
 func (h *ConversationHandler) RegisterRoutes(g *echo.Group) {
 	g.GET("/", h.GetUserConversations)
 	g.POST("/", h.GetorCreateDirectConversation)
+	g.GET("/:id", h.GetConversationByID)
 	g.GET("/:id/messages", h.GetConversationMessages)
 }
 
@@ -121,6 +122,43 @@ func (h *ConversationHandler) GetorCreateDirectConversation(c echo.Context) erro
 			ConversationID: conversationID,
 		},
 	)
+}
+
+// GetConversationByID godoc
+// @Summary Get a single conversation's info
+// @Description Returns info about one conversation the caller belongs to: for a direct chat this includes the other user's username, display name and avatar; for a group it includes the group name and avatar. Useful when a client receives a message for a conversation it doesn't have cached yet (e.g. a first message from a new person) and needs to render it in the chat list.
+// @Tags conversation
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Conversation ID"
+// @Success 200 {object} dto.Conversation
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/conversation/{id} [get]
+func (h *ConversationHandler) GetConversationByID(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	conversationID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid conversation id", err)
+	}
+
+	conversation, err := h.convSvc.GetConversationByID(
+		c.Request().Context(),
+		userID,
+		conversationID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, conv2convRes(conversation))
 }
 
 // GetConversationMessages godoc
