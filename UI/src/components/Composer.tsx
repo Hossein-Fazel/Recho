@@ -9,20 +9,46 @@ import { EmojiPicker } from './EmojiPicker'
 type ComposerProps = {
   disabled: boolean
   onSend: (content: string) => void
+  editing: { id: number; content: string } | null
+  onCancelEdit: () => void
 }
 
-export function Composer({ disabled, onSend }: ComposerProps) {
+export function Composer({
+  disabled,
+  onSend,
+  editing,
+  onCancelEdit,
+}: ComposerProps) {
   const [value, setValue] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiToggleRef = useRef<HTMLButtonElement>(null)
   const valueRef = useRef('')
   const cursorPos = useRef(0)
+  const editingRef = useRef<typeof editing>(null)
 
   function setMessage(next: string) {
     valueRef.current = next
     setValue(next)
   }
+
+  // When an edit is requested, prefill the composer with the message and
+  // focus it (Telegram-style).
+  useEffect(() => {
+    editingRef.current = editing
+    if (editing) {
+      setMessage(editing.content)
+      cursorPos.current = editing.content.length
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current
+        textarea?.focus()
+        textarea?.setSelectionRange(
+          editing.content.length,
+          editing.content.length,
+        )
+      })
+    }
+  }, [editing])
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -67,8 +93,44 @@ export function Composer({ disabled, onSend }: ComposerProps) {
     setPickerOpen(false)
   }
 
+  function cancelEdit() {
+    editingRef.current = null
+    setMessage('')
+    cursorPos.current = 0
+    setPickerOpen(false)
+    onCancelEdit()
+  }
+
+  const placeholder = disabled
+    ? 'Choose a conversation'
+    : editing
+      ? 'Edit message…'
+      : 'Write a message…'
+
   return (
     <div className="composer">
+      {editing ? (
+        <div className="edit-banner">
+          <button
+            type="button"
+            className="edit-banner-cancel"
+            onClick={cancelEdit}
+            aria-label="Cancel edit"
+            title="Cancel edit"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+          <div className="edit-banner-text">
+            <span className="edit-banner-label">Editing message</span>
+            <span className="edit-banner-preview">
+              {editing.content}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       <form
         className="composer-form"
         onSubmit={(event) => {
@@ -97,7 +159,7 @@ export function Composer({ disabled, onSend }: ComposerProps) {
           <textarea
             ref={textareaRef}
             rows={1}
-            placeholder={disabled ? 'Choose a conversation' : 'Write a message…'}
+            placeholder={placeholder}
             value={value}
             disabled={disabled}
             onChange={(e) => {
@@ -114,6 +176,10 @@ export function Composer({ disabled, onSend }: ComposerProps) {
                 e.preventDefault()
                 submit()
               }
+              if (e.key === 'Escape' && editing) {
+                e.preventDefault()
+                cancelEdit()
+              }
             }}
             aria-label="Message"
           />
@@ -121,8 +187,8 @@ export function Composer({ disabled, onSend }: ComposerProps) {
             className="send"
             type="submit"
             disabled={disabled || !value.trim()}
-            aria-label="Send message"
-            title="Send message"
+            aria-label={editing ? 'Save edit' : 'Send message'}
+            title={editing ? 'Save edit' : 'Send message'}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m5 12 14-7-4 14-3.2-5.8L5 12Z" />

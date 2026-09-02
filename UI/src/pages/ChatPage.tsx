@@ -18,6 +18,8 @@ export function ChatPage() {
   const [mobileChat, setMobileChat] = useState(false)
   const [notice, setNotice] = useState('')
   const [messageStatuses, setMessageStatuses] = useState<Map<number, 'sending' | 'sent'>>(new Map())
+  const [editing, setEditing] = useState<{ id: number; content: string } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Message | null>(null)
 
   const loadedFor = useRef<string | null>(null)
   const pendingConvFetches = useRef<Set<string>>(new Set())
@@ -185,7 +187,11 @@ export function ChatPage() {
     [applyIncomingToList],
   )
 
-  const { sendMessage } = useWebSocket({
+  const {
+    sendMessage,
+    sendEditMessage,
+    sendDeleteMessage,
+  } = useWebSocket({
     enabled: Boolean(user),
 
     onMessage: (incoming) => {
@@ -236,13 +242,77 @@ export function ChatPage() {
       })
     },
 
+    onMessageEdited: (edited) => {
+      // If a message in the active thread was edited, update it in place.
+      if (edited.conversation_id === loadedFor.current) {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === edited.id
+              ? {
+                  ...message,
+                  content: edited.content,
+                  updated_at: edited.updated_at,
+                  edited: true,
+                }
+              : message,
+          ),
+        )
+      }
 
+      // Update the sidebar last-message preview if needed.
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.conversation_id === edited.conversation_id &&
+          conversation.last_message_id === edited.id
+            ? { ...conversation, last_message_content: edited.content }
+            : conversation,
+        ),
+      )
+    },
+
+    onMessageDeleted: (deleted) => {
+      if (deleted.conversation_id === loadedFor.current) {
+        setMessages((current) => {
+          const remaining = current.filter(
+            (message) => message.id !== deleted.id,
+          )
+
+          const last = remaining[remaining.length - 1]
+          if (last) {
+            setConversations((convs) =>
+              convs.map((conversation) =>
+                conversation.conversation_id === deleted.conversation_id
+                  ? {
+                      ...conversation,
+                      last_message_id: last.id,
+                      last_message_content: last.content,
+                      last_message_created_at: last.created_at,
+                      updated_at: last.updated_at,
+                    }
+                  : conversation,
+              ),
+            )
+          }
+
+          return remaining
+        })
+      } else {
+        // The deleted message was in another conversation; mark the list
+        // stale by reloading conversations.
+        void refreshConversations()
+      }
+    },
+
+    onError: (message) => {
+      setNotice(message)
+    },
   })
 
   function selectConversation(conversation: Conversation) {
     setActiveId(conversation.conversation_id)
     setMobileChat(true)
     setNotice('')
+    setEditing(null)
   }
 
   function onCreated(
@@ -291,6 +361,52 @@ export function ChatPage() {
 
     const requestId = crypto.randomUUID()
 
+    // If we're editing a message, send the edit instead of a new message.
+    if (editing) {
+      setNotice('')
+
+      const sent = sendEditMessage(
+        activeId,
+        editing.id,
+        content,
+        requestId,
+      )
+
+      if (!sent) {
+        setNotice('Connecting to Recho…')
+        return
+      }
+
+      // Optimistically update the edited message in place.
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === editing.id
+            ? {
+                ...message,
+                content,
+                updated_at: new Date().toISOString(),
+                edited: true,
+              }
+            : message,
+        ),
+      )
+
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.conversation_id === activeId &&
+          conversation.last_message_id === editing.id
+            ? {
+                ...conversation,
+                last_message_content: content,
+              }
+            : conversation,
+        ),
+      )
+
+      setEditing(null)
+      return
+    }
+
     const sent = sendMessage(activeId, content, requestId)
 
     if (!sent) {
@@ -337,6 +453,41 @@ export function ChatPage() {
 
   }
 
+  function startEdit(message: Message) {
+    if (message.id < 0 || message.sender_id !== user?.id) return
+    setEditing({ id: message.id, content: message.content })
+  }
+
+  function cancelEdit() {
+    setEditing(null)
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete || !activeId) {
+      setPendingDelete(null)
+      return
+    }
+
+    const requestId = crypto.randomUUID()
+    const sent = sendDeleteMessage(
+      activeId,
+      pendingDelete.id,
+      requestId,
+    )
+
+    setPendingDelete(null)
+
+    if (!sent) {
+      setNotice('Connecting to Recho…')
+      return
+    }
+
+    // Optimistically remove the message.
+    setMessages((current) =>
+      current.filter((message) => message.id !== pendingDelete.id),
+    )
+  }
+
   if (!user) {
     return null
   }
@@ -372,13 +523,42 @@ export function ChatPage() {
           loading={loadingMessages}
           onLoadMore={() => void loadMore()}
           onBack={() => setMobileChat(false)}
+          onEdit={startEdit}
+          onDelete={setPendingDelete}
         />
 
         <Composer
           disabled={!activeId}
           onSend={send}
+          editing={editing}
+          onCancelEdit={cancelEdit}
         />
       </main>
+
+      {pendingDelete ? (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h3>Delete message?</h3>
+            <p>This message will be deleted for everyone.</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => setPendingDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
 
   )

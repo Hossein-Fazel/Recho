@@ -1,7 +1,17 @@
 package application
 
-import "github.com/google/uuid"
+import (
+	"github.com/Hossein-Fazel/Recho/internal/model"
+	"github.com/google/uuid"
+)
+
+type SendItems struct {
+	RequestID uuid.UUID
+	Event     model.Event
+	Content   any
+	Recievers uuid.UUIDs
+}
 
 type Sender interface {
-	Send(reqID uuid.UUID, v any, receivers uuid.UUIDs)
+	Send(items SendItems)
 }

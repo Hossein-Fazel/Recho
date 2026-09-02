@@ -55,6 +55,7 @@ export type Message = {
   created_at: string
   updated_at: string
   request_id?: string
+  edited?: boolean
 }
 
 export type GetConversationMessagesResponse = {
@@ -69,3 +70,19 @@ export type WSResponse = {
 }
 
 export type MessageCreated = Message
+
+export type MessageEdited = Message & {
+  request_id?: string
+}
+
+export type MessageDeleted = {
+  id: number
+  conversation_id: string
+  request_id?: string
+}
+
+export type WSEvent =
+  | { type: 'message.create'; request_id: string; data: MessageCreated }
+  | { type: 'message.edit'; request_id: string; data: MessageEdited }
+  | { type: 'message.delete'; request_id: string; data: MessageDeleted }
+  | { type: 'error'; request_id: string; data: { code: number; message: string } }

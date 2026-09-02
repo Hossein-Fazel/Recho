@@ -37,4 +37,6 @@ type ConversationRepo interface {
 
 type MessaageRepo interface {
 	Create(ctx context.Context, msg model.Message) (*model.Message, error)
+	Update(ctx context.Context, msg model.Message) (*model.Message, error)
+	Delete(ctx context.Context, msg model.Message) error
 }

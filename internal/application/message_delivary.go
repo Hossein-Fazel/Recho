@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+
 	"github.com/google/uuid"
 
 	"github.com/Hossein-Fazel/Recho/internal/model"
@@ -21,7 +22,7 @@ func NewMessageDelivery(msgService *MessageService, convService *ConverasionServ
 	}
 }
 
-func (d *MessageDelivery) HandleMessage(reqID uuid.UUID, msg model.Message) error {
+func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message) error {
 	ctx := context.Background()
 	message, err := d.msgService.Create(ctx, msg)
 	if err != nil {
@@ -33,6 +34,53 @@ func (d *MessageDelivery) HandleMessage(reqID uuid.UUID, msg model.Message) erro
 		return err
 	}
 
-	d.Sender.Send(reqID, *message, userIDs)
+	d.Sender.Send(SendItems{
+		RequestID: reqID,
+		Event:     model.MessageCreateEvent,
+		Content:   message,
+		Recievers: userIDs,
+	})
+	return nil
+}
+
+func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) error {
+	ctx := context.Background()
+	message, err := d.msgService.Update(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	userIDs, err := d.convService.GetConversationUsers(ctx, msg.SenderID, msg.ConversationID)
+	if err != nil {
+		return err
+	}
+
+	d.Sender.Send(SendItems{
+		RequestID: reqID,
+		Event:     model.MessageEditEvent,
+		Content:   message,
+		Recievers: userIDs,
+	})
+	return nil
+}
+
+func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message) error {
+	ctx := context.Background()
+	err := d.msgService.Delete(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	userIDs, err := d.convService.GetConversationUsers(ctx, msg.SenderID, msg.ConversationID)
+	if err != nil {
+		return err
+	}
+
+	d.Sender.Send(SendItems{
+		RequestID: reqID,
+		Event:     model.MessageDeleteEvent,
+		Content:   msg,
+		Recievers: userIDs,
+	})
 	return nil
 }
