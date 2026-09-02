@@ -1076,6 +1076,252 @@ textarea:focus {
 }
 
 /* -------------------------------------------------- */
+/* Context menu */
+/* -------------------------------------------------- */
+
+.context-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  animation: menu-pop 120ms ease;
+  transform-origin: top right;
+}
+
+:root[data-theme='light'] .context-menu {
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+}
+
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.context-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.86rem;
+  text-align: left;
+  transition: background 120ms ease;
+}
+
+.context-item:hover {
+  background: var(--surface-3);
+}
+
+.context-item svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.context-item.danger {
+  color: var(--danger);
+}
+
+.context-item.danger:hover {
+  background: rgba(220, 38, 38, 0.12);
+}
+
+/* -------------------------------------------------- */
+/* Edited tag */
+/* -------------------------------------------------- */
+
+.edited-tag {
+  color: rgba(248, 250, 252, 0.45);
+  font-size: 0.62em;
+  font-style: italic;
+}
+
+:root[data-theme='light'] .bubble:not(.mine) .edited-tag {
+  color: var(--muted-2);
+}
+
+/* -------------------------------------------------- */
+/* Edit banner */
+/* -------------------------------------------------- */
+
+.edit-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 4px 8px 18px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.edit-banner-cancel {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.edit-banner-cancel:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.edit-banner-cancel svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.edit-banner-text {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.edit-banner-label {
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.edit-banner-preview {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------- */
+/* Delete modal */
+/* -------------------------------------------------- */
+
+.modal-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(4, 8, 16, 0.6);
+  animation: overlay-fade 160ms ease;
+}
+
+:root[data-theme='light'] .modal-overlay {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+@keyframes overlay-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  width: min(360px, 100%);
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  animation: modal-pop 160ms ease;
+}
+
+:root[data-theme='light'] .modal {
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.modal h3 {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.modal p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ghost-btn,
+.danger-btn {
+  min-width: 84px;
+  padding: 9px 14px;
+  border-radius: 11px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  transition: 150ms ease;
+}
+
+.ghost-btn {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.ghost-btn:hover {
+  background: var(--border);
+}
+
+.danger-btn {
+  background: var(--danger);
+  color: #1a0b0b;
+}
+
+.danger-btn:hover {
+  filter: brightness(1.08);
+}
+
+/* -------------------------------------------------- */
 /* Toast */
 /* -------------------------------------------------- */
 

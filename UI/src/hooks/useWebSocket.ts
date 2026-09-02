@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MessageCreated, WSResponse } from '../lib/types'
+import type {
+  MessageCreated,
+  MessageDeleted,
+  MessageEdited,
+  WSResponse,
+} from '../lib/types'
 
 type Handlers = {
   onMessage: (message: MessageCreated) => void
+  onMessageEdited: (message: MessageEdited) => void
+  onMessageDeleted: (deleted: MessageDeleted) => void
+  onError: (message: string) => void
   enabled: boolean
 }
 
@@ -11,8 +19,17 @@ export type WebSocketStatus =
   | 'connected'
   | 'disconnected'
 
-export function useWebSocket({ onMessage, enabled }: Handlers) {
+export function useWebSocket({
+  onMessage,
+  onMessageEdited,
+  onMessageDeleted,
+  onError,
+  enabled,
+}: Handlers) {
   const onMessageRef = useRef(onMessage)
+  const onMessageEditedRef = useRef(onMessageEdited)
+  const onMessageDeletedRef = useRef(onMessageDeleted)
+  const onErrorRef = useRef(onError)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(false)
@@ -22,6 +39,9 @@ export function useWebSocket({ onMessage, enabled }: Handlers) {
   )
 
   onMessageRef.current = onMessage
+  onMessageEditedRef.current = onMessageEdited
+  onMessageDeletedRef.current = onMessageDeleted
+  onErrorRef.current = onError
 
   useEffect(() => {
     if (!enabled) {
@@ -73,17 +93,39 @@ export function useWebSocket({ onMessage, enabled }: Handlers) {
       socket.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data as string) as WSResponse
-          const data = payload.data as MessageCreated | undefined
+          const type = payload.type
+          const data = payload.data as Record<string, unknown>
 
-          if (
-            (payload.type === 'message.created' || !payload.type) &&
-            data?.conversation_id &&
-            data.content
-          ) {
-            onMessageRef.current({
-              ...data,
-              request_id: payload.request_id,
-            })
+          if (type === 'message.create' && data) {
+            const message = data as MessageCreated
+            if (message.conversation_id && message.content) {
+              onMessageRef.current({
+                ...message,
+                request_id: payload.request_id,
+              })
+            }
+          } else if (type === 'message.edit' && data) {
+            const message = data as MessageEdited
+            if (message.conversation_id && message.content) {
+              onMessageEditedRef.current({
+                ...message,
+                request_id: payload.request_id,
+              })
+            }
+          } else if (type === 'message.delete' && data) {
+            const deleted = data as MessageDeleted
+            if (deleted.id && deleted.conversation_id) {
+              onMessageDeletedRef.current({
+                id: deleted.id,
+                conversation_id: deleted.conversation_id,
+                request_id: payload.request_id,
+              })
+            }
+          } else if (type === 'error' && data) {
+            const err = data as { message?: string }
+            if (err.message) {
+              onErrorRef.current(err.message)
+            }
           }
         } catch {
           // Ignore malformed WebSocket frames.
@@ -137,30 +179,69 @@ export function useWebSocket({ onMessage, enabled }: Handlers) {
     content: string,
     requestId: string,
   ): boolean {
-    const socket = socketRef.current
-
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      return false
-    }
-
-    socket.send(
-      JSON.stringify({
+    return send(
+      {
         type: 'message.create',
         request_id: requestId,
         payload: {
           content,
           conversation_id: conversationId,
         },
-      }),
+      },
     )
+  }
 
+  function sendEditMessage(
+    conversationId: string,
+    messageId: number,
+    content: string,
+    requestId: string,
+  ): boolean {
+    return send(
+      {
+        type: 'message.edit',
+        request_id: requestId,
+        payload: {
+          message_id: messageId,
+          conversation_id: conversationId,
+          content,
+        },
+      },
+    )
+  }
+
+  function sendDeleteMessage(
+    conversationId: string,
+    messageId: number,
+    requestId: string,
+  ): boolean {
+    return send(
+      {
+        type: 'message.delete',
+        request_id: requestId,
+        payload: {
+          message_id: messageId,
+          conversation_id: conversationId,
+        },
+      },
+    )
+  }
+
+  function send(payload: unknown): boolean {
+    const socket = socketRef.current
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return false
+    }
+
+    socket.send(JSON.stringify(payload))
     return true
-
-
   }
 
   return {
     sendMessage,
+    sendEditMessage,
+    sendDeleteMessage,
     status,
     isConnected: status === 'connected',
   }
