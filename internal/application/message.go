@@ -65,3 +65,21 @@ func (m *MessageService) Update(ctx context.Context, msg model.Message) (*model.
 	}
 	return newMsg, nil
 }
+
+func (m *MessageService) Delete(ctx context.Context, msg model.Message) error {
+	msg.Content = strings.TrimSpace(msg.Content)
+	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil || msg.Content == "" {
+		return apperr.InvalidInput("message repo", "invalid message", nil)
+	}
+
+	isMember, err := m.convRepo.IsConversationMember(ctx, msg.SenderID, msg.ConversationID)
+	if err != nil {
+		return err
+	}
+
+	if !isMember {
+		return apperr.NotFound("message service", "Conversation not found", nil)
+	}
+
+	return m.msgRepo.Delete(ctx, msg)	
+}

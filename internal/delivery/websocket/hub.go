@@ -88,10 +88,18 @@ func createResponse(v application.SendItems) []byte {
 		if msg, ok := v.Content.(model.Message); ok {
 			response.Data = dto.ToMessageCreateResponse(msg)
 		}
-	
+
 	case model.MessageEditEvent:
 		if msg, ok := v.Content.(model.Message); ok {
 			response.Data = dto.ToMessageEditResponse(msg)
+		}
+
+	case model.MessageDeleteEvent:
+		if msg, ok := v.Content.(model.Message); ok {
+			response.Data = dto.MessageDeleteResponse{
+				ID:             msg.ID,
+				ConversationID: msg.ConversationID,
+			}
 		}
 	}
 

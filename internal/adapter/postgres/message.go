@@ -73,3 +73,29 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 	msg.UpdatedAt = newTime
 	return &msg, nil
 }
+
+func (m *Message) Delete(ctx context.Context, msg model.Message) error {
+	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil || msg.Content == "" {
+		return apperr.InvalidInput("message repo", "invalid message", nil)
+	}
+
+	err := m.sql.DeleteMessage(ctx, sqlc.DeleteMessageParams{
+		MessageID:      msg.ID,
+		ConversationID: msg.ConversationID,
+		UserID:         msg.SenderID,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return apperr.NotFound(
+				"message repo",
+				"message not found",
+				err,
+			)
+		}
+
+		return apperr.Internal("message repo", err)
+	}
+
+	return nil
+}

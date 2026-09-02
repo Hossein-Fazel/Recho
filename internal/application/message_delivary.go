@@ -63,3 +63,24 @@ func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) 
 	})
 	return nil
 }
+
+func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message) error {
+	ctx := context.Background()
+	err := d.msgService.Delete(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	userIDs, err := d.convService.GetConversationUsers(ctx, msg.SenderID, msg.ConversationID)
+	if err != nil {
+		return err
+	}
+
+	d.Sender.Send(SendItems{
+		RequestID: reqID,
+		Event:     model.MessageDeleteEvent,
+		Content:   msg,
+		Recievers: userIDs,
+	})
+	return nil
+}

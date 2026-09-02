@@ -57,3 +57,8 @@ func ToMessageEditResponse(msg model.Message) MessageEditResponse {
 		UpdatedAt:      msg.UpdatedAt,
 	}
 }
+
+type MessageDeleteResponse struct {
+	ID             int64     `json:"id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+}
