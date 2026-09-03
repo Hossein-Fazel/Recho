@@ -43,9 +43,7 @@ func Init(svcs Services, conf Config) *echo.Echo {
 
 	webServer := echo.New()
 	webServer.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:5173", "http://127.0.0.1:5173"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Content-Type"},
 		AllowCredentials: true,
 	}))
 
@@ -96,13 +94,16 @@ func Init(svcs Services, conf Config) *echo.Echo {
 	userHandler := api.NewUserHandler(svcs.User)
 	userHandler.RegisterRoutes(userGroup)
 
-	webServer.Static("/assets", "UI/dist/assets")
-	webServer.File("/favicon.svg", "UI/dist/favicon.svg")
-	webServer.File("/icons.svg", "UI/dist/icons.svg")
+	if !webServer.Debug {
+		pkg.Logger.Info().Msg("Serving frontend")
+		webServer.Static("/assets", "UI/dist/assets")
+		webServer.File("/favicon.svg", "UI/dist/favicon.svg")
+		webServer.File("/icons.svg", "UI/dist/icons.svg")
 
-	webServer.GET("*", func(c echo.Context) error {
-		return c.File("UI/dist/index.html")
-	})
+		webServer.GET("*", func(c echo.Context) error {
+			return c.File("UI/dist/index.html")
+		})
+	}
 
 	return webServer
 }
