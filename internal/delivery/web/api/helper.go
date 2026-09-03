@@ -9,25 +9,29 @@ const (
 	CtxUserID = "user_id"
 )
 
+func conv2convRes(conv *model.UserConversation) *dto.Conversation {
+	return &dto.Conversation{
+		ConversationID:       conv.ConversationID,
+		ConversationType:     conv.ConversationType,
+		UserID:               conv.UserID,
+		Username:             conv.Username,
+		DisplayName:          conv.DisplayName,
+		AvatarUrl:            conv.AvatarUrl,
+		GroupName:            conv.GroupName,
+		GroupAvatarUrl:       conv.GroupAvatarUrl,
+		LastMessageID:        conv.LastMessageID,
+		LastMessageContent:   conv.LastMessageContent,
+		LastMessageCreatedAt: conv.LastMessageCreatedAt,
+		UpdatedAt:            conv.UpdatedAt,
+	}
+}
+
 func convList2convListRes(convs []*model.UserConversation, next string) dto.UserConversationsResponse {
 	var res dto.UserConversationsResponse
 
 	res.NextCursor = next
 	for _, conv := range convs {
-		res.Conversations = append(res.Conversations, &dto.Conversation{
-			ConversationID:       conv.ConversationID,
-			ConversationType:     conv.ConversationType,
-			UserID:               conv.UserID,
-			Username:             conv.Username,
-			DisplayName:          conv.DisplayName,
-			AvatarUrl:            conv.AvatarUrl,
-			GroupName:            conv.GroupName,
-			GroupAvatarUrl:       conv.GroupAvatarUrl,
-			LastMessageID:        conv.LastMessageID,
-			LastMessageContent:   conv.LastMessageContent,
-			LastMessageCreatedAt: conv.LastMessageCreatedAt,
-			UpdatedAt:            conv.UpdatedAt,
-		})
+		res.Conversations = append(res.Conversations, conv2convRes(conv))
 	}
 
 	return res

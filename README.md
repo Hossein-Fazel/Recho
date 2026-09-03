@@ -2,7 +2,7 @@
 
 **Recho** is a realtime chat application built with a Go backend and a React (TypeScript) frontend. It provides user authentication, direct conversations, and realtime message delivery over WebSockets.
 
-![Go](https://img.shields.io/badge/Go1.26-00ADD8?style=for-the-badge&logo=go&logoColor=white) ![Echo](https://img.shields.io/badge/Echo-000000?style=for-the-badge&logo=go&logoColor=white) ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socketdotio&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white) ![Echo](https://img.shields.io/badge/Echo-000000?style=for-the-badge&logo=go&logoColor=white) ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ## Features
 
@@ -16,7 +16,7 @@
 
 ## Architecture
 
-Recho follows a clean architecture on the backend:
+Recho follows a clean/hexagonal architecture on the backend:
 
 ```
 internal/
@@ -57,21 +57,21 @@ Copy the example environment file and adjust the values as needed:
 cp .env.example .env
 ```
 
-| Variable                 | Description                                 | Default         |
-| ------------------------ | ------------------------------------------- | --------------- |
-| `POSTGRES_HOST`        | PostgreSQL host                             | `localhost`   |
-| `POSTGRES_PORT`        | PostgreSQL port                             | `5432`        |
-| `POSTGRES_USER`        | PostgreSQL username                         | `user`        |
-| `POSTGRES_PASSWORD`    | PostgreSQL password                         | `pass`        |
-| `POSTGRES_NAME`        | PostgreSQL database name                    | `DB_Name`     |
-| `POSTGRES_SSLMODE`     | PostgreSQL SSL mode                         | `disable`     |
-| `SERVER_PORT`          | Port the HTTP server listens on             | `8000`        |
-| `SERVER_SWAGGER_ROUTE` | Route prefix for Swagger UI (dev mode only) | `swagger`     |
-| `SERVER_MODE`          | `development` or `production`           | `development` |
-| `TOKEN_SECRET`         | Secret used to sign JWTs                    | `mysecret`    |
-| `TOKEN_ISSUER`         | JWT issuer claim                            | `Recho`       |
-| `TOKEN_RT_TTL`         | Refresh token time-to-live                  | `720h`        |
-| `TOKEN_AT_TTL`         | Access token time-to-live                   | `1h`          |
+| Variable                 | Description                                                                                                    | Default         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------- |
+| `POSTGRES_HOST`        | PostgreSQL host                                                                                                | `localhost`   |
+| `POSTGRES_PORT`        | PostgreSQL port                                                                                                | `5432`        |
+| `POSTGRES_USER`        | PostgreSQL username                                                                                            | `user`        |
+| `POSTGRES_PASSWORD`    | PostgreSQL password                                                                                            | `pass`        |
+| `POSTGRES_NAME`        | PostgreSQL database name                                                                                       | `DB_Name`     |
+| `POSTGRES_SSLMODE`     | PostgreSQL SSL mode                                                                                            | `disable`     |
+| `SERVER_PORT`          | Port the HTTP server listens on                                                                                | `8000`        |
+| `SERVER_SWAGGER_ROUTE` | Route prefix for Swagger UI (dev mode only)                                                                    | `swagger`     |
+| `SERVER_MODE`          | `development` (Swagger UI on, frontend not served) or `production` (Swagger UI off, built frontend served) | `development` |
+| `TOKEN_SECRET`         | Secret used to sign JWTs                                                                                       | `mysecret`    |
+| `TOKEN_ISSUER`         | JWT issuer claim                                                                                               | `Recho`       |
+| `TOKEN_RT_TTL`         | Refresh token time-to-live                                                                                     | `720h`        |
+| `TOKEN_AT_TTL`         | Access token time-to-live                                                                                      | `1h`          |
 
 > **Note:** Change `TOKEN_SECRET` and the database credentials before deploying anywhere beyond your local machine.
 
@@ -89,6 +89,8 @@ This single command:
 - Starts a PostgreSQL 17 container using the credentials from your `.env` file
 - Starts the `app` container once Postgres reports healthy, running database migrations automatically on boot
 - Serves the API and the built frontend together at `http://localhost:$SERVER_PORT` (default `http://localhost:8000`)
+
+> **Important:** the server only serves the built frontend (and disables Swagger UI) when `SERVER_MODE=production`. The default `.env.example` ships with `SERVER_MODE=development`, which is meant for Option B below. Set `SERVER_MODE=production` in your `.env` before running Option A, or the app container will serve the API only, with no frontend.
 
 Add `-d` to run in the background. To stop everything:
 
@@ -130,7 +132,7 @@ npm install
 npm run dev
 ```
 
-The Vite dev server runs on `http://localhost:5173` with hot reload, and is pre-configured (via CORS on the backend) to talk to the API.
+The Vite dev server runs on `http://localhost:5173` with hot reload. It proxies `/api` and `/ws` requests to the backend at `http://localhost:8000` (see `UI/vite.config.ts`), so the browser sees everything as same-origin and no CORS configuration is needed in development.
 
 #### Building for production (CLI)
 
@@ -145,25 +147,10 @@ make build
 
 `make build` compiles the Go binary and runs it, serving both the API (`/api/*`) and the built frontend (`UI/dist`) from a single process.
 
-## Available Make Targets
-
-| Target           | Description                                  |
-| ---------------- | -------------------------------------------- |
-| `make run`     | Run the server with`go run`                |
-| `make compile` | Compile the binary without running it        |
-| `make build`   | Clean, compile, and run the binary           |
-| `make test`    | Run the Go test suite                        |
-| `make clean`   | Remove build artifacts                       |
-| `make swag`    | Regenerate Swagger documentation             |
-| `make image`   | Build a Docker image from the`Dockerfile`  |
-| `make drun`    | Run the built Docker image                   |
-| `make dstop`   | Stop and remove the running Docker container |
-| `make help`    | List all available targets                   |
-
 ## Contributing
 
 Contributions are welcome. Please open an issue to discuss significant changes before submitting a pull request.
 
 ## License
 
-This project is licensed under the [MIT Licens](LICENSE)
+This project is licensed under the [MIT License](LICENSE).

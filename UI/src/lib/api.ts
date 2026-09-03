@@ -96,6 +96,10 @@ export const api = {
     return request<{ users: UserSearch[] | null }>(`/api/user/search?${params}`)
   },
 
+  conversation(conversationId: string) {
+    return request<Conversation>(`/api/conversation/${conversationId}`)
+  },
+
   openDirect(userId: string) {
     return request<{ conversation_id: string }>('/api/conversation/', {
       method: 'POST',

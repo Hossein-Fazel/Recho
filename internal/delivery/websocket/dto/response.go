@@ -18,7 +18,7 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-type MessageCreatedResponse struct {
+type MessageCreateResponse struct {
 	ID             int64     `json:"id"`
 	ConversationID uuid.UUID `json:"conversation_id"`
 	SenderID       uuid.UUID `json:"sender_id"`
@@ -27,8 +27,8 @@ type MessageCreatedResponse struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-func ToMessageCreatedResponse(msg model.Message) MessageCreatedResponse {
-	return MessageCreatedResponse{
+func ToMessageCreateResponse(msg model.Message) MessageCreateResponse {
+	return MessageCreateResponse{
 		ID:             msg.ID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
@@ -36,4 +36,29 @@ func ToMessageCreatedResponse(msg model.Message) MessageCreatedResponse {
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
+}
+
+type MessageEditResponse struct {
+	ID             int64     `json:"id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+	SenderID       uuid.UUID `json:"sender_id"`
+	Content        string    `json:"content"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+func ToMessageEditResponse(msg model.Message) MessageEditResponse {
+	return MessageEditResponse{
+		ID:             msg.ID,
+		ConversationID: msg.ConversationID,
+		SenderID:       msg.SenderID,
+		Content:        msg.Content,
+		CreatedAt:      msg.CreatedAt,
+		UpdatedAt:      msg.UpdatedAt,
+	}
+}
+
+type MessageDeleteResponse struct {
+	ID             int64     `json:"id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
 }

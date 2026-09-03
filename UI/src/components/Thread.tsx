@@ -1,4 +1,8 @@
-import { useEffect, useRef } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { Avatar } from './Avatar'
 import { displayName, formatMessageTime } from '../lib/format'
 import type { Conversation, Message, User } from '../lib/types'
@@ -12,7 +16,15 @@ type ThreadProps = {
   loading: boolean
   onLoadMore: () => void
   onBack: () => void
+  onEdit: (message: Message) => void
+  onDelete: (message: Message) => void
 }
+
+type MenuState = {
+  message: Message
+  x: number
+  y: number
+} | null
 
 export function Thread({
   user,
@@ -23,8 +35,13 @@ export function Thread({
   loading,
   onLoadMore,
   onBack,
+  onEdit,
+  onDelete,
 }: ThreadProps) {
   const scroller = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const [menu, setMenu] = useState<MenuState>(null)
 
   const stickToBottom = useRef(true)
   const previousConversation = useRef<string | null>(null)
@@ -66,8 +83,29 @@ export function Thread({
       el.scrollTop = el.scrollHeight
     }
 
-
   }, [messages])
+
+  // Close the context menu on outside click or Escape.
+  useEffect(() => {
+    if (!menu) return
+
+    function onClick(event: MouseEvent) {
+      if (menuRef.current?.contains(event.target as Node)) return
+      setMenu(null)
+    }
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMenu(null)
+    }
+
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menu])
 
   function onScroll() {
     const el = scroller.current
@@ -91,7 +129,19 @@ export function Thread({
       onLoadMore()
     }
 
+  }
 
+  function openMenu(
+    event: React.MouseEvent,
+    message: Message,
+  ) {
+    event.preventDefault()
+    setMenu({ message, x: event.clientX, y: event.clientY })
+  }
+
+  function copyMessage(message: Message) {
+    void navigator.clipboard.writeText(message.content)
+    setMenu(null)
   }
 
   if (!conversation) {
@@ -173,8 +223,14 @@ export function Thread({
             key={message.id}
             className={`bubble ${mine ? 'mine' : ''} ${stacked ? 'stacked' : ''
               }`}
+            onContextMenu={(event) => openMenu(event, message)}
           >
-            <p>{message.content}</p>
+            <p>
+              {message.content}
+              {message.edited ? (
+                <span className="edited-tag"> edited</span>
+              ) : null}
+            </p>
 
             <time className="bubble-time">
               {status !== 'sending' && (
@@ -224,6 +280,61 @@ export function Thread({
         )
       })}
     </div>
+
+    {menu ? (
+      <div
+        ref={menuRef}
+        className="context-menu"
+        style={{ top: menu.y, right: window.innerWidth - menu.x }}
+      >
+        <button
+          type="button"
+          className="context-item"
+          onClick={() => copyMessage(menu.message)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="9" y="9" width="11" height="11" rx="2" />
+            <path d="M5 15V6a1 1 0 0 1 1-1h9" />
+          </svg>
+          Copy message
+        </button>
+
+        {menu.message.sender_id === user.id ? (
+          <button
+            type="button"
+            className="context-item"
+            onClick={() => {
+              onEdit(menu.message)
+              setMenu(null)
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            </svg>
+            Edit
+          </button>
+        ) : null}
+
+        {menu.message.sender_id === user.id ? (
+          <button
+            type="button"
+            className="context-item danger"
+            onClick={() => {
+              onDelete(menu.message)
+              setMenu(null)
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M6 7l1 13h10l1-13" />
+              <path d="M9 7V4h6v3" />
+            </svg>
+            Delete
+          </button>
+        ) : null}
+      </div>
+    ) : null}
   </section>
 
   )

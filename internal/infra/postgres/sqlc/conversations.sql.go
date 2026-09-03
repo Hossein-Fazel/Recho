@@ -70,6 +70,100 @@ func (q *Queries) GetConvUsers(ctx context.Context, conversationID uuid.UUID) ([
 	return items, nil
 }
 
+const getConversationByID = `-- name: GetConversationByID :one
+
+SELECT
+    c.id AS conversation_id,
+
+    CASE
+        WHEN dc.conversation_id IS NOT NULL THEN 'direct'
+        ELSE 'group'
+    END AS conversation_type,
+
+    -- direct user
+    u.id AS user_id,
+    u.username,
+    u.display_name,
+    u.avatar_url,
+
+    -- group
+    g.name AS group_name,
+    g.avatar_url AS group_avatar_url,
+
+    -- last message
+    c.last_message_id,
+    c.last_message_content,
+    c.last_message_created_at,
+
+    c.updated_at
+
+FROM conversations c
+
+LEFT JOIN direct_conversations dc
+    ON dc.conversation_id = c.id
+
+LEFT JOIN users u
+    ON u.id = CASE
+        WHEN dc.user_one_id = $1 THEN dc.user_two_id
+        ELSE dc.user_one_id
+    END
+
+LEFT JOIN groups g
+    ON g.conversation_id = c.id
+
+LEFT JOIN group_members gm
+    ON gm.group_id = c.id
+    AND gm.user_id = $1
+
+WHERE
+    c.id = $2
+    AND (
+        dc.user_one_id = $1
+        OR dc.user_two_id = $1
+        OR gm.user_id IS NOT NULL
+    )
+`
+
+type GetConversationByIDParams struct {
+	UserID         uuid.UUID
+	ConversationID uuid.UUID
+}
+
+type GetConversationByIDRow struct {
+	ConversationID       uuid.UUID
+	ConversationType     string
+	UserID               pgtype.UUID
+	Username             pgtype.Text
+	DisplayName          pgtype.Text
+	AvatarUrl            pgtype.Text
+	GroupName            pgtype.Text
+	GroupAvatarUrl       pgtype.Text
+	LastMessageID        pgtype.Int8
+	LastMessageContent   pgtype.Text
+	LastMessageCreatedAt pgtype.Timestamptz
+	UpdatedAt            time.Time
+}
+
+func (q *Queries) GetConversationByID(ctx context.Context, arg GetConversationByIDParams) (GetConversationByIDRow, error) {
+	row := q.db.QueryRow(ctx, getConversationByID, arg.UserID, arg.ConversationID)
+	var i GetConversationByIDRow
+	err := row.Scan(
+		&i.ConversationID,
+		&i.ConversationType,
+		&i.UserID,
+		&i.Username,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.GroupName,
+		&i.GroupAvatarUrl,
+		&i.LastMessageID,
+		&i.LastMessageContent,
+		&i.LastMessageCreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getConversationMessages = `-- name: GetConversationMessages :many
 SELECT
     message_id,
