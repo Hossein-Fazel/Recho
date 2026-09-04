@@ -83,17 +83,17 @@ func createResponse(v application.SendItems) []byte {
 
 	switch v.Event {
 	case model.MessageCreateEvent:
-		if msg, ok := v.Content.(model.Message); ok {
+		if msg, ok := toMessage(v.Content); ok {
 			response.Data = dto.ToMessageCreateResponse(msg)
 		}
 
 	case model.MessageEditEvent:
-		if msg, ok := v.Content.(model.Message); ok {
+		if msg, ok := toMessage(v.Content); ok {
 			response.Data = dto.ToMessageEditResponse(msg)
 		}
 
 	case model.MessageDeleteEvent:
-		if msg, ok := v.Content.(model.Message); ok {
+		if msg, ok := toMessage(v.Content); ok {
 			response.Data = dto.MessageDeleteResponse{
 				ID:             msg.ID,
 				ConversationID: msg.ConversationID,
@@ -103,4 +103,18 @@ func createResponse(v application.SendItems) []byte {
 
 	res, _ := json.Marshal(response)
 	return res
+}
+
+func toMessage(content any) (model.Message, bool) {
+	switch msg := content.(type) {
+	case model.Message:
+		return msg, true
+	case *model.Message:
+		if msg == nil {
+			return model.Message{}, false
+		}
+		return *msg, true
+	default:
+		return model.Message{}, false
+	}
 }
