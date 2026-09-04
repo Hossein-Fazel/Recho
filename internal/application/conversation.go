@@ -233,5 +233,5 @@ func (c *ConversationService) GetConversationInfo(ctx context.Context, userID, c
 		return nil, apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
-	return c.ConversationRepo.GetInfo(ctx, convID)
+	return c.ConversationRepo.GetInfo(ctx, userID, convID)
 }

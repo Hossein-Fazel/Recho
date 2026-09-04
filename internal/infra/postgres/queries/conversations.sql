@@ -218,8 +218,11 @@ SELECT
     g.invite_code
 FROM conversations c
 LEFT JOIN direct_conversations dc ON dc.conversation_id = c.id
-LEFT JOIN users u ON dc.user_one_id = u.id OR dc.user_two_id = u.id
-LEFT JOIN groups g ON g.conversation_id = c.conversation_id
+LEFT JOIN users u ON u.id = CASE
+    WHEN dc.user_one_id = sqlc.arg(user_id) THEN dc.user_two_id
+    ELSE dc.user_one_id
+END
+LEFT JOIN groups g ON g.conversation_id = c.id
 WHERE c.id = sqlc.arg(conversation_id);
 
 -- name: GetGroupMembers :many

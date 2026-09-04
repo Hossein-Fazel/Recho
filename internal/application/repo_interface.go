@@ -33,7 +33,7 @@ type ConversationRepo interface {
 	IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error)
 	GetConversationMessages(ctx context.Context, params GetConversationMessagesParams) ([]*model.Message, error)
 	GetConversationUsers(ctx context.Context, convID uuid.UUID) ([]uuid.UUID, error)
-	GetInfo(ctx context.Context, CID uuid.UUID) (*model.ConversationInfo, error)
+	GetInfo(ctx context.Context, userID uuid.UUID, CID uuid.UUID) (*model.ConversationInfo, error)
 	GetGroupMembers(ctx context.Context, GID uuid.UUID, cursorUID uuid.UUID, limit int32) ([]*model.GroupMember, error)
 }
 

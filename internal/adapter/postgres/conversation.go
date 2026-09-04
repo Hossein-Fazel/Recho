@@ -311,12 +311,15 @@ func (r *Conversation) GetGroupMembers(ctx context.Context, GID uuid.UUID, curso
 	return res, nil
 }
 
-func (r *Conversation) GetInfo(ctx context.Context, CID uuid.UUID) (*model.ConversationInfo, error) {
-	if CID == uuid.Nil {
-		return nil, apperr.InvalidInput("Conversation repo", "cconversation id is required", nil)
+func (r *Conversation) GetInfo(ctx context.Context, userID uuid.UUID, CID uuid.UUID) (*model.ConversationInfo, error) {
+	if CID == uuid.Nil || userID == uuid.Nil {
+		return nil, apperr.InvalidInput("Conversation repo", "conversation and user id are required", nil)
 	}
 
-	info, err := r.sql.GetConversationInfo(ctx, CID)
+	info, err := r.sql.GetConversationInfo(ctx, sqlc.GetConversationInfoParams{
+		ConversationID: CID,
+		UserID:         userID,
+	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, apperr.NotFound(

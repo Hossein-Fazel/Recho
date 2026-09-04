@@ -185,10 +185,18 @@ SELECT
     g.invite_code
 FROM conversations c
 LEFT JOIN direct_conversations dc ON dc.conversation_id = c.id
-LEFT JOIN users u ON dc.user_one_id = u.id OR dc.user_two_id = u.id
-LEFT JOIN groups g ON g.conversation_id = c.conversation_id
-WHERE c.id = $1
+LEFT JOIN users u ON u.id = CASE
+    WHEN dc.user_one_id = $1 THEN dc.user_two_id
+    ELSE dc.user_one_id
+END
+LEFT JOIN groups g ON g.conversation_id = c.id
+WHERE c.id = $2
 `
+
+type GetConversationInfoParams struct {
+	UserID         uuid.UUID
+	ConversationID uuid.UUID
+}
 
 type GetConversationInfoRow struct {
 	ID               uuid.UUID
@@ -205,8 +213,8 @@ type GetConversationInfoRow struct {
 	InviteCode       pgtype.Text
 }
 
-func (q *Queries) GetConversationInfo(ctx context.Context, conversationID uuid.UUID) (GetConversationInfoRow, error) {
-	row := q.db.QueryRow(ctx, getConversationInfo, conversationID)
+func (q *Queries) GetConversationInfo(ctx context.Context, arg GetConversationInfoParams) (GetConversationInfoRow, error) {
+	row := q.db.QueryRow(ctx, getConversationInfo, arg.UserID, arg.ConversationID)
 	var i GetConversationInfoRow
 	err := row.Scan(
 		&i.ID,
