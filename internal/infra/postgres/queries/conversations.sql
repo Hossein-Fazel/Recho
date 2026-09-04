@@ -196,3 +196,43 @@ UNION ALL
 SELECT user_id
 FROM group_members
 WHERE group_id = sqlc.arg(conversation_id);
+
+-- name: GetConversationInfo :one
+SELECT
+    c.id,
+    CASE
+        WHEN dc.conversation_id IS NOT NULL THEN 'direct'
+        ELSE 'group'
+    END AS conversation_type,
+
+    u.id AS user_id,
+    u.username,
+    u.display_name,
+    u.avatar_url,
+    u.bio,
+
+    g.conversation_id AS group_id,
+    g.name AS group_name,
+    g.avatar_url AS group_avatar_url,
+    g.bio AS group_bio,
+    g.invite_code
+FROM conversations c
+LEFT JOIN direct_conversations dc ON dc.conversation_id = c.id
+LEFT JOIN users u ON dc.user_one_id = u.id OR dc.user_two_id = u.id
+LEFT JOIN groups g ON g.conversation_id = c.conversation_id
+WHERE c.id = sqlc.arg(conversation_id);
+
+-- name: GetGroupMembers :many
+SELECT
+    u.id,
+    u.username,
+    u.display_name,
+    u.avatar_url,
+    gm.role AS member_role
+FROM group_members gm
+JOIN users u ON u.id = gm.user_id
+WHERE gm.group_id = sqlc.arg(conversation_id) AND (
+    sqlc.arg(cursor_user_id)::uuid IS NULL
+    OR (u.id) > sqlc.arg(cursor_user_id)::uuid)
+ORDER BY u.id
+LIMIT sqlc.arg(cursor_limit);

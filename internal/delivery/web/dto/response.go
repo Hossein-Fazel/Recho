@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/google/uuid"
 )
 
@@ -78,4 +79,40 @@ type Message struct {
 	Content        string    `json:"content"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+type ConversationInfo struct {
+	ConversationID   uuid.UUID `json:"conversation_id"`
+	ConversationType string    `json:"conversation_type"`
+
+	User  *UserInfo  `json:"user,omitempty"`
+	Group *GroupInfo `json:"group,omitempty"`
+}
+
+type UserInfo struct {
+	ID          uuid.UUID `json:"id"`
+	Username    string    `json:"username"`
+	DisplayName string    `json:"display_name"`
+	AvatarURL   string    `json:"avatar_url"`
+	Bio         string    `json:"bio"`
+}
+
+type GroupInfo struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+}
+
+type GetGroupMembersResponse struct {
+	Members    []*GroupMember `json:"members"`
+	NextCursor string         `json:"next_cursor"`
+}
+
+type GroupMember struct {
+	UserID      uuid.UUID             `json:"user_id"`
+	Username    string                `json:"username"`
+	DisplayName string                `json:"display_name"`
+	AvatarURL   string                `json:"avatar_url"`
+	Role        model.GroupMemberRole `json:"role"`
 }

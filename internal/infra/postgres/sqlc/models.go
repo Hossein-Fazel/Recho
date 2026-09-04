@@ -78,6 +78,7 @@ type Group struct {
 	Name           string
 	AvatarUrl      pgtype.Text
 	InviteCode     pgtype.Text
+	Bio            pgtype.Text
 	CreatedBy      uuid.UUID
 	CreatedAt      time.Time
 	UpdatedAt      time.Time

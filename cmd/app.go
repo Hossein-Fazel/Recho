@@ -47,7 +47,7 @@ func Run() {
 	refreshToken := token.NewRefreshTokenService(conf.Token)
 
 	authService := application.NewAuthService(userRepo, accessToken, refreshToken, authRepo)
-	convService := application.NewConverasionService(convRepo)
+	convService := application.NewConversationService(convRepo)
 	userService := application.NewUserService(userRepo)
 	msgService := application.NewMessageService(msgRepo, convRepo)
 

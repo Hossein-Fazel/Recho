@@ -3,6 +3,7 @@ package postgres_repo
 import (
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
+	"github.com/google/uuid"
 )
 
 func pgUserSearch2modeUserSearch(user sqlc.SearchUsersRow) *model.UserSearch {
@@ -23,4 +24,43 @@ func toModelMessage(msg sqlc.Message) *model.Message {
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
+}
+
+func toModelGroupMember(member sqlc.GetGroupMembersRow) *model.GroupMember {
+	return &model.GroupMember{
+		UserID:      member.ID,
+		Username:    member.Username,
+		DisplayName: member.DisplayName.String,
+		AvatarURL:   member.AvatarUrl.String,
+		Role:        model.GroupMemberRole(member.MemberRole),
+	}
+}
+
+func toConversationInfo(row sqlc.GetConversationInfoRow) *model.ConversationInfo {
+	info := model.ConversationInfo{
+		ID:               row.ID,
+		ConversationType: row.ConversationType,
+	}
+
+	if row.UserID.Valid {
+		info.User = &model.UserInfo{
+			UserID:      uuid.UUID(row.UserID.Bytes),
+			Username:    row.Username.String,
+			DisplayName: row.DisplayName.String,
+			AvatarUrl:   row.AvatarUrl.String,
+			Bio:         row.Bio.String,
+		}
+	}
+
+	if row.GroupID.Valid {
+		info.Group = &model.GroupInfo{
+			GroupID:        uuid.UUID(row.GroupID.Bytes),
+			GroupName:      row.GroupName.String,
+			GroupAvatarUrl: row.GroupAvatarUrl.String,
+			GroupBio:       row.GroupBio.String,
+			InviteCode:     row.InviteCode.String,
+		}
+	}
+
+	return &info
 }

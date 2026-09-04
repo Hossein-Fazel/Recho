@@ -34,7 +34,7 @@ CREATE TABLE groups (
     name            VARCHAR(100) NOT NULL,
     avatar_url      TEXT,
     invite_code     VARCHAR(100) UNIQUE,
-
+    bio             VARCHAR(250),
     created_by      UUID         NOT NULL REFERENCES users(id),
 
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

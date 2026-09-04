@@ -27,7 +27,7 @@ func (c *Config) isDebug() bool {
 type Services struct {
 	Auth         *application.AuthService
 	AccessToken  application.AccessToken
-	Conversation *application.ConverasionService
+	Conversation *application.ConversationService
 	User         *application.UserService
 }
 
