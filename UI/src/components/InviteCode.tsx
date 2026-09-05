@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { copyText } from '../lib/clipboard'
 import { inviteLink } from '../lib/invite'
 
 type InviteCodeProps = {
@@ -20,12 +21,7 @@ export function InviteCode({ code }: InviteCodeProps) {
   }, [copied])
 
   async function copy(value: string, label: string) {
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopied(label)
-    } catch {
-      setCopied('')
-    }
+    setCopied((await copyText(value)) ? label : '')
   }
 
   const link = inviteLink(code)

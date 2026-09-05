@@ -178,10 +178,10 @@ func (c *ConversationService) GetConversationUserIDs(ctx context.Context, userID
 }
 
 type GetGroupMembersParams struct {
-	GroupID  uuid.UUID
-	UserID   uuid.UUID
-	Cursor   string
-	Limit    int32
+	GroupID uuid.UUID
+	UserID  uuid.UUID
+	Cursor  string
+	Limit   int32
 }
 
 func (c *ConversationService) GetGroupMembers(ctx context.Context, params GetGroupMembersParams) ([]*model.GroupMember, string, error) {

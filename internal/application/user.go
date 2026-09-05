@@ -8,6 +8,7 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 )
+
 type UserService struct {
 	userRepo UserRepo
 }
