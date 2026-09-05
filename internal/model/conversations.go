@@ -58,4 +58,31 @@ type GroupInfo struct {
 	GroupAvatarUrl string
 	GroupBio       string
 	InviteCode     string
+	ViewerRole     GroupMemberRole
+	MemberCount    int64
+}
+
+func (g *GroupInfo) CanShareInvite() bool {
+	return g.ViewerRole == GroupMemberRoleOwner ||
+		g.ViewerRole == GroupMemberRoleAdmin
+}
+
+type Group struct {
+	ID         uuid.UUID
+	Name       string
+	AvatarURL  string
+	Bio        string
+	InviteCode string
+	CreatedBy  uuid.UUID
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+type GroupPreview struct {
+	GroupID     uuid.UUID
+	Name        string
+	AvatarURL   string
+	Bio         string
+	MemberCount int64
+	IsMember    bool
 }

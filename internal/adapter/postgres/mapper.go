@@ -53,14 +53,44 @@ func toConversationInfo(row sqlc.GetConversationInfoRow) *model.ConversationInfo
 	}
 
 	if row.GroupID.Valid {
-		info.Group = &model.GroupInfo{
+		group := &model.GroupInfo{
 			GroupID:        uuid.UUID(row.GroupID.Bytes),
 			GroupName:      row.GroupName.String,
 			GroupAvatarUrl: row.GroupAvatarUrl.String,
 			GroupBio:       row.GroupBio.String,
 			InviteCode:     row.InviteCode.String,
+			MemberCount:    row.MemberCount,
 		}
+
+		if row.ViewerRole.Valid {
+			group.ViewerRole = model.GroupMemberRole(row.ViewerRole.GroupMemberRole)
+		}
+
+		info.Group = group
 	}
 
 	return &info
+}
+
+func toModelGroup(group sqlc.Group) *model.Group {
+	return &model.Group{
+		ID:         group.ConversationID,
+		Name:       group.Name,
+		AvatarURL:  group.AvatarUrl.String,
+		Bio:        group.Bio.String,
+		InviteCode: group.InviteCode.String,
+		CreatedBy:  group.CreatedBy,
+		CreatedAt:  group.CreatedAt,
+		UpdatedAt:  group.UpdatedAt,
+	}
+}
+
+func toModelGroupPreview(row sqlc.GetGroupByInviteCodeRow) *model.GroupPreview {
+	return &model.GroupPreview{
+		GroupID:     row.ConversationID,
+		Name:        row.Name,
+		AvatarURL:   row.AvatarUrl.String,
+		Bio:         row.Bio.String,
+		MemberCount: row.MemberCount,
+	}
 }
