@@ -215,7 +215,13 @@ SELECT
     g.name AS group_name,
     g.avatar_url AS group_avatar_url,
     g.bio AS group_bio,
-    g.invite_code
+    g.invite_code,
+    gm.role AS viewer_role,
+    (
+        SELECT COUNT(*)
+        FROM group_members gmc
+        WHERE gmc.group_id = g.conversation_id
+    ) AS member_count
 FROM conversations c
 LEFT JOIN direct_conversations dc ON dc.conversation_id = c.id
 LEFT JOIN users u ON u.id = CASE
@@ -223,6 +229,9 @@ LEFT JOIN users u ON u.id = CASE
     ELSE dc.user_one_id
 END
 LEFT JOIN groups g ON g.conversation_id = c.id
+LEFT JOIN group_members gm
+    ON gm.group_id = c.id
+    AND gm.user_id = sqlc.arg(user_id)
 WHERE c.id = sqlc.arg(conversation_id);
 
 -- name: GetGroupMembers :many
