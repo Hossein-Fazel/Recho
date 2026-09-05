@@ -44,7 +44,7 @@ function EmojiPickerInner({
       attributeFilter: ['data-theme'],
     })
 
-    function onPointerDown(event: MouseEvent) {
+    function onPointerDown(event: PointerEvent) {
       const target = event.target as Node
       if (panelRef.current?.contains(target)) return
       if (triggerRef.current?.contains(target)) return
@@ -55,12 +55,15 @@ function EmojiPickerInner({
       if (event.key === 'Escape') onClose()
     }
 
-    document.addEventListener('mousedown', onPointerDown)
+    // `pointerdown` rather than `mousedown`: a touch that lands on a
+    // scrollable area never dispatches synthetic mouse events, which would
+    // leave the picker stuck open on a phone.
+    document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
 
     return () => {
       observer.disconnect()
-      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open, onClose, triggerRef])

@@ -1,11 +1,13 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
 } from 'react'
 import { Avatar } from './Avatar'
+import { copyText } from '../lib/clipboard'
 import {
   conversationTitle,
   formatMessageTime,
@@ -39,6 +41,15 @@ type MenuState = {
   y: number
 } | null
 
+/** Gap kept between the menu and the viewport edges. */
+const menuMargin = 10
+
+/** How long a touch has to be held before the message menu opens. */
+const longPressDelay = 450
+
+/** How far a touch may drift before it counts as a scroll, not a press. */
+const longPressSlop = 10
+
 export function Thread({
   user,
   conversation,
@@ -57,6 +68,20 @@ export function Thread({
   const menuRef = useRef<HTMLDivElement>(null)
 
   const [menu, setMenu] = useState<MenuState>(null)
+
+  // Resolved viewport coordinates for the open menu. Kept separate from the
+  // pointer position because the menu has to be measured first to know
+  // whether it still fits below/left of the pointer.
+  const [menuAt, setMenuAt] = useState<{ left: number; top: number } | null>(
+    null,
+  )
+
+  // Pending long-press (touch) that will open the message menu.
+  const longPress = useRef<{
+    timer: number
+    x: number
+    y: number
+  } | null>(null)
 
   const stickToBottom = useRef(true)
   const previousConversation = useRef<string | null>(null)
@@ -100,11 +125,41 @@ export function Thread({
 
   }, [messages])
 
-  // Close the context menu on outside click or Escape.
+  // Keep the menu fully inside the viewport. `html` is `overflow: hidden`, so
+  // anything that spills past an edge — which happens easily on a phone, where
+  // the tap point is often near the bottom or the left edge — would be
+  // unreachable instead of merely clipped.
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    if (!menu || !el) return
+
+    // offsetWidth/Height ignore the pop-in transform, unlike getBoundingClientRect.
+    const width = el.offsetWidth
+    const height = el.offsetHeight
+
+    const maxLeft = Math.max(menuMargin, window.innerWidth - width - menuMargin)
+    const maxTop = Math.max(menuMargin, window.innerHeight - height - menuMargin)
+
+    // Anchor the right edge to the pointer, flipping to the other side when
+    // there isn't room, then clamp so it can never leave the viewport.
+    let left = menu.x - width
+    if (left < menuMargin) left = menu.x
+
+    let top = menu.y
+    if (top + height + menuMargin > window.innerHeight) top = menu.y - height
+
+    setMenuAt({
+      left: Math.min(Math.max(left, menuMargin), maxLeft),
+      top: Math.min(Math.max(top, menuMargin), maxTop),
+    })
+  }, [menu])
+
+  // Close the context menu on outside press or Escape. `pointerdown` covers
+  // mouse and touch alike; `mousedown` alone is unreliable on touch devices.
   useEffect(() => {
     if (!menu) return
 
-    function onClick(event: MouseEvent) {
+    function onPointerDown(event: PointerEvent) {
       if (menuRef.current?.contains(event.target as Node)) return
       setMenu(null)
     }
@@ -113,19 +168,31 @@ export function Thread({
       if (event.key === 'Escape') setMenu(null)
     }
 
-    document.addEventListener('mousedown', onClick)
+    document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKey)
 
     return () => {
-      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKey)
     }
   }, [menu])
+
+  function cancelLongPress() {
+    if (!longPress.current) return
+    window.clearTimeout(longPress.current.timer)
+    longPress.current = null
+  }
+
+  useEffect(() => cancelLongPress, [])
 
   function onScroll() {
     const el = scroller.current
 
     if (!el) return
+
+    // A fixed-position menu would float away from its message while scrolling.
+    cancelLongPress()
+    if (menu) setMenu(null)
 
     const distanceFromBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight
@@ -151,12 +218,52 @@ export function Thread({
     message: Message,
   ) {
     event.preventDefault()
+    cancelLongPress()
+    setMenuAt(null)
     setMenu({ message, x: event.clientX, y: event.clientY })
   }
 
+  // Touch browsers don't reliably fire `contextmenu` on a long press, so drive
+  // the menu from pointer events as well.
+  function startLongPress(
+    event: React.PointerEvent,
+    message: Message,
+  ) {
+    if (event.pointerType === 'mouse') return
+
+    const x = event.clientX
+    const y = event.clientY
+
+    cancelLongPress()
+
+    longPress.current = {
+      x,
+      y,
+      timer: window.setTimeout(() => {
+        longPress.current = null
+        setMenuAt(null)
+        setMenu({ message, x, y })
+      }, longPressDelay),
+    }
+  }
+
+  function trackLongPress(event: React.PointerEvent) {
+    const pending = longPress.current
+    if (!pending) return
+
+    if (
+      Math.abs(event.clientX - pending.x) > longPressSlop ||
+      Math.abs(event.clientY - pending.y) > longPressSlop
+    ) {
+      cancelLongPress()
+    }
+  }
+
   function copyMessage(message: Message) {
-    void navigator.clipboard.writeText(message.content)
+    // Close first: copying can fail (insecure origin, denied permission) and
+    // the menu must not be left stuck open when it does.
     setMenu(null)
+    void copyText(message.content)
   }
 
   type MessageRun = {
@@ -212,6 +319,10 @@ export function Thread({
         className={`bubble ${mine ? 'mine' : ''} ${stacked ? 'stacked' : ''
           }`}
         onContextMenu={(event) => openMenu(event, message)}
+        onPointerDown={(event) => startLongPress(event, message)}
+        onPointerMove={trackLongPress}
+        onPointerUp={cancelLongPress}
+        onPointerCancel={cancelLongPress}
       >
         <p>
           {message.content}
@@ -290,11 +401,15 @@ export function Thread({
 
   return (<section className="thread"> <header className="thread-head"> <button
     type="button"
-    className="ghost back"
+    className="back"
     onClick={onBack}
     aria-label="Back to conversations"
+    title="Back to conversations"
   >
-    Chats </button>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 5l-7 7 7 7" />
+    </svg>
+  </button>
 
     <button
       type="button"
@@ -394,58 +509,75 @@ export function Thread({
     </div>
 
     {menu ? (
-      <div
-        ref={menuRef}
-        className="context-menu"
-        style={{ top: menu.y, right: window.innerWidth - menu.x }}
-      >
-        <button
-          type="button"
-          className="context-item"
-          onClick={() => copyMessage(menu.message)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="9" y="9" width="11" height="11" rx="2" />
-            <path d="M5 15V6a1 1 0 0 1 1-1h9" />
-          </svg>
-          Copy message
-        </button>
+      <>
+        <div
+          className="context-backdrop"
+          onClick={() => setMenu(null)}
+          aria-hidden="true"
+        />
 
-        {menu.message.sender_id === user.id ? (
+        <div
+          ref={menuRef}
+          className={`context-menu${menuAt ? ' placed' : ''}`}
+          role="menu"
+          style={
+            {
+              '--menu-left': `${menuAt?.left ?? 0}px`,
+              '--menu-top': `${menuAt?.top ?? 0}px`,
+            } as CSSProperties
+          }
+        >
           <button
             type="button"
             className="context-item"
-            onClick={() => {
-              onEdit(menu.message)
-              setMenu(null)
-            }}
+            role="menuitem"
+            onClick={() => copyMessage(menu.message)}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <rect x="9" y="9" width="11" height="11" rx="2" />
+              <path d="M5 15V6a1 1 0 0 1 1-1h9" />
             </svg>
-            Edit
+            Copy message
           </button>
-        ) : null}
 
-        {menu.message.sender_id === user.id ? (
-          <button
-            type="button"
-            className="context-item danger"
-            onClick={() => {
-              onDelete(menu.message)
-              setMenu(null)
-            }}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 7h16" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M6 7l1 13h10l1-13" />
-              <path d="M9 7V4h6v3" />
-            </svg>
-            Delete
-          </button>
-        ) : null}
-      </div>
+          {menu.message.sender_id === user.id ? (
+            <button
+              type="button"
+              className="context-item"
+              role="menuitem"
+              onClick={() => {
+                onEdit(menu.message)
+                setMenu(null)
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              </svg>
+              Edit
+            </button>
+          ) : null}
+
+          {menu.message.sender_id === user.id ? (
+            <button
+              type="button"
+              className="context-item danger"
+              role="menuitem"
+              onClick={() => {
+                onDelete(menu.message)
+                setMenu(null)
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M6 7l1 13h10l1-13" />
+                <path d="M9 7V4h6v3" />
+              </svg>
+              Delete
+            </button>
+          ) : null}
+        </div>
+      </>
     ) : null}
   </section>
 

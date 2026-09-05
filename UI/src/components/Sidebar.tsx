@@ -19,7 +19,6 @@ type SidebarProps = {
   onNewGroup: () => void
   onJoinGroup: () => void
   onLogout: () => void
-  onCloseMobile?: () => void
 }
 
 export function Sidebar({
@@ -31,7 +30,6 @@ export function Sidebar({
   onNewGroup,
   onJoinGroup,
   onLogout,
-  onCloseMobile,
 }: SidebarProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<UserSearch[]>([])
@@ -69,10 +67,11 @@ export function Sidebar({
 
   async function startChat(peer: UserSearch) {
     const res = await api.openDirect(peer.id)
+    // `onCreated` opens the thread (and on mobile swaps the sidebar out for
+    // it), so nothing here may reset that state afterwards.
     onCreated(res.conversation_id, peer)
     setQuery('')
     setResults([])
-    onCloseMobile?.()
   }
 
   const myName = personName(user)
@@ -179,10 +178,7 @@ export function Sidebar({
                 <button
                   type="button"
                   className={`conv-item ${activeId === conv.conversation_id ? 'active' : ''}`}
-                  onClick={() => {
-                    onSelect(conv)
-                    onCloseMobile?.()
-                  }}
+                  onClick={() => onSelect(conv)}
                 >
                   <Avatar id={conv.user_id || conv.conversation_id} name={name} url={conv.avatar_url || conv.group_avatar_url} />
                   <span className="conv-meta">

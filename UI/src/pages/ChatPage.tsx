@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { api } from '../lib/api'
 import { firstGroupMemberCursor } from '../lib/cursor'
+import { newRequestId } from '../lib/id'
 import { clearInvitePath } from '../lib/invite'
 import type {
   Conversation,
@@ -484,7 +485,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       return
     }
 
-    const requestId = crypto.randomUUID()
+    const requestId = newRequestId()
 
     // If we're editing a message, send the edit instead of a new message.
     if (editing) {
@@ -593,7 +594,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       return
     }
 
-    const requestId = crypto.randomUUID()
+    const requestId = newRequestId()
     const sent = sendDeleteMessage(
       activeId,
       pendingDelete.id,
@@ -634,7 +635,6 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           setJoinOpen(true)
         }}
         onLogout={() => void logout()}
-        onCloseMobile={() => setMobileChat(false)}
       />
 
       <main className="main">

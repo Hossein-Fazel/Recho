@@ -187,6 +187,10 @@ export function Composer({
             className="send"
             type="submit"
             disabled={disabled || !value.trim()}
+            // Keep focus in the textarea: letting the tap blur it would close
+            // the soft keyboard, reflow the layout, and slide the button out
+            // from under the finger before the click landed.
+            onMouseDown={(e) => e.preventDefault()}
             aria-label={editing ? 'Save edit' : 'Send message'}
             title={editing ? 'Save edit' : 'Send message'}
           >

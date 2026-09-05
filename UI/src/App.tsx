@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { useAppHeight } from './hooks/useAppHeight'
 import { inviteCodeFromPath } from './lib/invite'
 import { AuthPage } from './pages/AuthPage'
 import { ChatPage } from './pages/ChatPage'
@@ -30,6 +31,8 @@ function Gate() {
 }
 
 export default function App() {
+  useAppHeight()
+
   return (
     <AuthProvider>
       <Gate />
