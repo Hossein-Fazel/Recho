@@ -118,6 +118,11 @@ export function JoinGroupModal({
         {preview ? (
           <>
             <div className="join-preview">
+              {!preview.is_member ? (
+                <p className="join-intro">
+                  You’ve been invited to join this group
+                </p>
+              ) : null}
               <Avatar
                 id={preview.conversation_id}
                 name={groupName}
