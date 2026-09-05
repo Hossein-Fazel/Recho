@@ -1,11 +1,11 @@
 import type { CSSProperties } from 'react'
-import { displayName, hueFromId, initials } from '../lib/format'
+import { hueFromId, initials } from '../lib/format'
 
 type AvatarProps = {
   id: string
   name: string
   url?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 export function Avatar({ id, name, url, size = 'md' }: AvatarProps) {
@@ -28,7 +28,7 @@ export function Avatar({ id, name, url, size = 'md' }: AvatarProps) {
       style={{ '--hue': hue } as CSSProperties}
       aria-hidden
     >
-      {initials(displayName({ display_name: name }))}
+      {initials(name)}
     </span>
   )
 }

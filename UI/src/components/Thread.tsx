@@ -4,7 +4,7 @@ import {
   useState,
 } from 'react'
 import { Avatar } from './Avatar'
-import { displayName, formatMessageTime } from '../lib/format'
+import { conversationTitle, formatMessageTime } from '../lib/format'
 import type { Conversation, Message, User } from '../lib/types'
 
 type ThreadProps = {
@@ -18,6 +18,7 @@ type ThreadProps = {
   onBack: () => void
   onEdit: (message: Message) => void
   onDelete: (message: Message) => void
+  onOpenInfo: () => void
 }
 
 type MenuState = {
@@ -37,6 +38,7 @@ export function Thread({
   onBack,
   onEdit,
   onDelete,
+  onOpenInfo,
 }: ThreadProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -161,7 +163,7 @@ export function Thread({
 
   }
 
-  const title = displayName(conversation)
+  const title = conversationTitle(conversation)
 
   return (<section className="thread"> <header className="thread-head"> <button
     type="button"
@@ -171,26 +173,33 @@ export function Thread({
   >
     Chats </button>
 
-    <Avatar
-      id={conversation.user_id || conversation.conversation_id}
-      name={title}
-      url={
-        conversation.avatar_url ||
-        conversation.group_avatar_url
-      }
-      size="sm"
-    />
+    <button
+      type="button"
+      className="thread-peer"
+      onClick={onOpenInfo}
+      aria-label={`Open ${conversation.conversation_type === 'group' ? 'group info' : 'profile'} for ${title}`}
+    >
+      <Avatar
+        id={conversation.user_id || conversation.conversation_id}
+        name={title}
+        url={
+          conversation.avatar_url ||
+          conversation.group_avatar_url
+        }
+        size="sm"
+      />
 
-    <div className="thread-title">
-      <h2>{title}</h2>
+      <div className="thread-title">
+        <h2>{title}</h2>
 
-      <p className="eyebrow">
-        {conversation.conversation_type === 'group'
-          ? 'Group'
-          : 'Direct'}{' '}
-        · live
-      </p>
-    </div>
+        <p className="eyebrow">
+          {conversation.conversation_type === 'group'
+            ? 'Group'
+            : 'Direct'}{' '}
+          · live
+        </p>
+      </div>
+    </button>
   </header>
 
     <div

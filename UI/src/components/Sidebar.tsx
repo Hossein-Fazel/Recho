@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from './Avatar'
 import { ThemeToggle } from './ThemeToggle'
-import { displayName, formatTime } from '../lib/format'
+import {
+  conversationTitle,
+  formatTime,
+  handle,
+  personName,
+} from '../lib/format'
 import { api } from '../lib/api'
 import type { Conversation, User, UserSearch } from '../lib/types'
 
@@ -53,7 +58,9 @@ export function Sidebar({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q || results.length > 0) return conversations
-    return conversations.filter((c) => displayName(c).toLowerCase().includes(q))
+    return conversations.filter((c) =>
+      `${conversationTitle(c)} ${c.username}`.toLowerCase().includes(q),
+    )
   }, [conversations, query, results.length])
 
   async function startChat(peer: UserSearch) {
@@ -63,6 +70,9 @@ export function Sidebar({
     setResults([])
     onCloseMobile?.()
   }
+
+  const myName = personName(user)
+  const myHandle = handle(user.username, myName)
 
   return (
     <aside className="sidebar">
@@ -106,18 +116,25 @@ export function Sidebar({
         <div className="result-block">
           <p className="list-label">People</p>
           <ul className="conv-list">
-            {results.map((peer) => (
-              <li key={peer.id}>
-                <button type="button" className="conv-item" onClick={() => void startChat(peer)}>
-                  <Avatar id={peer.id} name={displayName(peer)} url={peer.avatar_url} />
-                  <span className="conv-meta">
-                    <span className="conv-name">{displayName(peer)}</span>
-                    <span className="conv-preview">@{peer.username}</span>
-                  </span>
-                  <span className="new-chat-arrow" aria-hidden>→</span>
-                </button>
-              </li>
-            ))}
+            {results.map((peer) => {
+              const name = personName(peer)
+              const peerHandle = handle(peer.username, name)
+
+              return (
+                <li key={peer.id}>
+                  <button type="button" className="conv-item" onClick={() => void startChat(peer)}>
+                    <Avatar id={peer.id} name={name} url={peer.avatar_url} />
+                    <span className="conv-meta">
+                      <span className="conv-name">{name}</span>
+                      {peerHandle ? (
+                        <span className="conv-preview">{peerHandle}</span>
+                      ) : null}
+                    </span>
+                    <span className="new-chat-arrow" aria-hidden>→</span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         </div>
       ) : null}
@@ -134,7 +151,7 @@ export function Sidebar({
           </li>
         ) : (
           filtered.map((conv) => {
-            const name = displayName(conv)
+            const name = conversationTitle(conv)
             return (
               <li key={conv.conversation_id}>
                 <button
@@ -161,10 +178,10 @@ export function Sidebar({
       </ul>
 
       <footer className="sidebar-foot">
-        <Avatar id={user.id} name={displayName(user)} url={user.avatar_url} />
+        <Avatar id={user.id} name={myName} url={user.avatar_url} />
         <div className="conv-meta">
-          <span className="conv-name">{displayName(user)}</span>
-          <span className="conv-preview">@{user.username}</span>
+          <span className="conv-name">{myName}</span>
+          {myHandle ? <span className="conv-preview">{myHandle}</span> : null}
         </div>
         <button type="button" className="logout-button" onClick={() => void onLogout()} aria-label="Log out" title="Log out">
           <svg viewBox="0 0 24 24" aria-hidden="true">

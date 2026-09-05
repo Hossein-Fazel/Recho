@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Composer } from '../components/Composer'
+import { ConversationInfoPanel } from '../components/ConversationInfoPanel'
 import { Sidebar } from '../components/Sidebar'
 import { Thread } from '../components/Thread'
 import { useAuth } from '../context/AuthContext'
@@ -20,6 +21,7 @@ export function ChatPage() {
   const [messageStatuses, setMessageStatuses] = useState<Map<number, 'sending' | 'sent'>>(new Map())
   const [editing, setEditing] = useState<{ id: number; content: string } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null)
+  const [infoOpen, setInfoOpen] = useState(false)
 
   const loadedFor = useRef<string | null>(null)
   const pendingConvFetches = useRef<Set<string>>(new Set())
@@ -313,6 +315,7 @@ export function ChatPage() {
     setMobileChat(true)
     setNotice('')
     setEditing(null)
+    setInfoOpen(false)
   }
 
   function onCreated(
@@ -350,6 +353,7 @@ export function ChatPage() {
     setActiveId(conversationId)
     setMobileChat(true)
     setNotice('')
+    setInfoOpen(false)
 
 
   }
@@ -525,6 +529,7 @@ export function ChatPage() {
           onBack={() => setMobileChat(false)}
           onEdit={startEdit}
           onDelete={setPendingDelete}
+          onOpenInfo={() => setInfoOpen(true)}
         />
 
         <Composer
@@ -534,6 +539,13 @@ export function ChatPage() {
           onCancelEdit={cancelEdit}
         />
       </main>
+
+      <ConversationInfoPanel
+        conversation={active}
+        currentUserId={user.id}
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+      />
 
       {pendingDelete ? (
         <div className="modal-overlay" role="dialog" aria-modal="true">
