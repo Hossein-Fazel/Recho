@@ -1,13 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Composer } from '../components/Composer'
+import { ConversationInfoPanel } from '../components/ConversationInfoPanel'
+import { JoinGroupModal } from '../components/JoinGroupModal'
+import { NewGroupModal } from '../components/NewGroupModal'
 import { Sidebar } from '../components/Sidebar'
 import { Thread } from '../components/Thread'
 import { useAuth } from '../context/AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { api } from '../lib/api'
-import type { Conversation, Message, UserSearch } from '../lib/types'
+import { firstGroupMemberCursor } from '../lib/cursor'
+import { clearInvitePath } from '../lib/invite'
+import type {
+  Conversation,
+  CreateGroupResponse,
+  GroupMember,
+  Message,
+  UserSearch,
+} from '../lib/types'
 
-export function ChatPage() {
+type ChatPageProps = {
+  /** Invite code from a /join/<code> link the user landed on. */
+  inviteCode?: string
+}
+
+export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const { user, logout } = useAuth()
 
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -20,6 +36,11 @@ export function ChatPage() {
   const [messageStatuses, setMessageStatuses] = useState<Map<number, 'sending' | 'sent'>>(new Map())
   const [editing, setEditing] = useState<{ id: number; content: string } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null)
+  const [infoOpen, setInfoOpen] = useState(false)
+  const [newGroupOpen, setNewGroupOpen] = useState(false)
+  const [joinOpen, setJoinOpen] = useState(Boolean(inviteCode))
+  const [joinCode, setJoinCode] = useState(inviteCode)
+  const [groupSenders, setGroupSenders] = useState<Map<string, GroupMember>>(new Map())
 
   const loadedFor = useRef<string | null>(null)
   const pendingConvFetches = useRef<Set<string>>(new Set())
@@ -32,6 +53,51 @@ export function ChatPage() {
       ) ?? null,
     [conversations, activeId],
   )
+
+  // Keep the sender details (name, username, avatar) for every group member
+  // so group messages can be labeled like Telegram. Reloaded whenever the
+  // active group changes.
+  useEffect(() => {
+    const conversationId = active?.conversation_id ?? null
+    setGroupSenders(new Map())
+
+    if (!conversationId || active?.conversation_type !== 'group') {
+      return
+    }
+
+    const targetId = conversationId
+    let cancelled = false
+
+    async function loadSenders() {
+      const senders = new Map<string, GroupMember>()
+      let cursor = firstGroupMemberCursor
+
+      try {
+        while (cursor) {
+          const result = await api.groupMembers(targetId, cursor)
+          if (cancelled) return
+
+          for (const member of result.members) {
+            senders.set(member.user_id, member)
+          }
+
+          cursor = result.nextCursor
+          if (!cursor || result.members.length === 0) break
+        }
+      } catch {
+        // Sender labels are a nice-to-have; render without them on failure.
+        return
+      }
+
+      if (!cancelled) setGroupSenders(senders)
+    }
+
+    void loadSenders()
+
+    return () => {
+      cancelled = true
+    }
+  }, [active?.conversation_id, active?.conversation_type])
 
   const refreshConversations = useCallback(async () => {
     const response = await api.conversations()
@@ -313,6 +379,7 @@ export function ChatPage() {
     setMobileChat(true)
     setNotice('')
     setEditing(null)
+    setInfoOpen(false)
   }
 
   function onCreated(
@@ -350,8 +417,66 @@ export function ChatPage() {
     setActiveId(conversationId)
     setMobileChat(true)
     setNotice('')
+    setInfoOpen(false)
 
 
+  }
+
+  function onGroupCreated(group: CreateGroupResponse) {
+    setConversations((current) => {
+      if (
+        current.some(
+          (conversation) => conversation.conversation_id === group.conversation_id,
+        )
+      ) {
+        return current
+      }
+
+      const created: Conversation = {
+        conversation_id: group.conversation_id,
+        conversation_type: 'group',
+        user_id: '',
+        username: '',
+        display_name: '',
+        avatar_url: '',
+        group_name: group.name,
+        group_avatar_url: group.avatar_url,
+        last_message_id: 0,
+        last_message_content: '',
+        last_message_created_at: '',
+        updated_at: group.updated_at || new Date().toISOString(),
+      }
+
+      return [created, ...current]
+    })
+
+    setActiveId(group.conversation_id)
+    setMobileChat(true)
+    setNotice('')
+    setInfoOpen(false)
+  }
+
+  function closeJoin() {
+    setJoinOpen(false)
+    setJoinCode('')
+    // Drop /join/<code> from the URL so a refresh doesn't reopen the modal.
+    clearInvitePath()
+  }
+
+  async function onGroupJoined(conversationId: string) {
+    closeJoin()
+
+    // The joined group isn't in the cached list yet; reload so it shows up
+    // with its name, avatar and last message.
+    try {
+      await refreshConversations()
+    } catch {
+      setNotice('Joined, but the chat list could not be refreshed')
+    }
+
+    setActiveId(conversationId)
+    setMobileChat(true)
+    setInfoOpen(false)
   }
 
   function send(content: string) {
@@ -503,6 +628,11 @@ export function ChatPage() {
         activeId={activeId}
         onSelect={selectConversation}
         onCreated={onCreated}
+        onNewGroup={() => setNewGroupOpen(true)}
+        onJoinGroup={() => {
+          setJoinCode('')
+          setJoinOpen(true)
+        }}
         onLogout={() => void logout()}
         onCloseMobile={() => setMobileChat(false)}
       />
@@ -519,12 +649,14 @@ export function ChatPage() {
           conversation={active}
           messages={messages}
           messageStatuses={messageStatuses}
+          senders={groupSenders}
           hasMore={Boolean(nextMessageCursor)}
           loading={loadingMessages}
           onLoadMore={() => void loadMore()}
           onBack={() => setMobileChat(false)}
           onEdit={startEdit}
           onDelete={setPendingDelete}
+          onOpenInfo={() => setInfoOpen(true)}
         />
 
         <Composer
@@ -534,6 +666,26 @@ export function ChatPage() {
           onCancelEdit={cancelEdit}
         />
       </main>
+
+      <ConversationInfoPanel
+        conversation={active}
+        currentUserId={user.id}
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+      />
+
+      <NewGroupModal
+        open={newGroupOpen}
+        onClose={() => setNewGroupOpen(false)}
+        onCreated={onGroupCreated}
+      />
+
+      <JoinGroupModal
+        open={joinOpen}
+        initialCode={joinCode}
+        onClose={closeJoin}
+        onJoined={(conversationId) => void onGroupJoined(conversationId)}
+      />
 
       {pendingDelete ? (
         <div className="modal-overlay" role="dialog" aria-modal="true">

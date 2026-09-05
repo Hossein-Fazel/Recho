@@ -33,6 +33,15 @@ type ConversationRepo interface {
 	IsConversationMember(ctx context.Context, userID uuid.UUID, ConversationID uuid.UUID) (bool, error)
 	GetConversationMessages(ctx context.Context, params GetConversationMessagesParams) ([]*model.Message, error)
 	GetConversationUsers(ctx context.Context, convID uuid.UUID) ([]uuid.UUID, error)
+	GetInfo(ctx context.Context, userID uuid.UUID, CID uuid.UUID) (*model.ConversationInfo, error)
+	GetGroupMembers(ctx context.Context, GID uuid.UUID, cursorUID uuid.UUID, limit int32) ([]*model.GroupMember, error)
+}
+
+type GroupRepo interface {
+	Create(ctx context.Context, params CreateGroupParams) (*model.Group, error)
+	GetByInviteCode(ctx context.Context, code string) (*model.GroupPreview, error)
+	AddMember(ctx context.Context, groupID, userID uuid.UUID) error
+	GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (model.GroupMemberRole, error)
 }
 
 type MessaageRepo interface {

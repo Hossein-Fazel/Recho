@@ -10,11 +10,11 @@ import (
 
 type MessageDelivery struct {
 	msgService  *MessageService
-	convService *ConverasionService
+	convService *ConversationService
 	Sender      Sender
 }
 
-func NewMessageDelivery(msgService *MessageService, convService *ConverasionService, sender Sender) *MessageDelivery {
+func NewMessageDelivery(msgService *MessageService, convService *ConversationService, sender Sender) *MessageDelivery {
 	return &MessageDelivery{
 		msgService:  msgService,
 		convService: convService,
@@ -29,7 +29,7 @@ func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message
 		return err
 	}
 
-	userIDs, err := d.convService.GetConversationUsers(ctx, msg.SenderID, msg.ConversationID)
+	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) 
 		return err
 	}
 
-	userIDs, err := d.convService.GetConversationUsers(ctx, msg.SenderID, msg.ConversationID)
+	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message
 		return err
 	}
 
-	userIDs, err := d.convService.GetConversationUsers(ctx, msg.SenderID, msg.ConversationID)
+	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
 		return err
 	}

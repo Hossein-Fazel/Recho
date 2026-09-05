@@ -280,3 +280,57 @@ func (r *Conversation) GetConversationUsers(ctx context.Context, convID uuid.UUI
 
 	return uIDs, nil
 }
+
+func (r *Conversation) GetGroupMembers(ctx context.Context, GID uuid.UUID, cursorUID uuid.UUID, limit int32) ([]*model.GroupMember, error) {
+	if GID == uuid.Nil {
+		return []*model.GroupMember{}, apperr.InvalidInput("Conversation repo", "cconversation id is required", nil)
+	}
+
+	members, err := r.sql.GetGroupMembers(ctx, sqlc.GetGroupMembersParams{
+		ConversationID: GID,
+		CursorUserID:   cursorUID,
+		CursorLimit:    limit,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"Conversation repo",
+				"users not found",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("Conversation repo", err)
+	}
+
+	var res []*model.GroupMember
+
+	for _, member := range members {
+		res = append(res, toModelGroupMember(member))
+	}
+	return res, nil
+}
+
+func (r *Conversation) GetInfo(ctx context.Context, userID uuid.UUID, CID uuid.UUID) (*model.ConversationInfo, error) {
+	if CID == uuid.Nil || userID == uuid.Nil {
+		return nil, apperr.InvalidInput("Conversation repo", "conversation and user id are required", nil)
+	}
+
+	info, err := r.sql.GetConversationInfo(ctx, sqlc.GetConversationInfoParams{
+		ConversationID: CID,
+		UserID:         userID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"Conversation repo",
+				"users not found",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("Conversation repo", err)
+	}
+
+	return toConversationInfo(info), nil
+}

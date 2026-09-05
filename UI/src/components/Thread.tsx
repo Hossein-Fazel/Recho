@@ -1,23 +1,36 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
+  type CSSProperties,
 } from 'react'
 import { Avatar } from './Avatar'
-import { displayName, formatMessageTime } from '../lib/format'
-import type { Conversation, Message, User } from '../lib/types'
+import {
+  conversationTitle,
+  formatMessageTime,
+  hueFromId,
+} from '../lib/format'
+import type {
+  Conversation,
+  GroupMember,
+  Message,
+  User,
+} from '../lib/types'
 
 type ThreadProps = {
   user: User
   conversation: Conversation | null
   messages: Message[]
   messageStatuses: Map<number, 'sending' | 'sent'>
+  senders?: ReadonlyMap<string, GroupMember>
   hasMore: boolean
   loading: boolean
   onLoadMore: () => void
   onBack: () => void
   onEdit: (message: Message) => void
   onDelete: (message: Message) => void
+  onOpenInfo: () => void
 }
 
 type MenuState = {
@@ -31,12 +44,14 @@ export function Thread({
   conversation,
   messages,
   messageStatuses,
+  senders,
   hasMore,
   loading,
   onLoadMore,
   onBack,
   onEdit,
   onDelete,
+  onOpenInfo,
 }: ThreadProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -144,6 +159,115 @@ export function Thread({
     setMenu(null)
   }
 
+  type MessageRun = {
+    messages: Message[]
+    mine: boolean
+    member: GroupMember | null
+  }
+
+  // Consecutive messages from the same sender are one "run". In groups a run
+  // is rendered as a column with a single avatar and one name label, the way
+  // Telegram does it.
+  const runs = useMemo<MessageRun[]>(() => {
+    const result: MessageRun[] = []
+
+    for (const message of messages) {
+      const current = result[result.length - 1]
+      const currentLast = current?.messages[current.messages.length - 1]
+
+      if (current && currentLast?.sender_id === message.sender_id) {
+        current.messages.push(message)
+      } else {
+        result.push({
+          messages: [message],
+          mine: message.sender_id === user.id,
+          member: senders?.get(message.sender_id) ?? null,
+        })
+      }
+    }
+
+    return result
+  }, [messages, senders, user.id])
+
+  function senderLabel(member: GroupMember | null): string {
+    if (!member) return ''
+    return member.display_name?.trim() || member.username?.trim() || ''
+  }
+
+  function renderBubble(
+    message: Message,
+    stacked: boolean,
+  ) {
+    const mine = message.sender_id === user.id
+
+    const status = mine
+      ? message.id < 0
+        ? 'sending'
+        : messageStatuses.get(message.id)
+      : undefined
+
+    return (
+      <article
+        key={message.id}
+        className={`bubble ${mine ? 'mine' : ''} ${stacked ? 'stacked' : ''
+          }`}
+        onContextMenu={(event) => openMenu(event, message)}
+      >
+        <p>
+          {message.content}
+          {message.edited ? (
+            <span className="edited-tag"> edited</span>
+          ) : null}
+        </p>
+
+        <time className="bubble-time">
+          {status !== 'sending' && (
+            <span className="bubble-time-text">
+              {formatMessageTime(message.created_at)}
+            </span>
+          )}
+
+          {status ? (
+            <span
+              className={`msg-status ${status} ${status === 'sending' ? 'spinning' : ''
+                }`}
+              aria-label={
+                status === 'sending'
+                  ? 'Sending'
+                  : 'Sent'
+              }
+            >
+              {status === 'sending' ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 12.5l5 5L20 6.5" />
+                </svg>
+              )}
+            </span>
+          ) : null}
+        </time>
+      </article>
+    )
+  }
+
   if (!conversation) {
     return (<section className="thread empty-thread"> <div className="empty-card"> <span className="brand-mark lg" aria-hidden> <span /> <span /> <span /> </span>
 
@@ -161,7 +285,8 @@ export function Thread({
 
   }
 
-  const title = displayName(conversation)
+  const title = conversationTitle(conversation)
+  const isGroup = conversation.conversation_type === 'group'
 
   return (<section className="thread"> <header className="thread-head"> <button
     type="button"
@@ -171,26 +296,33 @@ export function Thread({
   >
     Chats </button>
 
-    <Avatar
-      id={conversation.user_id || conversation.conversation_id}
-      name={title}
-      url={
-        conversation.avatar_url ||
-        conversation.group_avatar_url
-      }
-      size="sm"
-    />
+    <button
+      type="button"
+      className="thread-peer"
+      onClick={onOpenInfo}
+      aria-label={`Open ${conversation.conversation_type === 'group' ? 'group info' : 'profile'} for ${title}`}
+    >
+      <Avatar
+        id={conversation.user_id || conversation.conversation_id}
+        name={title}
+        url={
+          conversation.avatar_url ||
+          conversation.group_avatar_url
+        }
+        size="sm"
+      />
 
-    <div className="thread-title">
-      <h2>{title}</h2>
+      <div className="thread-title">
+        <h2>{title}</h2>
 
-      <p className="eyebrow">
-        {conversation.conversation_type === 'group'
-          ? 'Group'
-          : 'Direct'}{' '}
-        · live
-      </p>
-    </div>
+        <p className="eyebrow">
+          {conversation.conversation_type === 'group'
+            ? 'Group'
+            : 'Direct'}{' '}
+          · live
+        </p>
+      </div>
+    </button>
   </header>
 
     <div
@@ -204,81 +336,61 @@ export function Thread({
         </div>
       ) : null}
 
-      {messages.map((message, index) => {
-        const mine = message.sender_id === user.id
-        const previous = messages[index - 1]
+      {isGroup
+        ? runs.map((run, runIndex) => {
+          const label = senderLabel(run.member)
+          const firstId = run.messages[0].id
 
-        const stacked =
-          Boolean(previous) &&
-          previous.sender_id === message.sender_id
-
-        const status = mine
-          ? message.id < 0
-            ? 'sending'
-            : messageStatuses.get(message.id)
-          : undefined
-
-        return (
-          <article
-            key={message.id}
-            className={`bubble ${mine ? 'mine' : ''} ${stacked ? 'stacked' : ''
-              }`}
-            onContextMenu={(event) => openMenu(event, message)}
-          >
-            <p>
-              {message.content}
-              {message.edited ? (
-                <span className="edited-tag"> edited</span>
-              ) : null}
-            </p>
-
-            <time className="bubble-time">
-              {status !== 'sending' && (
-                <span className="bubble-time-text">
-                  {formatMessageTime(message.created_at)}
-                </span>
+          return (
+            <div
+              key={`run:${firstId}:${runIndex}`}
+              className={`msg-group${run.mine ? ' mine' : ''}`}
+            >
+              {run.mine ? null : (
+                <div className="msg-gutter">
+                  {run.member && label ? (
+                    <Avatar
+                      id={run.member.user_id}
+                      name={label}
+                      url={run.member.avatar_url || undefined}
+                      size="sm"
+                    />
+                  ) : null}
+                </div>
               )}
 
-              {status ? (
-                <span
-                  className={`msg-status ${status} ${status === 'sending' ? 'spinning' : ''
-                    }`}
-                  aria-label={
-                    status === 'sending'
-                      ? 'Sending'
-                      : 'Sent'
-                  }
-                >
-                  {status === 'sending' ? (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M12 7v5l3 2" />
-                    </svg>
-                  ) : (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M4 12.5l5 5L20 6.5" />
-                    </svg>
-                  )}
-                </span>
-              ) : null}
-            </time>
-          </article>
-        )
-      })}
+              <div className="msg-stack">
+                {!run.mine && run.member && label ? (
+                  <span
+                    className="msg-author"
+                    title={
+                      run.member.username
+                        ? `@${run.member.username}`
+                        : label
+                    }
+                    style={{
+                      '--author-hue': hueFromId(run.member.user_id),
+                    } as CSSProperties}
+                  >
+                    {label}
+                  </span>
+                ) : null}
+
+                {run.messages.map((message, index) =>
+                  renderBubble(message, index > 0),
+                )}
+              </div>
+            </div>
+          )
+        })
+        : messages.map((message, index) => {
+          const previous = messages[index - 1]
+          const stacked =
+            Boolean(previous) &&
+            previous.sender_id === message.sender_id
+
+          return renderBubble(message, stacked)
+        })}
     </div>
 
     {menu ? (

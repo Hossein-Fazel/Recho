@@ -1,6 +1,6 @@
 # Recho
 
-**Recho** is a realtime chat application built with a Go backend and a React (TypeScript) frontend. It provides user authentication, direct conversations, and realtime message delivery over WebSockets.
+**Recho** is a realtime chat application built with a Go backend and a React (TypeScript) frontend. It provides user authentication, direct and group conversations, and realtime message delivery over WebSockets.
 
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white) ![Echo](https://img.shields.io/badge/Echo-000000?style=for-the-badge&logo=go&logoColor=white) ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
@@ -8,9 +8,18 @@
 
 - **Authentication** — registration, login, JWT access tokens, and rotating refresh tokens delivered via HTTP-only cookies
 - **Direct conversations** — start or resume a one-on-one conversation with another user
+- **Group chats** — create a group, browse its members, and chat together in realtime
+- **Group invite codes** — every group gets an invite code; owners and admins can copy the code or a shareable `/join/<code>` link straight from the group info panel
+- **Join by invite** — preview a group (name, bio, member count) from its code or invite link, then join with a single tap
+- **Group members & roles** — member list with owner/admin/member badges, right in the conversation info panel
 - **Realtime messaging** — WebSocket-based message delivery with a hub/client architecture
+- **Message editing & deletion** — edit or delete your own messages from a right-click context menu, synced to everyone in realtime
+- **Conversation & profile info** — view profile or group details (bio, handle, members) from the chat header
+- **Sender labels in group chats** — messages are grouped Telegram-style with the sender's avatar and name (falling back to username)
 - **User search** — look up other users to start a conversation
 - **Message history** — cursor-based pagination for fetching past messages
+- **Polished UI** — emoji picker, dark/light themes, optimistic sending with delivery status
+- **Single-binary deploy** — the compiled frontend is served as static assets by the Go server in production mode
 - **API documentation** — Swagger/OpenAPI docs generated from code annotations
 - **Database migrations** — versioned Postgres schema managed with `golang-migrate`
 

@@ -164,6 +164,88 @@ func (q *Queries) GetConversationByID(ctx context.Context, arg GetConversationBy
 	return i, err
 }
 
+const getConversationInfo = `-- name: GetConversationInfo :one
+SELECT
+    c.id,
+    CASE
+        WHEN dc.conversation_id IS NOT NULL THEN 'direct'
+        ELSE 'group'
+    END AS conversation_type,
+
+    u.id AS user_id,
+    u.username,
+    u.display_name,
+    u.avatar_url,
+    u.bio,
+
+    g.conversation_id AS group_id,
+    g.name AS group_name,
+    g.avatar_url AS group_avatar_url,
+    g.bio AS group_bio,
+    g.invite_code,
+    gm.role AS viewer_role,
+    (
+        SELECT COUNT(*)
+        FROM group_members gmc
+        WHERE gmc.group_id = g.conversation_id
+    ) AS member_count
+FROM conversations c
+LEFT JOIN direct_conversations dc ON dc.conversation_id = c.id
+LEFT JOIN users u ON u.id = CASE
+    WHEN dc.user_one_id = $1 THEN dc.user_two_id
+    ELSE dc.user_one_id
+END
+LEFT JOIN groups g ON g.conversation_id = c.id
+LEFT JOIN group_members gm
+    ON gm.group_id = c.id
+    AND gm.user_id = $1
+WHERE c.id = $2
+`
+
+type GetConversationInfoParams struct {
+	UserID         uuid.UUID
+	ConversationID uuid.UUID
+}
+
+type GetConversationInfoRow struct {
+	ID               uuid.UUID
+	ConversationType string
+	UserID           pgtype.UUID
+	Username         pgtype.Text
+	DisplayName      pgtype.Text
+	AvatarUrl        pgtype.Text
+	Bio              pgtype.Text
+	GroupID          pgtype.UUID
+	GroupName        pgtype.Text
+	GroupAvatarUrl   pgtype.Text
+	GroupBio         pgtype.Text
+	InviteCode       pgtype.Text
+	ViewerRole       NullGroupMemberRole
+	MemberCount      int64
+}
+
+func (q *Queries) GetConversationInfo(ctx context.Context, arg GetConversationInfoParams) (GetConversationInfoRow, error) {
+	row := q.db.QueryRow(ctx, getConversationInfo, arg.UserID, arg.ConversationID)
+	var i GetConversationInfoRow
+	err := row.Scan(
+		&i.ID,
+		&i.ConversationType,
+		&i.UserID,
+		&i.Username,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.Bio,
+		&i.GroupID,
+		&i.GroupName,
+		&i.GroupAvatarUrl,
+		&i.GroupBio,
+		&i.InviteCode,
+		&i.ViewerRole,
+		&i.MemberCount,
+	)
+	return i, err
+}
+
 const getConversationMessages = `-- name: GetConversationMessages :many
 SELECT
     message_id,
@@ -241,6 +323,62 @@ func (q *Queries) GetDirectConversation(ctx context.Context, arg GetDirectConver
 	var conversation_id uuid.UUID
 	err := row.Scan(&conversation_id)
 	return conversation_id, err
+}
+
+const getGroupMembers = `-- name: GetGroupMembers :many
+SELECT
+    u.id,
+    u.username,
+    u.display_name,
+    u.avatar_url,
+    gm.role AS member_role
+FROM group_members gm
+JOIN users u ON u.id = gm.user_id
+WHERE gm.group_id = $1 AND (
+    $2::uuid IS NULL
+    OR (u.id) > $2::uuid)
+ORDER BY u.id
+LIMIT $3
+`
+
+type GetGroupMembersParams struct {
+	ConversationID uuid.UUID
+	CursorUserID   uuid.UUID
+	CursorLimit    int32
+}
+
+type GetGroupMembersRow struct {
+	ID          uuid.UUID
+	Username    string
+	DisplayName pgtype.Text
+	AvatarUrl   pgtype.Text
+	MemberRole  GroupMemberRole
+}
+
+func (q *Queries) GetGroupMembers(ctx context.Context, arg GetGroupMembersParams) ([]GetGroupMembersRow, error) {
+	rows, err := q.db.Query(ctx, getGroupMembers, arg.ConversationID, arg.CursorUserID, arg.CursorLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetGroupMembersRow
+	for rows.Next() {
+		var i GetGroupMembersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.DisplayName,
+			&i.AvatarUrl,
+			&i.MemberRole,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserConversations = `-- name: GetUserConversations :many

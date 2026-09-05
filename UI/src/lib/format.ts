@@ -1,14 +1,51 @@
-export function displayName(input: {
+export const UNKNOWN_USER = 'Unknown user'
+export const UNNAMED_GROUP = 'Unnamed group'
+
+type NameFields = {
   display_name?: string
   username?: string
   group_name?: string
-}): string {
+  name?: string
+}
+
+/**
+ * Best available name, preferring a real name and falling back to the
+ * username. Returns '' when nothing is set.
+ */
+export function displayName(input: NameFields): string {
   return (
     input.display_name?.trim() ||
-    input.username?.trim() ||
     input.group_name?.trim() ||
-    'Unknown'
+    input.name?.trim() ||
+    input.username?.trim() ||
+    ''
   )
+}
+
+/** Name of a person, never empty. Falls back to the username. */
+export function personName(input: NameFields): string {
+  return displayName(input) || UNKNOWN_USER
+}
+
+/** Title of a direct or group conversation, never empty. */
+export function conversationTitle(
+  input: NameFields & { conversation_type?: string },
+): string {
+  return (
+    displayName(input) ||
+    (input.conversation_type === 'group' ? UNNAMED_GROUP : UNKNOWN_USER)
+  )
+}
+
+/**
+ * `@username` for use as a secondary line. Empty when there is no username,
+ * or when `name` is already the username and would just be repeated.
+ */
+export function handle(username?: string, name?: string): string {
+  const value = username?.trim()
+  if (!value) return ''
+  if (name?.trim() === value) return ''
+  return `@${value}`
 }
 
 export function initials(name: string): string {
@@ -59,4 +96,19 @@ export function formatMessageTime(value: string): string {
     return ''
   }
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
+/** Full date and time. Returns '' for missing or zero-value timestamps. */
+export function formatDateTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime()) || date.getFullYear() < 2) {
+    return ''
+  }
+  return date.toLocaleString([], {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }

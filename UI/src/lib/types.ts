@@ -86,3 +86,63 @@ export type WSEvent =
   | { type: 'message.edit'; request_id: string; data: MessageEdited }
   | { type: 'message.delete'; request_id: string; data: MessageDeleted }
   | { type: 'error'; request_id: string; data: { code: number; message: string } }
+
+export type ConversationInfo = {
+  conversation_id: string
+  conversation_type: 'direct' | 'group'
+  user?: UserInfo | null
+  group?: GroupInfo | null
+}
+
+export type UserInfo = {
+  id: string
+  username: string
+  display_name: string
+  avatar_url: string
+  bio: string
+}
+
+export type GroupInfo = {
+  id: string
+  name: string
+  avatar_url: string
+  bio: string
+  /** Only sent to members allowed to share it (owner and admins). */
+  invite_code?: string
+  role?: GroupMemberRole
+  member_count?: number
+}
+
+export type CreateGroupResponse = {
+  conversation_id: string
+  name: string
+  bio: string
+  avatar_url: string
+  invite_code: string
+  created_at: string
+  updated_at: string
+}
+
+export type GroupPreview = {
+  conversation_id: string
+  name: string
+  avatar_url: string
+  bio: string
+  member_count: number
+  is_member: boolean
+}
+
+export type GroupMemberRole = 'owner' | 'admin' | 'member'
+
+export type GroupMember = {
+  user_id: string
+  username: string
+  display_name: string
+  avatar_url: string
+  role: GroupMemberRole
+}
+
+export type GroupMembersResponse = {
+  members: GroupMember[] | null
+  next_cursor?: string
+}

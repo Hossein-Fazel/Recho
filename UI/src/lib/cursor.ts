@@ -19,3 +19,7 @@ export const firstMessageCursor = encodeGoCursor({
   Date: '0001-01-01T00:00:00Z',
   ID: 0,
 })
+
+export const firstGroupMemberCursor = encodeGoCursor({
+  ID: '00000000-0000-0000-0000-000000000000',
+})

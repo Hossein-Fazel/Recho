@@ -1,9 +1,14 @@
-import { firstConvCursor, firstMessageCursor } from './cursor'
+import { firstConvCursor, firstGroupMemberCursor, firstMessageCursor } from './cursor'
 import type {
   AuthResponse,
   Conversation,
+  ConversationInfo,
+  CreateGroupResponse,
   ErrResponse,
   GetConversationMessagesResponse,
+  GroupMember,
+  GroupMembersResponse,
+  GroupPreview,
   Message,
   User,
   UserConversationsResponse,
@@ -119,6 +124,46 @@ export const api = {
       messages: (data.messages ?? []).filter((m): m is Message => Boolean(m)),
       nextCursor: data.next_cursor ?? '',
     }
+  },
+
+  conversationInfo(conversationId: string) {
+    return request<ConversationInfo>(
+      `/api/conversation/${conversationId}/info`,
+    )
+  },
+
+  async groupMembers(conversationId: string, cursor = firstGroupMemberCursor, limit = 50) {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      cursor,
+    })
+    const data = await request<GroupMembersResponse>(
+      `/api/conversation/${conversationId}/members?${params}`,
+    )
+    return {
+      members: (data.members ?? []).filter((m): m is GroupMember => Boolean(m)),
+      nextCursor: data.next_cursor ?? '',
+    }
+  },
+
+  createGroup(name: string, bio = '') {
+    return request<CreateGroupResponse>('/api/group/', {
+      method: 'POST',
+      body: JSON.stringify({ name, bio }),
+    })
+  },
+
+  groupByInviteCode(code: string) {
+    return request<GroupPreview>(
+      `/api/group/invite/${encodeURIComponent(code)}`,
+    )
+  },
+
+  joinGroup(code: string) {
+    return request<GroupPreview>('/api/group/join', {
+      method: 'POST',
+      body: JSON.stringify({ invite_code: code }),
+    })
   },
 }
 

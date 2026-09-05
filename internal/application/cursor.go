@@ -71,3 +71,33 @@ func decodeMessageCursor(value string) (MessageCursor, error) {
 
 	return cursor, nil
 }
+
+type GroupMemberCursor struct {
+	ID uuid.UUID
+}
+
+func encodeGroupMemberCursor(id uuid.UUID) (string, error) {
+	data, err := json.Marshal(GroupMemberCursor{
+		ID: id,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(data), nil
+}
+
+func decodeGroupMemberCursor(value string) (GroupMemberCursor, error) {
+	data, err := base64.RawURLEncoding.DecodeString(value)
+	if err != nil {
+		return GroupMemberCursor{}, err
+	}
+
+	var cursor GroupMemberCursor
+
+	if err := json.Unmarshal(data, &cursor); err != nil {
+		return GroupMemberCursor{}, err
+	}
+
+	return cursor, nil
+}

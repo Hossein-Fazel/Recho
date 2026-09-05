@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from './Avatar'
 import { ThemeToggle } from './ThemeToggle'
-import { displayName, formatTime } from '../lib/format'
+import {
+  conversationTitle,
+  formatTime,
+  handle,
+  personName,
+} from '../lib/format'
 import { api } from '../lib/api'
 import type { Conversation, User, UserSearch } from '../lib/types'
 
@@ -11,6 +16,8 @@ type SidebarProps = {
   activeId: string | null
   onSelect: (conversation: Conversation) => void
   onCreated: (conversationId: string, peer: UserSearch) => void
+  onNewGroup: () => void
+  onJoinGroup: () => void
   onLogout: () => void
   onCloseMobile?: () => void
 }
@@ -21,6 +28,8 @@ export function Sidebar({
   activeId,
   onSelect,
   onCreated,
+  onNewGroup,
+  onJoinGroup,
   onLogout,
   onCloseMobile,
 }: SidebarProps) {
@@ -53,7 +62,9 @@ export function Sidebar({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q || results.length > 0) return conversations
-    return conversations.filter((c) => displayName(c).toLowerCase().includes(q))
+    return conversations.filter((c) =>
+      `${conversationTitle(c)} ${c.username}`.toLowerCase().includes(q),
+    )
   }, [conversations, query, results.length])
 
   async function startChat(peer: UserSearch) {
@@ -63,6 +74,9 @@ export function Sidebar({
     setResults([])
     onCloseMobile?.()
   }
+
+  const myName = personName(user)
+  const myHandle = handle(user.username, myName)
 
   return (
     <aside className="sidebar">
@@ -100,24 +114,49 @@ export function Sidebar({
             </button>
           ) : null}
         </div>
+
+        <div className="sidebar-actions">
+          <button type="button" className="side-action" onClick={onNewGroup}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="9" r="3.4" />
+              <path d="M3.5 19c0-3 2.5-4.7 5.5-4.7s5.5 1.7 5.5 4.7" />
+              <path d="M18 8v6M15 11h6" />
+            </svg>
+            New group
+          </button>
+          <button type="button" className="side-action" onClick={onJoinGroup}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H15" />
+              <path d="M11 8l4 4-4 4M15 12H4" />
+            </svg>
+            Join with code
+          </button>
+        </div>
       </div>
 
       {results.length > 0 ? (
         <div className="result-block">
           <p className="list-label">People</p>
           <ul className="conv-list">
-            {results.map((peer) => (
-              <li key={peer.id}>
-                <button type="button" className="conv-item" onClick={() => void startChat(peer)}>
-                  <Avatar id={peer.id} name={displayName(peer)} url={peer.avatar_url} />
-                  <span className="conv-meta">
-                    <span className="conv-name">{displayName(peer)}</span>
-                    <span className="conv-preview">@{peer.username}</span>
-                  </span>
-                  <span className="new-chat-arrow" aria-hidden>→</span>
-                </button>
-              </li>
-            ))}
+            {results.map((peer) => {
+              const name = personName(peer)
+              const peerHandle = handle(peer.username, name)
+
+              return (
+                <li key={peer.id}>
+                  <button type="button" className="conv-item" onClick={() => void startChat(peer)}>
+                    <Avatar id={peer.id} name={name} url={peer.avatar_url} />
+                    <span className="conv-meta">
+                      <span className="conv-name">{name}</span>
+                      {peerHandle ? (
+                        <span className="conv-preview">{peerHandle}</span>
+                      ) : null}
+                    </span>
+                    <span className="new-chat-arrow" aria-hidden>→</span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         </div>
       ) : null}
@@ -134,7 +173,7 @@ export function Sidebar({
           </li>
         ) : (
           filtered.map((conv) => {
-            const name = displayName(conv)
+            const name = conversationTitle(conv)
             return (
               <li key={conv.conversation_id}>
                 <button
@@ -161,10 +200,10 @@ export function Sidebar({
       </ul>
 
       <footer className="sidebar-foot">
-        <Avatar id={user.id} name={displayName(user)} url={user.avatar_url} />
+        <Avatar id={user.id} name={myName} url={user.avatar_url} />
         <div className="conv-meta">
-          <span className="conv-name">{displayName(user)}</span>
-          <span className="conv-preview">@{user.username}</span>
+          <span className="conv-name">{myName}</span>
+          {myHandle ? <span className="conv-preview">{myHandle}</span> : null}
         </div>
         <button type="button" className="logout-button" onClick={() => void onLogout()} aria-label="Log out" title="Log out">
           <svg viewBox="0 0 24 24" aria-hidden="true">
