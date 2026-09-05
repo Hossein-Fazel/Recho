@@ -27,20 +27,15 @@ const EMPTY_PLACEHOLDER = 'Not set'
 type InfoRowProps = {
   label: string
   value: string
-  mono?: boolean
 }
 
-function InfoRow({ label, value, mono = false }: InfoRowProps) {
+function InfoRow({ label, value }: InfoRowProps) {
   const filled = value.trim().length > 0
 
   return (
     <div className="info-row">
       <dt className="info-label">{label}</dt>
-      <dd
-        className={`info-value${filled ? '' : ' info-value-empty'}${
-          filled && mono ? ' info-value-mono' : ''
-        }`}
-      >
+      <dd className={`info-value${filled ? '' : ' info-value-empty'}`}>
         {filled ? value : EMPTY_PLACEHOLDER}
       </dd>
     </div>
@@ -176,8 +171,6 @@ export function ConversationInfoPanel({
 
   const groupName = (group?.name || conversation.group_name || '').trim()
 
-  const groupId = (group?.id || '').trim()
-
   // The backend only sends the invite code to members allowed to share it,
   // so its presence is the permission check.
   const inviteCode = (group?.invite_code || '').trim()
@@ -261,7 +254,6 @@ export function ConversationInfoPanel({
               <dl className="info-card">
                 <InfoRow label="Name" value={groupName} />
                 <InfoRow label="About" value={bio} />
-                <InfoRow label="Group ID" value={groupId} mono />
               </dl>
 
               {inviteCode ? <InviteCode code={inviteCode} /> : null}

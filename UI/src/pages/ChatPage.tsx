@@ -8,10 +8,12 @@ import { Thread } from '../components/Thread'
 import { useAuth } from '../context/AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { api } from '../lib/api'
+import { firstGroupMemberCursor } from '../lib/cursor'
 import { clearInvitePath } from '../lib/invite'
 import type {
   Conversation,
   CreateGroupResponse,
+  GroupMember,
   Message,
   UserSearch,
 } from '../lib/types'
@@ -38,6 +40,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const [newGroupOpen, setNewGroupOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(Boolean(inviteCode))
   const [joinCode, setJoinCode] = useState(inviteCode)
+  const [groupSenders, setGroupSenders] = useState<Map<string, GroupMember>>(new Map())
 
   const loadedFor = useRef<string | null>(null)
   const pendingConvFetches = useRef<Set<string>>(new Set())
@@ -50,6 +53,51 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       ) ?? null,
     [conversations, activeId],
   )
+
+  // Keep the sender details (name, username, avatar) for every group member
+  // so group messages can be labeled like Telegram. Reloaded whenever the
+  // active group changes.
+  useEffect(() => {
+    const conversationId = active?.conversation_id ?? null
+    setGroupSenders(new Map())
+
+    if (!conversationId || active?.conversation_type !== 'group') {
+      return
+    }
+
+    const targetId = conversationId
+    let cancelled = false
+
+    async function loadSenders() {
+      const senders = new Map<string, GroupMember>()
+      let cursor = firstGroupMemberCursor
+
+      try {
+        while (cursor) {
+          const result = await api.groupMembers(targetId, cursor)
+          if (cancelled) return
+
+          for (const member of result.members) {
+            senders.set(member.user_id, member)
+          }
+
+          cursor = result.nextCursor
+          if (!cursor || result.members.length === 0) break
+        }
+      } catch {
+        // Sender labels are a nice-to-have; render without them on failure.
+        return
+      }
+
+      if (!cancelled) setGroupSenders(senders)
+    }
+
+    void loadSenders()
+
+    return () => {
+      cancelled = true
+    }
+  }, [active?.conversation_id, active?.conversation_type])
 
   const refreshConversations = useCallback(async () => {
     const response = await api.conversations()
@@ -601,6 +649,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           conversation={active}
           messages={messages}
           messageStatuses={messageStatuses}
+          senders={groupSenders}
           hasMore={Boolean(nextMessageCursor)}
           loading={loadingMessages}
           onLoadMore={() => void loadMore()}

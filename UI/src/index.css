@@ -901,6 +901,74 @@ textarea:focus {
   font-size: 0.72rem;
 }
 
+/* -------------------------------------------------- */
+/* Group message runs (Telegram-style sender labels)  */
+/* -------------------------------------------------- */
+
+.msg-group {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.msg-group.mine {
+  justify-content: flex-end;
+}
+
+.msg-gutter {
+  display: flex;
+  width: 34px;
+  flex: 0 0 34px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.msg-group .msg-gutter .avatar {
+  margin-bottom: 2px;
+}
+
+.msg-stack {
+  display: flex;
+  min-width: 0;
+  max-width: min(68%, 620px);
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.msg-group.mine .msg-stack {
+  align-items: flex-end;
+}
+
+.msg-stack .bubble {
+  max-width: 100%;
+}
+
+.msg-group .bubble {
+  align-self: auto;
+}
+
+.msg-author {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 4px;
+  overflow: hidden;
+  color: hsl(var(--author-hue, 220) 72% 60%);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme='light'] .msg-author {
+  color: hsl(var(--author-hue, 220) 60% 36%);
+}
+
 .empty-thread {
   display: grid;
   place-items: center;
@@ -1587,11 +1655,6 @@ textarea:focus {
   font-style: italic;
 }
 
-.info-value-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.82rem;
-}
-
 .info-members {
   display: grid;
   gap: 6px;
@@ -1697,6 +1760,10 @@ textarea:focus {
   .bubble {
     max-width: min(76%, 580px);
   }
+
+  .msg-stack {
+    max-width: min(76%, 580px);
+  }
 }
 
 /* -------------------------------------------------- */
@@ -1773,6 +1840,10 @@ textarea:focus {
     max-width: 84%;
     padding: 9px 11px 7px;
     border-radius: 15px 15px 15px 5px;
+  }
+
+  .msg-stack {
+    max-width: 84%;
   }
 
   .bubble.mine {
