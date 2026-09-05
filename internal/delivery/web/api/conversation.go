@@ -13,7 +13,7 @@ import (
 )
 
 type ConversationHandler struct {
-convSvc *application.ConversationService
+	convSvc *application.ConversationService
 }
 
 func NewConversationHandler(convSvc *application.ConversationService) *ConversationHandler {
@@ -306,7 +306,6 @@ func (h *ConversationHandler) GetConversationInfo(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, response)
 }
-
 
 // GetGroupMembers godoc
 // @Summary Get group members

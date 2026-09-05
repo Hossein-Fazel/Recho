@@ -98,12 +98,10 @@ type UserInfo struct {
 }
 
 type GroupInfo struct {
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	AvatarURL string    `json:"avatar_url"`
-	Bio       string    `json:"bio"`
-	// InviteCode is only populated for members who are allowed to share it
-	// (owner and admins).
+	ID          uuid.UUID             `json:"id"`
+	Name        string                `json:"name"`
+	AvatarURL   string                `json:"avatar_url"`
+	Bio         string                `json:"bio"`
 	InviteCode  string                `json:"invite_code,omitempty"`
 	Role        model.GroupMemberRole `json:"role,omitempty"`
 	MemberCount int64                 `json:"member_count"`

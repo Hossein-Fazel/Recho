@@ -118,7 +118,6 @@ func (s *GroupService) PreviewByInviteCode(ctx context.Context, userID uuid.UUID
 	return preview, nil
 }
 
-
 func (s *GroupService) JoinByInviteCode(ctx context.Context, userID uuid.UUID, code string) (*model.GroupPreview, error) {
 	pkg.Logger.Info().
 		Str("user id", userID.String()).
