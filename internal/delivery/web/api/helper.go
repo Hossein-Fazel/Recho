@@ -37,6 +37,17 @@ func convList2convListRes(convs []*model.UserConversation, next string) dto.User
 	return res
 }
 
+func groupPreview2res(preview *model.GroupPreview) dto.GroupPreviewResponse {
+	return dto.GroupPreviewResponse{
+		ConversationID: preview.GroupID,
+		Name:           preview.Name,
+		AvatarURL:      preview.AvatarURL,
+		Bio:            preview.Bio,
+		MemberCount:    preview.MemberCount,
+		IsMember:       preview.IsMember,
+	}
+}
+
 func uSearch2dtoUSearch(user *model.UserSearch) *dto.UserSearch {
 	return &dto.UserSearch{
 		ID:          user.ID,

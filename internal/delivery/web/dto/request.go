@@ -19,3 +19,12 @@ type RefreshRequest struct {
 type GetOrCreateDirectConversationRequest struct {
 	UserID uuid.UUID `json:"user_id"`
 }
+
+type CreateGroupRequest struct {
+	Name string `json:"name"`
+	Bio  string `json:"bio"`
+}
+
+type JoinGroupRequest struct {
+	InviteCode string `json:"invite_code"`
+}

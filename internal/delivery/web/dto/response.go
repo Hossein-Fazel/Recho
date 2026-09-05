@@ -102,6 +102,30 @@ type GroupInfo struct {
 	Name      string    `json:"name"`
 	AvatarURL string    `json:"avatar_url"`
 	Bio       string    `json:"bio"`
+	// InviteCode is only populated for members who are allowed to share it
+	// (owner and admins).
+	InviteCode  string                `json:"invite_code,omitempty"`
+	Role        model.GroupMemberRole `json:"role,omitempty"`
+	MemberCount int64                 `json:"member_count"`
+}
+
+type CreateGroupResponse struct {
+	ConversationID uuid.UUID `json:"conversation_id"`
+	Name           string    `json:"name"`
+	Bio            string    `json:"bio"`
+	AvatarURL      string    `json:"avatar_url"`
+	InviteCode     string    `json:"invite_code"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+type GroupPreviewResponse struct {
+	ConversationID uuid.UUID `json:"conversation_id"`
+	Name           string    `json:"name"`
+	AvatarURL      string    `json:"avatar_url"`
+	Bio            string    `json:"bio"`
+	MemberCount    int64     `json:"member_count"`
+	IsMember       bool      `json:"is_member"`
 }
 
 type GetGroupMembersResponse struct {

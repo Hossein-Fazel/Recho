@@ -29,6 +29,7 @@ type Services struct {
 	AccessToken  application.AccessToken
 	Conversation *application.ConversationService
 	User         *application.UserService
+	Group        *application.GroupService
 }
 
 // @title Recho
@@ -93,6 +94,10 @@ func Init(svcs Services, conf Config) *echo.Echo {
 	userGroup := apiGroup.Group("/user", accessMidleware)
 	userHandler := api.NewUserHandler(svcs.User)
 	userHandler.RegisterRoutes(userGroup)
+
+	groupGroup := apiGroup.Group("/group", accessMidleware)
+	groupHandler := api.NewGroupHandler(svcs.Group)
+	groupHandler.RegisterRoutes(groupGroup)
 
 	if !webServer.Debug {
 		pkg.Logger.Info().Msg("Serving frontend")

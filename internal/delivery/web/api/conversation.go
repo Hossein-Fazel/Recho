@@ -288,12 +288,20 @@ func (h *ConversationHandler) GetConversationInfo(c echo.Context) error {
 		}
 	}
 	if info.Group != nil {
-		response.Group = &dto.GroupInfo{
-			ID:        info.Group.GroupID,
-			Name:      info.Group.GroupName,
-			AvatarURL: info.Group.GroupAvatarUrl,
-			Bio:       info.Group.GroupBio,
+		group := &dto.GroupInfo{
+			ID:          info.Group.GroupID,
+			Name:        info.Group.GroupName,
+			AvatarURL:   info.Group.GroupAvatarUrl,
+			Bio:         info.Group.GroupBio,
+			Role:        info.Group.ViewerRole,
+			MemberCount: info.Group.MemberCount,
 		}
+
+		if info.Group.CanShareInvite() {
+			group.InviteCode = info.Group.InviteCode
+		}
+
+		response.Group = group
 	}
 
 	return c.JSON(http.StatusOK, response)
