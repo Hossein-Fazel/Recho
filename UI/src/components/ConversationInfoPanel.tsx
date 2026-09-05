@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Avatar } from './Avatar'
 import { InviteCode } from './InviteCode'
+import { LinkedText } from './LinkedText'
 import { api } from '../lib/api'
 import { UNNAMED_GROUP, displayName, handle, personName } from '../lib/format'
 import type {
@@ -36,7 +37,7 @@ function InfoRow({ label, value }: InfoRowProps) {
     <div className="info-row">
       <dt className="info-label">{label}</dt>
       <dd className={`info-value${filled ? '' : ' info-value-empty'}`}>
-        {filled ? value : EMPTY_PLACEHOLDER}
+        {filled ? <LinkedText text={value} /> : EMPTY_PLACEHOLDER}
       </dd>
     </div>
   )

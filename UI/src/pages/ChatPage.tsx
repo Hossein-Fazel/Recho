@@ -657,6 +657,10 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           onEdit={startEdit}
           onDelete={setPendingDelete}
           onOpenInfo={() => setInfoOpen(true)}
+          onOpenInvite={(code) => {
+            setJoinCode(code)
+            setJoinOpen(true)
+          }}
         />
 
         <Composer

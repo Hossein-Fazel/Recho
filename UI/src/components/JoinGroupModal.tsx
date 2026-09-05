@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
+import { LinkedText } from './LinkedText'
 import { api } from '../lib/api'
 import { UNNAMED_GROUP } from '../lib/format'
 import type { GroupPreview } from '../lib/types'
@@ -126,7 +127,9 @@ export function JoinGroupModal({
               <h4 className="join-name">{groupName}</h4>
               <p className="join-meta">{memberLabel}</p>
               {preview.bio.trim() ? (
-                <p className="join-bio">{preview.bio}</p>
+                <p className="join-bio">
+                  <LinkedText text={preview.bio} />
+                </p>
               ) : null}
             </div>
 

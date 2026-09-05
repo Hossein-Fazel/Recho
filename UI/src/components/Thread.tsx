@@ -7,6 +7,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { Avatar } from './Avatar'
+import { LinkedText } from './LinkedText'
 import { copyText } from '../lib/clipboard'
 import {
   conversationTitle,
@@ -33,6 +34,8 @@ type ThreadProps = {
   onEdit: (message: Message) => void
   onDelete: (message: Message) => void
   onOpenInfo: () => void
+  /** Opens the join flow for an invite link tapped inside a message. */
+  onOpenInvite: (code: string) => void
 }
 
 type MenuState = {
@@ -63,6 +66,7 @@ export function Thread({
   onEdit,
   onDelete,
   onOpenInfo,
+  onOpenInvite,
 }: ThreadProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -82,6 +86,10 @@ export function Thread({
     x: number
     y: number
   } | null>(null)
+
+  // Set when a long press opened the menu, so the tap that follows can't also
+  // activate a link inside the bubble.
+  const swallowClick = useRef(false)
 
   const stickToBottom = useRef(true)
   const previousConversation = useRef<string | null>(null)
@@ -229,6 +237,8 @@ export function Thread({
     event: React.PointerEvent,
     message: Message,
   ) {
+    swallowClick.current = false
+
     if (event.pointerType === 'mouse') return
 
     const x = event.clientX
@@ -241,10 +251,19 @@ export function Thread({
       y,
       timer: window.setTimeout(() => {
         longPress.current = null
+        swallowClick.current = true
         setMenuAt(null)
         setMenu({ message, x, y })
       }, longPressDelay),
     }
+  }
+
+  function onBubbleClick(event: React.MouseEvent) {
+    if (!swallowClick.current) return
+
+    swallowClick.current = false
+    event.preventDefault()
+    event.stopPropagation()
   }
 
   function trackLongPress(event: React.PointerEvent) {
@@ -323,9 +342,13 @@ export function Thread({
         onPointerMove={trackLongPress}
         onPointerUp={cancelLongPress}
         onPointerCancel={cancelLongPress}
+        onClickCapture={onBubbleClick}
       >
         <p>
-          {message.content}
+          <LinkedText
+            text={message.content}
+            onInvite={onOpenInvite}
+          />
           {message.edited ? (
             <span className="edited-tag"> edited</span>
           ) : null}

@@ -1358,6 +1358,34 @@ textarea:focus {
 }
 
 /* -------------------------------------------------- */
+/* Links inside user text */
+/* -------------------------------------------------- */
+
+.linkified {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: 150ms ease;
+}
+
+.linkified:hover {
+  color: var(--accent-hover);
+}
+
+/* Own bubbles are accent-coloured, so the accent link would disappear. */
+.bubble.mine .linkified {
+  color: #fff;
+  text-decoration-color: rgba(255, 255, 255, 0.55);
+}
+
+.bubble.mine .linkified:hover,
+.bubble.mine .linkified:active {
+  color: #fff;
+  text-decoration-color: #fff;
+}
+
+/* -------------------------------------------------- */
 /* Edited tag */
 /* -------------------------------------------------- */
 
