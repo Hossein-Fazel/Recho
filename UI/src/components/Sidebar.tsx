@@ -16,6 +16,8 @@ type SidebarProps = {
   activeId: string | null
   onSelect: (conversation: Conversation) => void
   onCreated: (conversationId: string, peer: UserSearch) => void
+  onNewGroup: () => void
+  onJoinGroup: () => void
   onLogout: () => void
   onCloseMobile?: () => void
 }
@@ -26,6 +28,8 @@ export function Sidebar({
   activeId,
   onSelect,
   onCreated,
+  onNewGroup,
+  onJoinGroup,
   onLogout,
   onCloseMobile,
 }: SidebarProps) {
@@ -109,6 +113,24 @@ export function Sidebar({
               ×
             </button>
           ) : null}
+        </div>
+
+        <div className="sidebar-actions">
+          <button type="button" className="side-action" onClick={onNewGroup}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="9" r="3.4" />
+              <path d="M3.5 19c0-3 2.5-4.7 5.5-4.7s5.5 1.7 5.5 4.7" />
+              <path d="M18 8v6M15 11h6" />
+            </svg>
+            New group
+          </button>
+          <button type="button" className="side-action" onClick={onJoinGroup}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H15" />
+              <path d="M11 8l4 4-4 4M15 12H4" />
+            </svg>
+            Join with code
+          </button>
         </div>
       </div>
 

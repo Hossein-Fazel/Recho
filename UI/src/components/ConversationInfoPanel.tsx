@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Avatar } from './Avatar'
+import { InviteCode } from './InviteCode'
 import { api } from '../lib/api'
 import { UNNAMED_GROUP, displayName, handle, personName } from '../lib/format'
 import type {
@@ -177,6 +178,10 @@ export function ConversationInfoPanel({
 
   const groupId = (group?.id || '').trim()
 
+  // The backend only sends the invite code to members allowed to share it,
+  // so its presence is the permission check.
+  const inviteCode = (group?.invite_code || '').trim()
+
   // The avatar URL is only used to render the image in the hero, never shown
   // as a text row.
   const avatarUrl = isGroup
@@ -258,6 +263,8 @@ export function ConversationInfoPanel({
                 <InfoRow label="About" value={bio} />
                 <InfoRow label="Group ID" value={groupId} mono />
               </dl>
+
+              {inviteCode ? <InviteCode code={inviteCode} /> : null}
 
               <section className="info-members">
                 <p className="list-label">

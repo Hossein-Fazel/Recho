@@ -107,6 +107,29 @@ export type GroupInfo = {
   name: string
   avatar_url: string
   bio: string
+  /** Only sent to members allowed to share it (owner and admins). */
+  invite_code?: string
+  role?: GroupMemberRole
+  member_count?: number
+}
+
+export type CreateGroupResponse = {
+  conversation_id: string
+  name: string
+  bio: string
+  avatar_url: string
+  invite_code: string
+  created_at: string
+  updated_at: string
+}
+
+export type GroupPreview = {
+  conversation_id: string
+  name: string
+  avatar_url: string
+  bio: string
+  member_count: number
+  is_member: boolean
 }
 
 export type GroupMemberRole = 'owner' | 'admin' | 'member'

@@ -3,10 +3,12 @@ import type {
   AuthResponse,
   Conversation,
   ConversationInfo,
+  CreateGroupResponse,
   ErrResponse,
   GetConversationMessagesResponse,
   GroupMember,
   GroupMembersResponse,
+  GroupPreview,
   Message,
   User,
   UserConversationsResponse,
@@ -142,6 +144,26 @@ export const api = {
       members: (data.members ?? []).filter((m): m is GroupMember => Boolean(m)),
       nextCursor: data.next_cursor ?? '',
     }
+  },
+
+  createGroup(name: string, bio = '') {
+    return request<CreateGroupResponse>('/api/group/', {
+      method: 'POST',
+      body: JSON.stringify({ name, bio }),
+    })
+  },
+
+  groupByInviteCode(code: string) {
+    return request<GroupPreview>(
+      `/api/group/invite/${encodeURIComponent(code)}`,
+    )
+  },
+
+  joinGroup(code: string) {
+    return request<GroupPreview>('/api/group/join', {
+      method: 'POST',
+      body: JSON.stringify({ invite_code: code }),
+    })
   },
 }
 
