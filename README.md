@@ -6,38 +6,78 @@
 
 ## Features
 
-- **Authentication** — registration, login, JWT access tokens, and rotating refresh tokens delivered via HTTP-only cookies
-- **Direct conversations** — start or resume a one-on-one conversation with another user
-- **Group chats** — create a group, browse its members, and chat together in realtime
-- **Group invite codes** — every group gets an invite code; owners and admins can copy the code or a shareable `/join/<code>` link straight from the group info panel
-- **Join by invite** — preview a group (name, bio, member count) from its code or invite link, then join with a single tap
-- **Group members & roles** — member list with owner/admin/member badges, right in the conversation info panel
-- **Realtime messaging** — WebSocket-based message delivery with a hub/client architecture
-- **Message editing & deletion** — edit or delete your own messages from a right-click context menu, synced to everyone in realtime
-- **Conversation & profile info** — view profile or group details (bio, handle, members) from the chat header
-- **Sender labels in group chats** — messages are grouped Telegram-style with the sender's avatar and name (falling back to username)
-- **User search** — look up other users to start a conversation
-- **Message history** — cursor-based pagination for fetching past messages
-- **Polished UI** — emoji picker, dark/light themes, optimistic sending with delivery status
-- **Single-binary deploy** — the compiled frontend is served as static assets by the Go server in production mode
-- **API documentation** — Swagger/OpenAPI docs generated from code annotations
-- **Database migrations** — versioned Postgres schema managed with `golang-migrate`
+### Authentication & Security
+
+| Feature            | Description                                                      |
+| ------------------ | ---------------------------------------------------------------- |
+| **Authentication** | User registration and login with JWT-based authentication        |
+| **Access Tokens**  | Short-lived JWT access tokens for authenticated API requests     |
+| **Refresh Tokens** | Rotating refresh tokens securely delivered via HTTP-only cookies |
+
+### Messaging
+
+| Feature                  | Description                                                      |
+| ------------------------ | ---------------------------------------------------------------- |
+| **Direct Conversations** | Start or resume one-on-one conversations between users           |
+| **Realtime Messaging**   | WebSocket-based message delivery using a hub/client architecture |
+| **Message Editing**      | Edit your own messages and synchronize changes in realtime       |
+| **Message Deletion**     | Delete your own messages with realtime synchronization           |
+| **Message History**      | Cursor-based pagination for efficient message history retrieval  |
+| **Optimistic Messaging** | Messages appear instantly with delivery status updates           |
+
+### Groups
+
+| Feature            | Description                                                           |
+| ------------------ | --------------------------------------------------------------------- |
+| **Group Chats**    | Create and participate in realtime group conversations                |
+| **Group Members**  | Browse group members directly from the conversation info panel        |
+| **Member Roles**   | Owner, admin, and member roles with visual role badges                |
+| **Invite Codes**   | Each group has a unique invite code and shareable `/join/<code>` link |
+| **Join by Invite** | Preview group information before joining with a single action         |
+| **Sender Labels**  | Telegram-style sender grouping with avatars and display names         |
+
+### Users & Profiles
+
+| Feature                      | Description                                                    |
+| ---------------------------- | -------------------------------------------------------------- |
+| **User Search**              | Search for users and quickly start a conversation              |
+| **Profile Information**      | View user profiles, bios, and handles from the conversation    |
+| **Conversation Information** | View detailed information about direct and group conversations |
+
+### User Experience
+
+| Feature                 | Description                                                     |
+| ----------------------- | --------------------------------------------------------------- |
+| **Modern UI**           | Clean and responsive messaging interface                        |
+| **Dark / Light Themes** | Built-in theme support                                          |
+| **Emoji Picker**        | Easily add emojis to messages                                   |
+| **Delivery Status**     | Visual feedback for optimistic messages and successful delivery |
+
+### Backend & Infrastructure
+
+| Feature                      | Description                                                           |
+| ---------------------------- | --------------------------------------------------------------------- |
+| **Single-Binary Deployment** | Go server serves the compiled frontend as static assets in production |
+| **API Documentation**        | Swagger/OpenAPI documentation generated from code annotations         |
+| **Database Migrations**      | Version-controlled PostgreSQL schema managed with `golang-migrate`    |
+| **WebSocket Architecture**   | Hub/client architecture for managing realtime connections             |
+
 
 ## Architecture
 
-Recho follows a clean/hexagonal architecture on the backend:
+Recho follows a clean architecture on the backend:
 
 ```
 internal/
-├── model/         # Core domain entities
-├── application/   # Business logic and service interfaces
-├── adapter/       # Interface implementations (e.g. Postgres repositories)
-├── infra/         # Infrastructure concerns (DB pool, migrations, token signing)
+├── model/           # Core domain entities
+├── application/     # Business logic and service interfaces
+├── adapter/         # Interface implementations (e.g. Postgres repositories)
+├── infra/           # Infrastructure concerns (DB pool, migrations, token signing)
 ├── delivery/
 │   ├── web/         # HTTP layer (Echo handlers, DTOs, middleware, error handling)
 │   └── websocket/   # WebSocket hub, client, and message delivery
-├── config/        # Environment-based configuration loading
-└── apperr/        # Application-level error types
+├── config/          # Environment-based configuration loading
+└── apperr/          # Application-level error types
 ```
 
 The compiled frontend (`UI/dist`) is served as static assets directly by the Echo server, so the API and UI can be deployed as a single binary.
