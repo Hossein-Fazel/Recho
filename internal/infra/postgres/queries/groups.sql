@@ -64,3 +64,12 @@ WHERE group_id = sqlc.arg(group_id)
 SELECT COUNT(*) AS member_count
 FROM group_members
 WHERE group_id = sqlc.arg(group_id);
+
+-- name: RemoveGroupMember :exec
+DELETE FROM group_members
+WHERE group_id = sqlc.arg(group_id)
+  AND user_id = sqlc.arg(user_id);
+
+-- name: DeleteGroup :exec
+DELETE FROM conversations
+WHERE id = sqlc.arg(group_id);
