@@ -128,6 +128,35 @@ func (r *Group) AddMember(ctx context.Context, groupID, userID uuid.UUID) error 
 	return nil
 }
 
+func (r *Group) RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error {
+	if groupID == uuid.Nil || userID == uuid.Nil {
+		return apperr.InvalidInput("group repo", "group and user id are required", nil)
+	}
+
+	err := r.sql.RemoveGroupMember(ctx, sqlc.RemoveGroupMemberParams{
+		GroupID: groupID,
+		UserID:  userID,
+	})
+	if err != nil {
+		return apperr.Internal("group repo", err)
+	}
+
+	return nil
+}
+
+func (r *Group) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
+	if groupID == uuid.Nil {
+		return apperr.InvalidInput("group repo", "group id is required", nil)
+	}
+
+	err := r.sql.DeleteGroup(ctx, groupID)
+	if err != nil {
+		return apperr.Internal("group repo", err)
+	}
+
+	return nil
+}
+
 func (r *Group) GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (model.GroupMemberRole, error) {
 	if groupID == uuid.Nil || userID == uuid.Nil {
 		return "", apperr.InvalidInput("group repo", "group and user id are required", nil)
