@@ -1,7 +1,16 @@
+CREATE TYPE message_type AS ENUM (
+    'text'
+    -- 'voice',
+    -- 'video',
+    -- 'picture'
+    -- etc
+);
+
 CREATE TABLE conversations (
     id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     last_message_id         BIGINT,
-    last_message_content    TEXT,
+    last_message_type       message_type,
+    last_message_text       TEXT,
     last_message_created_at TIMESTAMPTZ,
     message_id_counter      BIGINT      NOT NULL DEFAULT 0,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),

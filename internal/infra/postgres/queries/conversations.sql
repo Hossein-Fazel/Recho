@@ -20,7 +20,8 @@ SELECT
 
     -- last message
     c.last_message_id,
-    c.last_message_content,
+    c.last_message_type,
+    c.last_message_text,
     c.last_message_created_at,
 
     c.updated_at
@@ -86,7 +87,8 @@ SELECT
 
     -- last message
     c.last_message_id,
-    c.last_message_content,
+    c.last_message_type,
+    c.last_message_text,
     c.last_message_created_at,
 
     c.updated_at
@@ -149,22 +151,26 @@ RETURNING conversation_id;
 
 -- name: GetConversationMessages :many
 SELECT
-    message_id,
-    conversation_id,
-    sender_id,
-    content,
-    created_at,
-    updated_at
-FROM messages
-WHERE conversation_id = sqlc.arg(conversation_id)
+    m.message_id,
+    m.conversation_id,
+    m.sender_id,
+    m.type,
+    tm.content,
+    m.created_at,
+    m.updated_at
+FROM messages m
+LEFT JOIN text_messages tm
+    ON tm.conversation_id = m.conversation_id
+    AND tm.message_id = m.message_id
+WHERE m.conversation_id = sqlc.arg(conversation_id)
   AND (
       sqlc.arg(cursor_created_at)::timestamptz IS NULL
-      OR (created_at, message_id) < (
+      OR (m.created_at, m.message_id) < (
           sqlc.narg(cursor_created_at)::timestamptz,
           sqlc.narg(cursor_id)::BIGINT
       )
   )
-ORDER BY created_at DESC
+ORDER BY m.created_at DESC
 LIMIT sqlc.arg(query_limit);
 
 -- name: IsConversationMember :one
@@ -248,3 +254,12 @@ WHERE gm.group_id = sqlc.arg(conversation_id) AND (
     OR (u.id) > sqlc.arg(cursor_user_id)::uuid)
 ORDER BY u.id
 LIMIT sqlc.arg(cursor_limit);
+
+-- name: UpdateConversationLastMessage :exec
+UPDATE conversations 
+SET updated_at = sqlc.arg(created_at),
+    last_message_id = sqlc.arg(message_id),
+    last_message_type = sqlc.arg(message_type),
+    last_message_text = sqlc.arg(message_text),
+    last_message_created_at = sqlc.arg(created_at)
+WHERE id = sqlc.arg(conversation_id);
