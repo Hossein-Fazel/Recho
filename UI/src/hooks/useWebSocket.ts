@@ -10,7 +10,6 @@ type Handlers = {
   onMessage: (message: MessageCreated) => void
   onMessageEdited: (message: MessageEdited) => void
   onMessageDeleted: (deleted: MessageDeleted) => void
-  onError: (message: string) => void
   enabled: boolean
 }
 
@@ -23,13 +22,11 @@ export function useWebSocket({
   onMessage,
   onMessageEdited,
   onMessageDeleted,
-  onError,
   enabled,
 }: Handlers) {
   const onMessageRef = useRef(onMessage)
   const onMessageEditedRef = useRef(onMessageEdited)
   const onMessageDeletedRef = useRef(onMessageDeleted)
-  const onErrorRef = useRef(onError)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(false)
@@ -41,7 +38,6 @@ export function useWebSocket({
   onMessageRef.current = onMessage
   onMessageEditedRef.current = onMessageEdited
   onMessageDeletedRef.current = onMessageDeleted
-  onErrorRef.current = onError
 
   useEffect(() => {
     if (!enabled) {
@@ -120,11 +116,6 @@ export function useWebSocket({
                 conversation_id: deleted.conversation_id,
                 request_id: payload.request_id,
               })
-            }
-          } else if (type === 'error' && data) {
-            const err = data as { message?: string }
-            if (err.message) {
-              onErrorRef.current(err.message)
             }
           }
         } catch {

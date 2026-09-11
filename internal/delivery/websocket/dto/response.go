@@ -12,12 +12,6 @@ type WSResponse struct {
 	RequestID uuid.UUID `json:"request_id"`
 	Data      any       `json:"data"`
 }
-
-type ErrorResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
 type MessageCreateResponse struct {
 	ID             int64     `json:"id"`
 	ConversationID uuid.UUID `json:"conversation_id"`

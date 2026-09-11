@@ -85,7 +85,6 @@ export type WSEvent =
   | { type: 'message.create'; request_id: string; data: MessageCreated }
   | { type: 'message.edit'; request_id: string; data: MessageEdited }
   | { type: 'message.delete'; request_id: string; data: MessageDeleted }
-  | { type: 'error'; request_id: string; data: { code: number; message: string } }
 
 export type ConversationInfo = {
   conversation_id: string

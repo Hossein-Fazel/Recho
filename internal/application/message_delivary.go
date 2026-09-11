@@ -22,16 +22,16 @@ func NewMessageDelivery(msgService *MessageService, convService *ConversationSer
 	}
 }
 
-func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message) error {
+func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message) {
 	ctx := context.Background()
 	message, err := d.msgService.Create(ctx, msg)
 	if err != nil {
-		return err
+		return
 	}
 
 	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
-		return err
+		return
 	}
 
 	d.Sender.Send(SendItems{
@@ -40,19 +40,18 @@ func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message
 		Content:   message,
 		Recievers: userIDs,
 	})
-	return nil
 }
 
-func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) error {
+func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) {
 	ctx := context.Background()
 	message, err := d.msgService.Update(ctx, msg)
 	if err != nil {
-		return err
+		return
 	}
 
 	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
-		return err
+		return
 	}
 
 	d.Sender.Send(SendItems{
@@ -61,19 +60,18 @@ func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) 
 		Content:   message,
 		Recievers: userIDs,
 	})
-	return nil
 }
 
-func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message) error {
+func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message) {
 	ctx := context.Background()
 	err := d.msgService.Delete(ctx, msg)
 	if err != nil {
-		return err
+		return
 	}
 
 	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
-		return err
+		return
 	}
 
 	d.Sender.Send(SendItems{
@@ -82,5 +80,4 @@ func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message
 		Content:   msg,
 		Recievers: userIDs,
 	})
-	return nil
 }

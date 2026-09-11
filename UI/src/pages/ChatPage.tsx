@@ -369,10 +369,6 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         void refreshConversations()
       }
     },
-
-    onError: (message) => {
-      setNotice(message)
-    },
   })
 
   function selectConversation(conversation: Conversation) {
