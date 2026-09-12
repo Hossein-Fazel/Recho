@@ -18,7 +18,9 @@ func pgUserSearch2modeUserSearch(user sqlc.SearchUsersRow) *model.UserSearch {
 func toModelMessage(msg sqlc.GetConversationMessagesRow) *model.Message {
 	var text *model.TextMessage
 	if msg.Type == sqlc.MessageTypeText {
-		text.Content = msg.Content.String
+		text = &model.TextMessage{
+			Content: msg.Content.String,
+		}
 	}
 
 	return &model.Message{

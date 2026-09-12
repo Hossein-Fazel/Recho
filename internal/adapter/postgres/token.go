@@ -34,10 +34,6 @@ func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, 
 		Str("tokenHash", tokenHash).
 		Msg("Creating refresh token")
 
-	if userID == uuid.Nil {
-		return nil, apperr.InvalidInput("token repo", "invalid id", nil)
-	}
-
 	rt, err := a.sql.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
 		UserID:    userID,
 		TokenHash: tokenHash,
