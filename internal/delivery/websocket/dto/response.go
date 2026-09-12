@@ -24,7 +24,7 @@ type MessageCreateResponse struct {
 
 func ToMessageCreateResponse(msg model.Message) MessageCreateResponse {
 	var text *TextMessage
-	if msg.Type == model.MessageTypeText {
+	if msg.Type == model.MessageTypeText && msg.Text != nil {
 		text = &TextMessage{
 			Content: msg.Text.Content,
 		}
@@ -52,7 +52,7 @@ type MessageEditResponse struct {
 
 func ToMessageEditResponse(msg model.Message) MessageEditResponse {
 	var text *TextMessage
-	if msg.Type == model.MessageTypeText {
+	if msg.Type == model.MessageTypeText && msg.Text != nil {
 		text = &TextMessage{
 			Content: msg.Text.Content,
 		}

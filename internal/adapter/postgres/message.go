@@ -41,7 +41,7 @@ func (m *Message) Create(ctx context.Context, msg model.Message) (*model.Message
 
 	switch msg.Type {
 	case model.MessageTypeText:
-		if msg.Text.Content == "" {
+		if msg.Text == nil || msg.Text.Content == "" {
 			return nil, apperr.InvalidInput("message repo", "invalid message", nil)
 		}
 
@@ -79,20 +79,11 @@ func (m *Message) Create(ctx context.Context, msg model.Message) (*model.Message
 			},
 			MessageText: pgtype.Text{
 				String: msg.Text.Content,
-				Valid:  msg.Text != nil,
+				Valid:  true,
 			},
 			ConversationID: msg.ConversationID,
 		})
-
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return nil, apperr.NotFound(
-					"message repo",
-					"message not found",
-					err,
-				)
-			}
-
 			return nil, apperr.Internal("message repo", err)
 		}
 
@@ -124,7 +115,7 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 
 	switch msg.Type {
 	case model.MessageTypeText:
-		if msg.Text.Content == "" {
+		if msg.Text == nil || msg.Text.Content == "" {
 			return nil, apperr.InvalidInput("message repo", "invalid message", nil)
 		}
 
@@ -136,15 +127,12 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				return nil, apperr.NotFound(
-					"message repo",
-					"message not found",
-					err,
-				)
+				return nil, apperr.NotFound("message repo", "message not found", err)
 			}
 
 			return nil, apperr.Internal("message repo", err)
 		}
+		msg.UpdatedAt = newTime
 
 		err = qtx.UpdateTextMessage(ctx, sqlc.UpdateTextMessageParams{
 			MsgText:        msg.Text.Content,
@@ -152,16 +140,7 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 			ConversationID: msg.ConversationID,
 			UserID:         msg.SenderID,
 		})
-
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return nil, apperr.NotFound(
-					"message repo",
-					"message not found",
-					err,
-				)
-			}
-
 			return nil, apperr.Internal("message repo", err)
 		}
 
@@ -177,32 +156,22 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 			},
 			MessageText: pgtype.Text{
 				String: msg.Text.Content,
-				Valid:  msg.Text != nil,
+				Valid:  true,
 			},
 			ConversationID: msg.ConversationID,
 		})
-
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return nil, apperr.NotFound(
-					"message repo",
-					"message not found",
-					err,
-				)
-			}
-
 			return nil, apperr.Internal("message repo", err)
 		}
 
-		msg.UpdatedAt = newTime
+		if err := tx.Commit(ctx); err != nil {
+			return nil, apperr.Internal("message repo", err)
+		}
+
 		return &msg, nil
 
 	default:
-		return nil, apperr.InvalidInput(
-			"message repo",
-			"unsupported message type",
-			nil,
-		)
+		return nil, apperr.InvalidInput("message repo", "unsupported message type", nil)
 	}
 }
 

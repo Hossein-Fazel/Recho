@@ -224,12 +224,12 @@ func (h *ConversationHandler) GetConversationMessages(c echo.Context) error {
 
 	for _, message := range messages {
 		var text *dto.TextMessage
-		if message.Type == model.MessageTypeText {
+		if message.Type == model.MessageTypeText && message.Text != nil {
 			text = &dto.TextMessage{
 				Content: message.Text.Content,
 			}
 		}
-		
+
 		response.Messages = append(
 			response.Messages,
 			&dto.Message{

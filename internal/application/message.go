@@ -31,6 +31,10 @@ func normalize(msg *model.Message) error {
 	}
 
 	if msg.Type == model.MessageTypeText {
+		if msg.Text == nil {
+			return apperr.InvalidInput("message service", "message content is required", nil)
+		}
+
 		msg.Text.Content = strings.TrimSpace(msg.Text.Content)
 
 		if msg.Text.Content == "" {
