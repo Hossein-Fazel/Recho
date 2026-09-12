@@ -6,15 +6,21 @@ CREATE TYPE message_type AS ENUM (
     -- etc
 );
 
+CREATE TYPE conversation_type AS ENUM (
+    'group',
+    'direct'
+);
+
 CREATE TABLE conversations (
-    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    id                      UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+    type                    conversation_type NOT NULL,
     last_message_id         BIGINT,
     last_message_type       message_type,
     last_message_text       TEXT,
     last_message_created_at TIMESTAMPTZ,
-    message_id_counter      BIGINT      NOT NULL DEFAULT 0,
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    message_id_counter      BIGINT            NOT NULL DEFAULT 0,
+    created_at              TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ       NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_conversations_updated_at ON conversations(updated_at DESC);

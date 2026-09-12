@@ -165,7 +165,7 @@ func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID u
 
 	q := r.sql.WithTx(tx)
 
-	conversationID, err := q.InsertConversation(ctx)
+	conversationID, err := q.InsertConversation(ctx, sqlc.ConversationTypeDirect)
 
 	if err != nil {
 		return uuid.Nil, apperr.Internal("Conversation repo", err)

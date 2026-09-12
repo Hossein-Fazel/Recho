@@ -13,6 +13,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ConversationType string
+
+const (
+	ConversationTypeGroup  ConversationType = "group"
+	ConversationTypeDirect ConversationType = "direct"
+)
+
+func (e *ConversationType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ConversationType(s)
+	case string:
+		*e = ConversationType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ConversationType: %T", src)
+	}
+	return nil
+}
+
+type NullConversationType struct {
+	ConversationType ConversationType
+	Valid            bool // Valid is true if ConversationType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullConversationType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ConversationType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ConversationType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullConversationType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ConversationType), nil
+}
+
 type GroupMemberRole string
 
 const (
@@ -99,6 +141,7 @@ func (ns NullMessageType) Value() (driver.Value, error) {
 
 type Conversation struct {
 	ID                   uuid.UUID
+	Type                 ConversationType
 	LastMessageID        pgtype.Int8
 	LastMessageType      NullMessageType
 	LastMessageText      pgtype.Text

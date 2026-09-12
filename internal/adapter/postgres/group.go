@@ -47,7 +47,7 @@ func (r *Group) Create(ctx context.Context, params application.CreateGroupParams
 
 	q := r.sql.WithTx(tx)
 
-	conversationID, err := q.InsertConversation(ctx)
+	conversationID, err := q.InsertConversation(ctx, sqlc.ConversationTypeGroup)
 	if err != nil {
 		return nil, apperr.Internal("group repo", err)
 	}

@@ -1,5 +1,4 @@
 -- name: GetUserConversations :many
-
 SELECT
     c.id AS conversation_id,
 
@@ -66,7 +65,6 @@ ORDER BY
 LIMIT sqlc.arg(query_limit);
 
 -- name: GetConversationByID :one
-
 SELECT
     c.id AS conversation_id,
 
@@ -132,8 +130,8 @@ WHERE user_one_id = $1
 AND user_two_id = $2;
 
 -- name: InsertConversation :one
-INSERT INTO conversations(message_id_counter)
-VALUES (0)
+INSERT INTO conversations(type,message_id_counter)
+VALUES (sqlc.arg(conversation_type),0)
 RETURNING id;
 
 -- name: InsertDirectConversation :one

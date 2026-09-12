@@ -71,7 +71,6 @@ func (q *Queries) GetConvUsers(ctx context.Context, conversationID uuid.UUID) ([
 }
 
 const getConversationByID = `-- name: GetConversationByID :one
-
 SELECT
     c.id AS conversation_id,
 
@@ -400,7 +399,6 @@ func (q *Queries) GetGroupMembers(ctx context.Context, arg GetGroupMembersParams
 }
 
 const getUserConversations = `-- name: GetUserConversations :many
-
 SELECT
     c.id AS conversation_id,
 
@@ -530,13 +528,13 @@ func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversat
 }
 
 const insertConversation = `-- name: InsertConversation :one
-INSERT INTO conversations(message_id_counter)
-VALUES (0)
+INSERT INTO conversations(type,message_id_counter)
+VALUES ($1,0)
 RETURNING id
 `
 
-func (q *Queries) InsertConversation(ctx context.Context) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, insertConversation)
+func (q *Queries) InsertConversation(ctx context.Context, conversationType ConversationType) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertConversation, conversationType)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
