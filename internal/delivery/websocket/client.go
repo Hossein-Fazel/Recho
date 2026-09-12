@@ -80,7 +80,8 @@ func (c *Client) ReadPump() {
 			c.MessageDelivery.HandleCreateMessage(income.RequestID, model.Message{
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
-				Content:        msg.Content,
+				Type:           msg.Type,
+				Text:           (*model.TextMessage)(msg.Text),
 			})
 
 		case string(model.MessageEditEvent):
@@ -91,7 +92,8 @@ func (c *Client) ReadPump() {
 				ID:             msg.MessageID,
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
-				Content:        msg.Content,
+				Type:           msg.Type,
+				Text:           (*model.TextMessage)(msg.Text),
 			})
 
 		case string(model.MessageDeleteEvent):

@@ -21,10 +21,33 @@ func NewMessageService(msgRepo MessaageRepo, convRepo ConversationRepo) *Message
 	}
 }
 
+func normalize(msg *model.Message) error {
+	if msg.Type == "" {
+		msg.Type = model.DefaultMessageType()
+	}
+
+	if !msg.Type.IsValid() {
+		return apperr.InvalidInput("message service", "unsupported message type", nil)
+	}
+
+	if msg.Type == model.MessageTypeText {
+		msg.Text.Content = strings.TrimSpace(msg.Text.Content)
+
+		if msg.Text.Content == "" {
+			return apperr.InvalidInput("message service", "message content is required", nil)
+		}
+	}
+
+	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil {
+		return apperr.InvalidInput("message service", "invalid message", nil)
+	}
+
+	return nil
+}
+
 func (m *MessageService) Create(ctx context.Context, msg model.Message) (*model.Message, error) {
-	msg.Content = strings.TrimSpace(msg.Content)
-	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil || msg.Content == "" {
-		return nil, apperr.InvalidInput("message repo", "invalid message", nil)
+	if err := normalize(&msg); err != nil {
+		return nil, err
 	}
 
 	isMember, err := m.convRepo.IsConversationMember(ctx, msg.SenderID, msg.ConversationID)
@@ -45,9 +68,8 @@ func (m *MessageService) Create(ctx context.Context, msg model.Message) (*model.
 }
 
 func (m *MessageService) Update(ctx context.Context, msg model.Message) (*model.Message, error) {
-	msg.Content = strings.TrimSpace(msg.Content)
-	if msg.ConversationID == uuid.Nil || msg.SenderID == uuid.Nil || msg.Content == "" {
-		return nil, apperr.InvalidInput("message repo", "invalid message", nil)
+	if err := normalize(&msg); err != nil {
+		return nil, err
 	}
 
 	isMember, err := m.convRepo.IsConversationMember(ctx, msg.SenderID, msg.ConversationID)

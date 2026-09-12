@@ -86,7 +86,8 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 			GroupName:            conv.GroupName.String,
 			GroupAvatarUrl:       conv.GroupAvatarUrl.String,
 			LastMessageID:        lmID,
-			LastMessageContent:   conv.LastMessageContent.String,
+			LastMessageType:      model.MessageType(conv.LastMessageType.MessageType),
+			LastMessageText:      conv.LastMessageText.String,
 			LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
 			UpdatedAt:            conv.UpdatedAt,
 		})
@@ -132,7 +133,8 @@ func (r *Conversation) GetConversationByID(ctx context.Context, userID uuid.UUID
 		GroupName:            conv.GroupName.String,
 		GroupAvatarUrl:       conv.GroupAvatarUrl.String,
 		LastMessageID:        conv.LastMessageID.Int64,
-		LastMessageContent:   conv.LastMessageContent.String,
+		LastMessageType:      model.MessageType(conv.LastMessageType.MessageType),
+		LastMessageText:      conv.LastMessageText.String,
 		LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
 		UpdatedAt:            conv.UpdatedAt,
 	}, nil

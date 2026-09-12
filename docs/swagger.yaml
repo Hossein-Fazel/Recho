@@ -21,12 +21,14 @@ definitions:
         type: string
       group_name:
         type: string
-      last_message_content:
-        type: string
       last_message_created_at:
         type: string
       last_message_id:
         type: integer
+      last_message_text:
+        type: string
+      last_message_type:
+        $ref: '#/definitions/model.MessageType'
       updated_at:
         type: string
       user_id:
@@ -160,6 +162,12 @@ definitions:
           $ref: '#/definitions/dto.UserSearch'
         type: array
     type: object
+  model.MessageType:
+    enum:
+    - text
+    type: string
+    x-enum-varnames:
+    - MessageTypeText
 info:
   contact: {}
   description: Realtime chat application

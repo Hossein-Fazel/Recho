@@ -20,7 +20,8 @@ func conv2convRes(conv *model.UserConversation) *dto.Conversation {
 		GroupName:            conv.GroupName,
 		GroupAvatarUrl:       conv.GroupAvatarUrl,
 		LastMessageID:        conv.LastMessageID,
-		LastMessageContent:   conv.LastMessageContent,
+		LastMessageType:      conv.LastMessageType,
+		LastMessageText:      conv.LastMessageText,
 		LastMessageCreatedAt: conv.LastMessageCreatedAt,
 		UpdatedAt:            conv.UpdatedAt,
 	}
