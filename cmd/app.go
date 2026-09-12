@@ -41,7 +41,7 @@ func Run() {
 	userRepo := postgres_repo.NewUserRepo(queries)
 	convRepo := postgres_repo.NewConversationRepo(queries, database)
 	groupRepo := postgres_repo.NewGroupRepo(queries, database)
-	msgRepo := postgres_repo.NewMessageRepo(queries)
+	msgRepo := postgres_repo.NewMessageRepo(queries, database)
 
 	pkg.Logger.Info().Msg("Initializing services")
 	accessToken := token.NewJWTService(conf.Token)

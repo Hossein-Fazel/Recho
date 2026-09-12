@@ -3,7 +3,6 @@ package postgres_repo
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -32,10 +31,6 @@ func (u *User) Create(ctx context.Context, username, passHash string) (*model.Us
 	pkg.Logger.Info().
 		Str("username", username).
 		Msg("Creating user")
-
-	if username == "" || passHash == "" {
-		return nil, apperr.InvalidInput("user repo", "invalid username or password", nil)
-	}
 
 	user, err := u.sql.CreateUser(ctx, sqlc.CreateUserParams{
 		Username:     username,
@@ -148,10 +143,6 @@ func (u *User) Exists(ctx context.Context, username string) (bool, error) {
 }
 
 func (u *User) Search(ctx context.Context, username string) ([]*model.UserSearch, error) {
-	if strings.TrimSpace(username) == "" {
-		return []*model.UserSearch{}, apperr.InvalidInput("user repo", "username is required", nil)
-	}
-
 	list, err := u.sql.SearchUsers(ctx, pgtype.Text{
 		String: username,
 		Valid:  true,

@@ -13,6 +13,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ConversationType string
+
+const (
+	ConversationTypeGroup  ConversationType = "group"
+	ConversationTypeDirect ConversationType = "direct"
+)
+
+func (e *ConversationType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ConversationType(s)
+	case string:
+		*e = ConversationType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ConversationType: %T", src)
+	}
+	return nil
+}
+
+type NullConversationType struct {
+	ConversationType ConversationType
+	Valid            bool // Valid is true if ConversationType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullConversationType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ConversationType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ConversationType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullConversationType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ConversationType), nil
+}
+
 type GroupMemberRole string
 
 const (
@@ -56,10 +98,53 @@ func (ns NullGroupMemberRole) Value() (driver.Value, error) {
 	return string(ns.GroupMemberRole), nil
 }
 
+type MessageType string
+
+const (
+	MessageTypeText MessageType = "text"
+)
+
+func (e *MessageType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MessageType(s)
+	case string:
+		*e = MessageType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MessageType: %T", src)
+	}
+	return nil
+}
+
+type NullMessageType struct {
+	MessageType MessageType
+	Valid       bool // Valid is true if MessageType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMessageType) Scan(value interface{}) error {
+	if value == nil {
+		ns.MessageType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MessageType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMessageType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MessageType), nil
+}
+
 type Conversation struct {
 	ID                   uuid.UUID
+	Type                 ConversationType
 	LastMessageID        pgtype.Int8
-	LastMessageContent   pgtype.Text
+	LastMessageType      NullMessageType
+	LastMessageText      pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
 	MessageIDCounter     int64
 	CreatedAt            time.Time
@@ -95,7 +180,7 @@ type Message struct {
 	MessageID      int64
 	ConversationID uuid.UUID
 	SenderID       uuid.UUID
-	Content        string
+	Type           MessageType
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -107,6 +192,12 @@ type RefreshToken struct {
 	ExpiresAt time.Time
 	RevokedAt pgtype.Timestamptz
 	CreatedAt time.Time
+}
+
+type TextMessage struct {
+	ConversationID uuid.UUID
+	MessageID      int64
+	Content        string
 }
 
 type User struct {

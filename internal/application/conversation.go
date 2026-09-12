@@ -88,6 +88,10 @@ func (c *ConversationService) GetOrCreateDC(ctx context.Context, userOneID uuid.
 		return uuid.Nil, apperr.InvalidInput("conversation service", "user one and two is required", nil)
 	}
 
+	if userOneID == userTwoID {
+		return uuid.Nil, apperr.InvalidInput("conversation service", "user one and two must be different", nil)
+	}
+
 	if userOneID.String() > userTwoID.String() {
 		userTwoID, userOneID = userOneID, userTwoID
 	}

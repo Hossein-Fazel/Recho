@@ -16,6 +16,49 @@ const createMessage = `-- name: CreateMessage :one
 INSERT INTO messages (
     conversation_id,
     sender_id,
+    type
+)
+VALUES (
+    $1,
+    $2,
+    $3
+)
+RETURNING
+    message_id,
+    conversation_id,
+    created_at,
+    updated_at
+`
+
+type CreateMessageParams struct {
+	ConversationID uuid.UUID
+	SenderID       uuid.UUID
+	MessageType    MessageType
+}
+
+type CreateMessageRow struct {
+	MessageID      int64
+	ConversationID uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (CreateMessageRow, error) {
+	row := q.db.QueryRow(ctx, createMessage, arg.ConversationID, arg.SenderID, arg.MessageType)
+	var i CreateMessageRow
+	err := row.Scan(
+		&i.MessageID,
+		&i.ConversationID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createTextMessage = `-- name: CreateTextMessage :exec
+INSERT INTO text_messages (
+    conversation_id,
+    message_id,
     content
 )
 VALUES (
@@ -23,26 +66,17 @@ VALUES (
     $2,
     $3
 )
-RETURNING message_id, created_at, updated_at
 `
 
-type CreateMessageParams struct {
+type CreateTextMessageParams struct {
 	ConversationID uuid.UUID
-	SenderID       uuid.UUID
+	MessageID      int64
 	Content        string
 }
 
-type CreateMessageRow struct {
-	MessageID int64
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (CreateMessageRow, error) {
-	row := q.db.QueryRow(ctx, createMessage, arg.ConversationID, arg.SenderID, arg.Content)
-	var i CreateMessageRow
-	err := row.Scan(&i.MessageID, &i.CreatedAt, &i.UpdatedAt)
-	return i, err
+func (q *Queries) CreateTextMessage(ctx context.Context, arg CreateTextMessageParams) error {
+	_, err := q.db.Exec(ctx, createTextMessage, arg.ConversationID, arg.MessageID, arg.Content)
+	return err
 }
 
 const deleteMessage = `-- name: DeleteMessage :exec
@@ -63,27 +97,53 @@ func (q *Queries) DeleteMessage(ctx context.Context, arg DeleteMessageParams) er
 
 const updateMessage = `-- name: UpdateMessage :one
 UPDATE messages
-SET content = $1,
-    updated_at = NOW()
-WHERE message_id = $2 and conversation_id = $3 and sender_id = $4
+SET updated_at = NOW()
+WHERE conversation_id = $1 AND message_id = $2 AND sender_id = $3
 RETURNING updated_at
 `
 
 type UpdateMessageParams struct {
-	Msgtext        string
-	MessageID      int64
 	ConversationID uuid.UUID
+	MessageID      int64
 	UserID         uuid.UUID
 }
 
 func (q *Queries) UpdateMessage(ctx context.Context, arg UpdateMessageParams) (time.Time, error) {
-	row := q.db.QueryRow(ctx, updateMessage,
-		arg.Msgtext,
-		arg.MessageID,
-		arg.ConversationID,
-		arg.UserID,
-	)
+	row := q.db.QueryRow(ctx, updateMessage, arg.ConversationID, arg.MessageID, arg.UserID)
 	var updated_at time.Time
 	err := row.Scan(&updated_at)
 	return updated_at, err
+}
+
+const updateTextMessage = `-- name: UpdateTextMessage :exec
+UPDATE text_messages AS tm
+SET
+    content = $1
+WHERE tm.conversation_id = $2
+  AND tm.message_id = $3
+  AND EXISTS (
+      SELECT 1
+      FROM messages AS m
+      WHERE m.conversation_id = tm.conversation_id
+        AND m.message_id = tm.message_id
+        AND m.sender_id = $4
+        AND m.type = 'text'
+  )
+`
+
+type UpdateTextMessageParams struct {
+	MsgText        string
+	ConversationID uuid.UUID
+	MessageID      int64
+	UserID         uuid.UUID
+}
+
+func (q *Queries) UpdateTextMessage(ctx context.Context, arg UpdateTextMessageParams) error {
+	_, err := q.db.Exec(ctx, updateTextMessage,
+		arg.MsgText,
+		arg.ConversationID,
+		arg.MessageID,
+		arg.UserID,
+	)
+	return err
 }

@@ -15,12 +15,20 @@ func pgUserSearch2modeUserSearch(user sqlc.SearchUsersRow) *model.UserSearch {
 	}
 }
 
-func toModelMessage(msg sqlc.Message) *model.Message {
+func toModelMessage(msg sqlc.GetConversationMessagesRow) *model.Message {
+	var text *model.TextMessage
+	if msg.Type == sqlc.MessageTypeText {
+		text = &model.TextMessage{
+			Content: msg.Content.String,
+		}
+	}
+
 	return &model.Message{
 		ID:             msg.MessageID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
-		Content:        msg.Content,
+		Type:           model.MessageType(msg.Type),
+		Text:           text,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}

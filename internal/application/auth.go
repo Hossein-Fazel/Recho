@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
@@ -39,6 +40,10 @@ func (s *AuthService) Register(ctx context.Context, username string, password st
 	pkg.Logger.Info().
 		Str("username", username).
 		Msg("Registering user")
+
+	if strings.TrimSpace(username) == "" || strings.TrimSpace(password) == "" {
+		return nil, apperr.InvalidInput("auth service", "username and password are required", nil)
+	}
 
 	exists, err := s.users.Exists(ctx, username)
 
@@ -86,6 +91,10 @@ func (s *AuthService) Login(ctx context.Context, username string, password strin
 	pkg.Logger.Info().
 		Str("username", username).
 		Msg("Loging in user")
+	
+	if strings.TrimSpace(username) == "" || strings.TrimSpace(password) == "" {
+		return nil, apperr.InvalidInput("auth service", "username and password are required", nil)
+	}
 
 	user, err := s.users.GetByUsername(ctx, username)
 
@@ -119,6 +128,10 @@ func (s *AuthService) Login(ctx context.Context, username string, password strin
 }
 
 func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
+
+	if strings.TrimSpace(refreshToken) == "" {
+		return nil, nil, apperr.InvalidInput("auth service", "refresh token is required", nil)
+	}
 
 	tokenHash := s.rt.Hash(refreshToken)
 
@@ -162,6 +175,9 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*model.
 }
 
 func (s *AuthService) issueTokens(ctx context.Context, userID uuid.UUID) (*model.UserAcccessToken, *model.UserRefreshToken, error) {
+	if userID == uuid.Nil {
+		return nil, nil, apperr.InvalidInput("auth service", "user id is required", nil)
+	}
 	if err := s.refreshTokens.RevokeAllByUser(ctx, userID); err != nil {
 		return nil, nil, err
 	}

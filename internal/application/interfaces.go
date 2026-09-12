@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/Hossein-Fazel/Recho/internal/model"
+	"github.com/google/uuid"
 )
+
+// Repository
 
 type UserRepo interface {
 	Create(ctx context.Context, username, passHash string) (*model.User, error)
@@ -48,4 +49,29 @@ type MessaageRepo interface {
 	Create(ctx context.Context, msg model.Message) (*model.Message, error)
 	Update(ctx context.Context, msg model.Message) (*model.Message, error)
 	Delete(ctx context.Context, msg model.Message) error
+}
+
+// Sender
+
+type SendItems struct {
+	RequestID uuid.UUID
+	Event     model.Event
+	Content   any
+	Recievers uuid.UUIDs
+}
+
+type Sender interface {
+	Send(items SendItems)
+}
+
+// Token Manager
+
+type AccessToken interface {
+	Generate(userID uuid.UUID) (*model.UserAcccessToken, error)
+	Validate(token string) (uuid.UUID, error)
+}
+
+type RefreshToken interface {
+	Generate() (*model.RefreshToken, *model.UserRefreshToken, error)
+	Hash(plainText string) string
 }

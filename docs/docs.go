@@ -827,14 +827,17 @@ const docTemplate = `{
                 "group_name": {
                     "type": "string"
                 },
-                "last_message_content": {
-                    "type": "string"
-                },
                 "last_message_created_at": {
                     "type": "string"
                 },
                 "last_message_id": {
                     "type": "integer"
+                },
+                "last_message_text": {
+                    "type": "string"
+                },
+                "last_message_type": {
+                    "$ref": "#/definitions/model.MessageType"
                 },
                 "updated_at": {
                     "type": "string"
@@ -1042,6 +1045,15 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "model.MessageType": {
+            "type": "string",
+            "enum": [
+                "text"
+            ],
+            "x-enum-varnames": [
+                "MessageTypeText"
+            ]
         }
     },
     "securityDefinitions": {

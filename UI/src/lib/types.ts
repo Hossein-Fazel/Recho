@@ -19,6 +19,12 @@ export type ErrResponse = {
   module?: string
 }
 
+export type MessageType = 'text'
+
+export type MessageText = {
+  content: string
+}
+
 export type Conversation = {
   conversation_id: string
   conversation_type: string
@@ -29,7 +35,8 @@ export type Conversation = {
   group_name: string
   group_avatar_url: string
   last_message_id: number
-  last_message_content: string
+  last_message_type?: MessageType
+  last_message_text: string
   last_message_created_at: string
   updated_at: string
 }
@@ -51,7 +58,8 @@ export type Message = {
   id: number
   conversation_id: string
   sender_id: string
-  content: string
+  type: MessageType
+  text?: MessageText | null
   created_at: string
   updated_at: string
   request_id?: string
@@ -85,7 +93,6 @@ export type WSEvent =
   | { type: 'message.create'; request_id: string; data: MessageCreated }
   | { type: 'message.edit'; request_id: string; data: MessageEdited }
   | { type: 'message.delete'; request_id: string; data: MessageDeleted }
-  | { type: 'error'; request_id: string; data: { code: number; message: string } }
 
 export type ConversationInfo = {
   conversation_id: string
