@@ -1,5 +1,12 @@
+import type { Message } from './types'
+
 export const UNKNOWN_USER = 'Unknown user'
 export const UNNAMED_GROUP = 'Unnamed group'
+
+/** Text content of a message, or '' for non-text/missing payloads. */
+export function messageText(message: Message): string {
+  return message.text?.content ?? ''
+}
 
 type NameFields = {
   display_name?: string

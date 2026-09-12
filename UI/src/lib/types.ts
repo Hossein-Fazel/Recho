@@ -19,6 +19,12 @@ export type ErrResponse = {
   module?: string
 }
 
+export type MessageType = 'text'
+
+export type MessageText = {
+  content: string
+}
+
 export type Conversation = {
   conversation_id: string
   conversation_type: string
@@ -29,7 +35,8 @@ export type Conversation = {
   group_name: string
   group_avatar_url: string
   last_message_id: number
-  last_message_content: string
+  last_message_type?: MessageType
+  last_message_text: string
   last_message_created_at: string
   updated_at: string
 }
@@ -51,7 +58,8 @@ export type Message = {
   id: number
   conversation_id: string
   sender_id: string
-  content: string
+  type: MessageType
+  text?: MessageText | null
   created_at: string
   updated_at: string
   request_id?: string

@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { api } from '../lib/api'
 import { firstGroupMemberCursor } from '../lib/cursor'
+import { messageText } from '../lib/format'
 import { newRequestId } from '../lib/id'
 import { clearInvitePath } from '../lib/invite'
 import type {
@@ -184,7 +185,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           ? {
             ...conversation,
             last_message_id: incoming.id,
-            last_message_content: incoming.content,
+            last_message_type: incoming.type,
+            last_message_text: messageText(incoming),
             last_message_created_at:
               incoming.created_at,
             updated_at:
@@ -296,7 +298,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           ...withoutPending.filter(
             (message) =>
               message.id > 0 ||
-              message.content !== incoming.content,
+              messageText(message) !== messageText(incoming),
           ),
           incoming,
         ]
@@ -317,7 +319,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
             message.id === edited.id
               ? {
                   ...message,
-                  content: edited.content,
+                  type: edited.type,
+                  text: edited.text,
                   updated_at: edited.updated_at,
                   edited: true,
                 }
@@ -331,7 +334,11 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         current.map((conversation) =>
           conversation.conversation_id === edited.conversation_id &&
           conversation.last_message_id === edited.id
-            ? { ...conversation, last_message_content: edited.content }
+            ? {
+                ...conversation,
+                last_message_type: edited.type,
+                last_message_text: messageText(edited),
+              }
             : conversation,
         ),
       )
@@ -352,7 +359,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
                   ? {
                       ...conversation,
                       last_message_id: last.id,
-                      last_message_content: last.content,
+                      last_message_type: last.type,
+                      last_message_text: messageText(last),
                       last_message_created_at: last.created_at,
                       updated_at: last.updated_at,
                     }
@@ -403,7 +411,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         group_name: '',
         group_avatar_url: '',
         last_message_id: 0,
-        last_message_content: '',
+        last_message_text: '',
         last_message_created_at: '',
         updated_at: new Date().toISOString(),
       }
@@ -439,7 +447,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         group_name: group.name,
         group_avatar_url: group.avatar_url,
         last_message_id: 0,
-        last_message_content: '',
+        last_message_text: '',
         last_message_created_at: '',
         updated_at: group.updated_at || new Date().toISOString(),
       }
@@ -505,7 +513,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           message.id === editing.id
             ? {
                 ...message,
-                content,
+                type: 'text',
+                text: { content },
                 updated_at: new Date().toISOString(),
                 edited: true,
               }
@@ -519,7 +528,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           conversation.last_message_id === editing.id
             ? {
                 ...conversation,
-                last_message_content: content,
+                last_message_type: 'text',
+                last_message_text: content,
               }
             : conversation,
         ),
@@ -542,7 +552,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       id: -Date.now(),
       conversation_id: activeId,
       sender_id: user.id,
-      content,
+      type: 'text',
+      text: { content },
       created_at: now,
       updated_at: now,
       request_id: requestId,
@@ -564,7 +575,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         conversation.conversation_id === activeId
           ? {
             ...conversation,
-            last_message_content: content,
+            last_message_type: 'text',
+            last_message_text: content,
             updated_at: now,
           }
           : conversation,
@@ -577,7 +589,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
 
   function startEdit(message: Message) {
     if (message.id < 0 || message.sender_id !== user?.id) return
-    setEditing({ id: message.id, content: message.content })
+    setEditing({ id: message.id, content: messageText(message) })
   }
 
   function cancelEdit() {

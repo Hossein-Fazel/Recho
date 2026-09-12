@@ -94,7 +94,7 @@ export function useWebSocket({
 
           if (type === 'message.create' && data) {
             const message = data as MessageCreated
-            if (message.conversation_id && message.content) {
+            if (message.conversation_id && message.text?.content) {
               onMessageRef.current({
                 ...message,
                 request_id: payload.request_id,
@@ -102,7 +102,7 @@ export function useWebSocket({
             }
           } else if (type === 'message.edit' && data) {
             const message = data as MessageEdited
-            if (message.conversation_id && message.content) {
+            if (message.conversation_id && message.text?.content) {
               onMessageEditedRef.current({
                 ...message,
                 request_id: payload.request_id,
@@ -175,7 +175,8 @@ export function useWebSocket({
         type: 'message.create',
         request_id: requestId,
         payload: {
-          content,
+          type: 'text',
+          text: { content },
           conversation_id: conversationId,
         },
       },
@@ -195,7 +196,8 @@ export function useWebSocket({
         payload: {
           message_id: messageId,
           conversation_id: conversationId,
-          content,
+          type: 'text',
+          text: { content },
         },
       },
     )
