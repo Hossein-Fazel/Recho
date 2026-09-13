@@ -144,37 +144,59 @@ func (s *GroupService) JoinByInviteCode(ctx context.Context, userID uuid.UUID, c
 	return preview, nil
 }
 
-
-func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID) (bool, error) {
+func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID) error {
 	pkg.Logger.Info().
 		Str("user id", userID.String()).
 		Str("group id", groupID.String()).
 		Msg("Leaving group")
 
 	if userID == uuid.Nil || groupID == uuid.Nil {
-		return false, apperr.InvalidInput("group service", "user and group id are required", nil)
+		return apperr.InvalidInput("group service", "user and group id are required", nil)
+	}
+
+	isMember, err := s.ConversationRepo.IsConversationMember(ctx, userID, groupID)
+	if err != nil {
+		return err
+	}
+
+	if !isMember {
+		return apperr.InvalidInput("group service", "invalid group", nil)
+	}
+
+	if err := s.GroupRepo.RemoveMember(ctx, groupID, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *GroupService) Delete(ctx context.Context, userID, groupID uuid.UUID) error {
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Str("group id", groupID.String()).
+		Msg("request to delete group")
+
+	if userID == uuid.Nil || groupID == uuid.Nil {
+		return apperr.InvalidInput("group service", "user and group id are required", nil)
 	}
 
 	role, err := s.GroupRepo.GetMemberRole(ctx, groupID, userID)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if role == "" {
-		return false, apperr.NotFound("group service", "you are not a member of this group", nil)
+		return apperr.InvalidInput("group service", "invalid group", nil)
 	}
 
-	if role == model.GroupMemberRoleOwner || role == model.GroupMemberRoleAdmin {
-		if err := s.GroupRepo.DeleteGroup(ctx, groupID); err != nil {
-			return false, err
-		}
-
-		return true, nil
+	if role == model.GroupMemberRoleMember {
+		return apperr.InvalidInput("group service", "you are not an admin or owner", nil)
 	}
 
-	if err := s.GroupRepo.RemoveMember(ctx, groupID, userID); err != nil {
-		return false, err
+	err = s.GroupRepo.DeleteGroup(ctx, groupID)
+	if err != nil {
+		return err
 	}
 
-	return false, nil
+	return nil
 }

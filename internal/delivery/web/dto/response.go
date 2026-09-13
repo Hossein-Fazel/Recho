@@ -144,8 +144,3 @@ type GroupMember struct {
 	AvatarURL   string                `json:"avatar_url"`
 	Role        model.GroupMemberRole `json:"role"`
 }
-
-type LeaveGroupResponse struct {
-	ConversationID uuid.UUID `json:"conversation_id"`
-	GroupDeleted   bool      `json:"group_deleted"`
-}

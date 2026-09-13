@@ -33,10 +33,6 @@ func NewGroupRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Group {
 }
 
 func (r *Group) Create(ctx context.Context, params application.CreateGroupParams) (*model.Group, error) {
-	if params.CreatedBy == uuid.Nil {
-		return nil, apperr.InvalidInput("group repo", "creator id is required", nil)
-	}
-
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return nil, apperr.Internal("group repo", err)
@@ -92,10 +88,6 @@ func (r *Group) Create(ctx context.Context, params application.CreateGroupParams
 }
 
 func (r *Group) GetByInviteCode(ctx context.Context, code string) (*model.GroupPreview, error) {
-	if code == "" {
-		return nil, apperr.InvalidInput("group repo", "invite code is required", nil)
-	}
-
 	row, err := r.sql.GetGroupByInviteCode(ctx, pgtype.Text{
 		String: code,
 		Valid:  true,
@@ -112,10 +104,6 @@ func (r *Group) GetByInviteCode(ctx context.Context, code string) (*model.GroupP
 }
 
 func (r *Group) AddMember(ctx context.Context, groupID, userID uuid.UUID) error {
-	if groupID == uuid.Nil || userID == uuid.Nil {
-		return apperr.InvalidInput("group repo", "group and user id are required", nil)
-	}
-
 	err := r.sql.InsertGroupMember(ctx, sqlc.InsertGroupMemberParams{
 		GroupID: groupID,
 		UserID:  userID,
@@ -129,10 +117,6 @@ func (r *Group) AddMember(ctx context.Context, groupID, userID uuid.UUID) error 
 }
 
 func (r *Group) RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error {
-	if groupID == uuid.Nil || userID == uuid.Nil {
-		return apperr.InvalidInput("group repo", "group and user id are required", nil)
-	}
-
 	err := r.sql.RemoveGroupMember(ctx, sqlc.RemoveGroupMemberParams{
 		GroupID: groupID,
 		UserID:  userID,
@@ -145,10 +129,6 @@ func (r *Group) RemoveMember(ctx context.Context, groupID, userID uuid.UUID) err
 }
 
 func (r *Group) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
-	if groupID == uuid.Nil {
-		return apperr.InvalidInput("group repo", "group id is required", nil)
-	}
-
 	err := r.sql.DeleteGroup(ctx, groupID)
 	if err != nil {
 		return apperr.Internal("group repo", err)
