@@ -484,6 +484,22 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     setInfoOpen(false)
   }
 
+  function onConversationLeft(conversationId: string, deleted: boolean) {
+    setConversations((current) =>
+      current.filter(
+        (conversation) => conversation.conversation_id !== conversationId,
+      ),
+    )
+
+    setActiveId((current) => (current === conversationId ? null : current))
+    setMessages([])
+    setMessageStatuses(new Map())
+    setNextMessageCursor('')
+    setInfoOpen(false)
+    setMobileChat(false)
+    setNotice(deleted ? 'Group deleted' : 'You left the group')
+  }
+
   function send(content: string) {
     if (!activeId || !user) {
       return
@@ -684,6 +700,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         currentUserId={user.id}
         open={infoOpen}
         onClose={() => setInfoOpen(false)}
+        onLeft={onConversationLeft}
       />
 
       <NewGroupModal

@@ -189,14 +189,13 @@ func (s *GroupService) Delete(ctx context.Context, userID, groupID uuid.UUID) er
 		return apperr.InvalidInput("group service", "invalid group", nil)
 	}
 
-	if role == model.GroupMemberRoleMember {
-		return apperr.InvalidInput("group service", "you are not an admin or owner", nil)
+	if role == model.GroupMemberRoleOwner {
+		err = s.GroupRepo.DeleteGroup(ctx, groupID)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
-	err = s.GroupRepo.DeleteGroup(ctx, groupID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return apperr.InvalidInput("group service", "you are not an owner", nil)
 }
