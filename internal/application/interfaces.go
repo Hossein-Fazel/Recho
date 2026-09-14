@@ -63,7 +63,7 @@ type SendItem struct {
 }
 
 type Sender interface {
-	Send(items SendItem)
+	Broadcast(items SendItem)
 }
 
 // Token Manager

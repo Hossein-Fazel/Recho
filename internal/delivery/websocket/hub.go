@@ -72,7 +72,7 @@ func (h *Hub) unregisterClient(client *Client) {
 	close(client.Send)
 }
 
-func (h *Hub) Send(params application.SendItem) {
+func (h *Hub) Broadcast(params application.SendItem) {
 	h.Deliver <- params
 }
 

@@ -34,7 +34,7 @@ func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message
 		return
 	}
 
-	d.Sender.Send(SendItem{
+	d.Sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageCreateEvent,
 		Content:   message,
@@ -54,7 +54,7 @@ func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) 
 		return
 	}
 
-	d.Sender.Send(SendItem{
+	d.Sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageEditEvent,
 		Content:   message,
@@ -74,7 +74,7 @@ func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message
 		return
 	}
 
-	d.Sender.Send(SendItem{
+	d.Sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageDeleteEvent,
 		Content:   msg,
