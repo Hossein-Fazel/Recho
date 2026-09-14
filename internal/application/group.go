@@ -18,18 +18,18 @@ const (
 )
 
 type GroupService struct {
-	GroupRepo        GroupRepo
-	ConversationRepo ConversationRepo
-	Sender           Sender
+	groupRepo        GroupRepo
+	conversationRepo ConversationRepo
+	sender           Sender
 }
 
 func NewGroupService(groupRepo GroupRepo, conversationRepo ConversationRepo, sender Sender) *GroupService {
 	pkg.Logger.Info().Msg("Initializing Group service")
 
 	return &GroupService{
-		GroupRepo:        groupRepo,
-		ConversationRepo: conversationRepo,
-		Sender:           sender,
+		groupRepo:        groupRepo,
+		conversationRepo: conversationRepo,
+		sender:           sender,
 	}
 }
 
@@ -72,7 +72,7 @@ func (s *GroupService) Create(ctx context.Context, createdBy uuid.UUID, name, bi
 			return nil, apperr.Internal("group service", err)
 		}
 
-		group, err := s.GroupRepo.Create(ctx, CreateGroupParams{
+		group, err := s.groupRepo.Create(ctx, CreateGroupParams{
 			Name:       name,
 			Bio:        bio,
 			InviteCode: code,
@@ -101,13 +101,13 @@ func (s *GroupService) PreviewByInviteCode(ctx context.Context, userID uuid.UUID
 		return nil, apperr.InvalidInput("group service", "invite code is required", nil)
 	}
 
-	preview, err := s.GroupRepo.GetByInviteCode(ctx, code)
+	preview, err := s.groupRepo.GetByInviteCode(ctx, code)
 	if err != nil {
 		return nil, err
 	}
 
 	if userID != uuid.Nil {
-		role, err := s.GroupRepo.GetMemberRole(ctx, preview.GroupID, userID)
+		role, err := s.groupRepo.GetMemberRole(ctx, preview.GroupID, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func (s *GroupService) JoinByInviteCode(ctx context.Context, userID uuid.UUID, c
 		return preview, nil
 	}
 
-	if err := s.GroupRepo.AddMember(ctx, preview.GroupID, userID); err != nil {
+	if err := s.groupRepo.AddMember(ctx, preview.GroupID, userID); err != nil {
 		return nil, err
 	}
 
@@ -156,7 +156,7 @@ func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID
 		return apperr.InvalidInput("group service", "user and group id are required", nil)
 	}
 
-	isMember, err := s.ConversationRepo.IsConversationMember(ctx, userID, groupID)
+	isMember, err := s.conversationRepo.IsConversationMember(ctx, userID, groupID)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID
 		return apperr.InvalidInput("group service", "invalid group", nil)
 	}
 
-	if err := s.GroupRepo.RemoveMember(ctx, groupID, userID); err != nil {
+	if err := s.groupRepo.RemoveMember(ctx, groupID, userID); err != nil {
 		return err
 	}
 
@@ -182,7 +182,7 @@ func (s *GroupService) Delete(ctx context.Context, userID, groupID uuid.UUID) er
 		return apperr.InvalidInput("group service", "user and group id are required", nil)
 	}
 
-	role, err := s.GroupRepo.GetMemberRole(ctx, groupID, userID)
+	role, err := s.groupRepo.GetMemberRole(ctx, groupID, userID)
 	if err != nil {
 		return err
 	}
@@ -195,17 +195,17 @@ func (s *GroupService) Delete(ctx context.Context, userID, groupID uuid.UUID) er
 		return apperr.InvalidInput("group service", "you are not an owner", nil)
 	}
 
-	members, err := s.ConversationRepo.GetConversationUsers(ctx, groupID)
+	members, err := s.conversationRepo.GetConversationUsers(ctx, groupID)
 	if err != nil {
 		return err
 	}
 
-	err = s.GroupRepo.DeleteGroup(ctx, groupID)
+	err = s.groupRepo.DeleteGroup(ctx, groupID)
 	if err != nil {
 		return err
 	}
 
-	s.Sender.Broadcast(SendItem{
+	s.sender.Broadcast(SendItem{
 		RequestID: uuid.New(),
 		Event:     model.ConversationDeleteEvent,
 		Content:   groupID,

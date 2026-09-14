@@ -12,14 +12,14 @@ import (
 )
 
 type ConversationService struct {
-	ConversationRepo ConversationRepo
+	conversationRepo ConversationRepo
 }
 
-func NewConversationService(ConversationRepo ConversationRepo) *ConversationService {
+func NewConversationService(conversationRepo ConversationRepo) *ConversationService {
 	pkg.Logger.Info().Msg("Initializing Converasion service")
 
 	return &ConversationService{
-		ConversationRepo: ConversationRepo,
+		conversationRepo: conversationRepo,
 	}
 }
 
@@ -44,7 +44,7 @@ func (c *ConversationService) GetUserConversations(ctx context.Context, userID u
 		return []*model.UserConversation{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
 	}
 
-	list, err := c.ConversationRepo.GetConversations(ctx, GetUserConversationsParams{
+	list, err := c.conversationRepo.GetConversations(ctx, GetUserConversationsParams{
 		UserID:          userID,
 		CursorUpdatedAt: cursorItem.Date,
 		CursorID:        cursorItem.ID,
@@ -75,7 +75,7 @@ func (c *ConversationService) GetConversationByID(ctx context.Context, userID uu
 		return nil, apperr.InvalidInput("conversation service", "conversation id is required", nil)
 	}
 
-	return c.ConversationRepo.GetConversationByID(ctx, userID, conversationID)
+	return c.conversationRepo.GetConversationByID(ctx, userID, conversationID)
 }
 
 func (c *ConversationService) GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
@@ -96,12 +96,12 @@ func (c *ConversationService) GetOrCreateDC(ctx context.Context, userOneID uuid.
 		userTwoID, userOneID = userOneID, userTwoID
 	}
 
-	ConversationID, err := c.ConversationRepo.GetDirectConversation(ctx, userOneID, userTwoID)
+	ConversationID, err := c.conversationRepo.GetDirectConversation(ctx, userOneID, userTwoID)
 
 	if err != nil {
 		var appErr *apperr.AppError
 		if errors.As(err, &appErr) && appErr.Type == apperr.ErrNotFound {
-			ConversationID, err := c.ConversationRepo.CreateDirectConversation(ctx, userOneID, userTwoID)
+			ConversationID, err := c.conversationRepo.CreateDirectConversation(ctx, userOneID, userTwoID)
 			if err != nil {
 				return uuid.Nil, err
 			}
@@ -125,7 +125,7 @@ func (c *ConversationService) GetConversationMessages(ctx context.Context, userI
 		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "Conversation id is required", nil)
 	}
 
-	isMember, err := c.ConversationRepo.IsConversationMember(ctx, userID, conversationID)
+	isMember, err := c.conversationRepo.IsConversationMember(ctx, userID, conversationID)
 	if err != nil {
 		return []*model.Message{}, "", err
 	}
@@ -139,7 +139,7 @@ func (c *ConversationService) GetConversationMessages(ctx context.Context, userI
 		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
 	}
 
-	list, err := c.ConversationRepo.GetConversationMessages(ctx, GetConversationMessagesParams{
+	list, err := c.conversationRepo.GetConversationMessages(ctx, GetConversationMessagesParams{
 		ConversationID:  conversationID,
 		CursorCreatedAt: CursorItem.Date,
 		CursorID:        CursorItem.ID,
@@ -169,7 +169,7 @@ func (c *ConversationService) GetConversationUserIDs(ctx context.Context, userID
 		return []uuid.UUID{}, apperr.InvalidInput("conversation service", "Conversation id is required", nil)
 	}
 
-	isMember, err := c.ConversationRepo.IsConversationMember(ctx, userID, convID)
+	isMember, err := c.conversationRepo.IsConversationMember(ctx, userID, convID)
 	if err != nil {
 		return []uuid.UUID{}, err
 	}
@@ -178,7 +178,7 @@ func (c *ConversationService) GetConversationUserIDs(ctx context.Context, userID
 		return []uuid.UUID{}, apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
-	return c.ConversationRepo.GetConversationUsers(ctx, convID)
+	return c.conversationRepo.GetConversationUsers(ctx, convID)
 }
 
 type GetGroupMembersParams struct {
@@ -193,7 +193,7 @@ func (c *ConversationService) GetGroupMembers(ctx context.Context, params GetGro
 		return []*model.GroupMember{}, "", apperr.InvalidInput("conversation service", "Conversation id is required", nil)
 	}
 
-	isMember, err := c.ConversationRepo.IsConversationMember(ctx, params.UserID, params.GroupID)
+	isMember, err := c.conversationRepo.IsConversationMember(ctx, params.UserID, params.GroupID)
 	if err != nil {
 		return []*model.GroupMember{}, "", err
 	}
@@ -204,7 +204,7 @@ func (c *ConversationService) GetGroupMembers(ctx context.Context, params GetGro
 
 	cursor, err := pkg.DecodeGroupMemberCursor(params.Cursor)
 
-	members, err := c.ConversationRepo.GetGroupMembers(ctx, params.GroupID, cursor.ID, params.Limit)
+	members, err := c.conversationRepo.GetGroupMembers(ctx, params.GroupID, cursor.ID, params.Limit)
 	if err != nil {
 		return []*model.GroupMember{}, "", err
 	}
@@ -228,7 +228,7 @@ func (c *ConversationService) GetConversationInfo(ctx context.Context, userID, c
 		return nil, apperr.InvalidInput("conversation service", "Conversation id is required", nil)
 	}
 
-	isMember, err := c.ConversationRepo.IsConversationMember(ctx, userID, convID)
+	isMember, err := c.conversationRepo.IsConversationMember(ctx, userID, convID)
 	if err != nil {
 		return nil, err
 	}
@@ -237,5 +237,5 @@ func (c *ConversationService) GetConversationInfo(ctx context.Context, userID, c
 		return nil, apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
-	return c.ConversationRepo.GetInfo(ctx, userID, convID)
+	return c.conversationRepo.GetInfo(ctx, userID, convID)
 }

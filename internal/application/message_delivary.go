@@ -11,14 +11,14 @@ import (
 type MessageDelivery struct {
 	msgService  *MessageService
 	convService *ConversationService
-	Sender      Sender
+	sender      Sender
 }
 
 func NewMessageDelivery(msgService *MessageService, convService *ConversationService, sender Sender) *MessageDelivery {
 	return &MessageDelivery{
 		msgService:  msgService,
 		convService: convService,
-		Sender:      sender,
+		sender:      sender,
 	}
 }
 
@@ -34,7 +34,7 @@ func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message
 		return
 	}
 
-	d.Sender.Broadcast(SendItem{
+	d.sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageCreateEvent,
 		Content:   message,
@@ -54,7 +54,7 @@ func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) 
 		return
 	}
 
-	d.Sender.Broadcast(SendItem{
+	d.sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageEditEvent,
 		Content:   message,
@@ -74,7 +74,7 @@ func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message
 		return
 	}
 
-	d.Sender.Broadcast(SendItem{
+	d.sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageDeleteEvent,
 		Content:   msg,
