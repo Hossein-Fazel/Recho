@@ -42,6 +42,8 @@ type GroupRepo interface {
 	Create(ctx context.Context, params CreateGroupParams) (*model.Group, error)
 	GetByInviteCode(ctx context.Context, code string) (*model.GroupPreview, error)
 	AddMember(ctx context.Context, groupID, userID uuid.UUID) error
+	RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error
+	DeleteGroup(ctx context.Context, groupID uuid.UUID) error
 	GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (model.GroupMemberRole, error)
 }
 
@@ -53,7 +55,7 @@ type MessaageRepo interface {
 
 // Sender
 
-type SendItems struct {
+type SendItem struct {
 	RequestID uuid.UUID
 	Event     model.Event
 	Content   any
@@ -61,7 +63,7 @@ type SendItems struct {
 }
 
 type Sender interface {
-	Send(items SendItems)
+	Broadcast(item SendItem)
 }
 
 // Token Manager

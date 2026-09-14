@@ -25,6 +25,8 @@ func (h *GroupHandler) RegisterRoutes(g *echo.Group) {
 	g.POST("/", h.CreateGroup)
 	g.GET("/invite/:code", h.GetGroupByInviteCode)
 	g.POST("/join", h.JoinGroup)
+	g.POST("/:id/leave", h.LeaveGroup)
+	g.DELETE("/:id", h.DeleteGroup)
 }
 
 // CreateGroup godoc
@@ -139,4 +141,74 @@ func (h *GroupHandler) JoinGroup(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, groupPreview2res(preview))
+}
+
+// LeaveGroup godoc
+// @Summary Leave a group
+// @Description Removes the current user from the group.
+// @Tags group
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Group ID"
+// @Success 200 {object} dto.MessageResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/group/{id}/leave [post]
+func (h *GroupHandler) LeaveGroup(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid group id", err)
+	}
+
+	err = h.groupSvc.LeaveGroup(c.Request().Context(), userID, groupID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, dto.MessageResponse{
+		Message: "You left the group successfully",
+	})
+}
+
+// DeleteGroup godoc
+// @Summary Delete a group
+// @Description Delete the group.
+// @Tags group
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Group ID"
+// @Success 200 {object} dto.MessageResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/group/{id} [delete]
+func (h *GroupHandler) DeleteGroup(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid group id", err)
+	}
+
+	err = h.groupSvc.Delete(c.Request().Context(), userID, groupID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, dto.MessageResponse{
+		Message: "the group was deleted successfully",
+	})
 }

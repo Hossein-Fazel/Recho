@@ -73,6 +73,10 @@ type MessageDeleteResponse struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
 }
 
+type ConversationDeleteResponse struct {
+	ConversationID uuid.UUID `json:"conversation_id"`
+}
+
 type TextMessage struct {
 	Content string `json:"content,omitempty"`
 }

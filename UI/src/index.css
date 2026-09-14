@@ -1894,6 +1894,22 @@ textarea:focus {
   margin-top: 4px;
 }
 
+.info-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.info-action {
+  width: 100%;
+}
+
+.info-action-hint {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 0.74rem;
+  text-align: center;
+}
+
 /* -------------------------------------------------- */
 /* Tablet */
 /* -------------------------------------------------- */

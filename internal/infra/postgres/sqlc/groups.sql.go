@@ -26,6 +26,16 @@ func (q *Queries) CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int
 	return member_count, err
 }
 
+const deleteGroup = `-- name: DeleteGroup :exec
+DELETE FROM conversations
+WHERE id = $1
+`
+
+func (q *Queries) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteGroup, groupID)
+	return err
+}
+
 const getGroupByInviteCode = `-- name: GetGroupByInviteCode :one
 SELECT
     g.conversation_id,
@@ -171,5 +181,21 @@ type InsertGroupMemberParams struct {
 
 func (q *Queries) InsertGroupMember(ctx context.Context, arg InsertGroupMemberParams) error {
 	_, err := q.db.Exec(ctx, insertGroupMember, arg.GroupID, arg.UserID, arg.Role)
+	return err
+}
+
+const removeGroupMember = `-- name: RemoveGroupMember :exec
+DELETE FROM group_members
+WHERE group_id = $1
+  AND user_id = $2
+`
+
+type RemoveGroupMemberParams struct {
+	GroupID uuid.UUID
+	UserID  uuid.UUID
+}
+
+func (q *Queries) RemoveGroupMember(ctx context.Context, arg RemoveGroupMemberParams) error {
+	_, err := q.db.Exec(ctx, removeGroupMember, arg.GroupID, arg.UserID)
 	return err
 }

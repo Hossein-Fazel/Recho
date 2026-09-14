@@ -165,6 +165,20 @@ export const api = {
       body: JSON.stringify({ invite_code: code }),
     })
   },
+
+  leaveGroup(groupId: string) {
+    return request<{ message: string }>(
+      `/api/group/${encodeURIComponent(groupId)}/leave`,
+      { method: 'POST' },
+    )
+  },
+
+  deleteGroup(groupId: string) {
+    return request<{ message: string }>(
+      `/api/group/${encodeURIComponent(groupId)}`,
+      { method: 'DELETE' },
+    )
+  },
 }
 
 const USER_KEY = 'recho.user'

@@ -89,10 +89,15 @@ export type MessageDeleted = {
   request_id?: string
 }
 
+export type ConversationDeleted = {
+  conversation_id: string
+}
+
 export type WSEvent =
   | { type: 'message.create'; request_id: string; data: MessageCreated }
   | { type: 'message.edit'; request_id: string; data: MessageEdited }
   | { type: 'message.delete'; request_id: string; data: MessageDeleted }
+  | { type: 'conversation.delete'; request_id: string; data: ConversationDeleted }
 
 export type ConversationInfo = {
   conversation_id: string

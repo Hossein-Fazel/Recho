@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Avatar } from './Avatar'
 import { InviteCode } from './InviteCode'
 import { LinkedText } from './LinkedText'
@@ -15,7 +15,10 @@ type ConversationInfoPanelProps = {
   currentUserId: string
   open: boolean
   onClose: () => void
+  onLeft: (conversationId: string, deleted: boolean) => void
 }
+
+type GroupAction = 'leave' | 'delete'
 
 const roleLabel: Record<GroupMember['role'], string> = {
   owner: 'Owner',
@@ -48,6 +51,7 @@ export function ConversationInfoPanel({
   currentUserId,
   open,
   onClose,
+  onLeft,
 }: ConversationInfoPanelProps) {
   const [info, setInfo] = useState<ConversationInfo | null>(null)
   const [loading, setLoading] = useState(false)
@@ -56,20 +60,37 @@ export function ConversationInfoPanel({
   const [membersError, setMembersError] = useState('')
   const [membersLoading, setMembersLoading] = useState(false)
   const [nextCursor, setNextCursor] = useState('')
+  const [pendingAction, setPendingAction] = useState<GroupAction | null>(null)
+  const [actionBusy, setActionBusy] = useState(false)
+  const [actionError, setActionError] = useState('')
 
   const conversationId = conversation?.conversation_id ?? null
   const isGroup = conversation?.conversation_type === 'group'
+
+  // The viewer's own role decides what they may do with the group. Prefer the
+  // value returned with the conversation info; fall back to the member list
+  // while the info request is still in flight.
+  const myRole =
+    info?.group?.role ??
+    members.find((member) => member.user_id === currentUserId)?.role ??
+    null
+
+  const closePanel = useCallback(() => {
+    setPendingAction(null)
+    setActionError('')
+    onClose()
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
 
     function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') closePanel()
     }
 
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, closePanel])
 
   useEffect(() => {
     if (!open || !conversationId) return
@@ -143,6 +164,31 @@ export function ConversationInfoPanel({
     }
   }
 
+  async function confirmAction() {
+    if (!conversationId || !pendingAction || actionBusy) return
+
+    setActionBusy(true)
+    setActionError('')
+
+    try {
+      if (pendingAction === 'delete') {
+        await api.deleteGroup(conversationId)
+      } else {
+        await api.leaveGroup(conversationId)
+      }
+
+      const deleted = pendingAction === 'delete'
+      setPendingAction(null)
+      onLeft(conversationId, deleted)
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Something went wrong',
+      )
+    } finally {
+      setActionBusy(false)
+    }
+  }
+
   if (!open || !conversation) return null
 
   const directUser = info?.user ?? null
@@ -191,7 +237,7 @@ export function ConversationInfoPanel({
       <button
         type="button"
         className="info-backdrop"
-        onClick={onClose}
+        onClick={closePanel}
         aria-label="Close conversation info"
         tabIndex={-1}
       />
@@ -206,7 +252,7 @@ export function ConversationInfoPanel({
           <button
             type="button"
             className="icon-button info-close"
-            onClick={onClose}
+            onClick={closePanel}
             aria-label="Close conversation info"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -320,10 +366,92 @@ export function ConversationInfoPanel({
                   </button>
                 ) : null}
               </section>
+
+              {myRole ? (
+                <section className="info-actions">
+                  {myRole === 'owner' ? (
+                    <>
+                      <button
+                        type="button"
+                        className="danger-btn info-action"
+                        onClick={() => {
+                          setActionError('')
+                          setPendingAction('delete')
+                        }}
+                      >
+                        Delete group
+                      </button>
+                      <p className="info-action-hint">
+                        Deleting removes the group, its messages and members for
+                        everyone.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="danger-btn info-action"
+                        onClick={() => {
+                          setActionError('')
+                          setPendingAction('leave')
+                        }}
+                      >
+                        Leave group
+                      </button>
+                      <p className="info-action-hint">
+                        You will stop receiving messages from this group.
+                      </p>
+                    </>
+                  )}
+                </section>
+              ) : null}
             </>
           )}
         </div>
       </aside>
+
+      {pendingAction ? (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h3>
+              {pendingAction === 'delete' ? 'Delete group?' : 'Leave group?'}
+            </h3>
+            <p>
+              {pendingAction === 'delete'
+                ? 'This group and all of its messages will be deleted for everyone.'
+                : 'You will no longer be a member of this group.'}
+            </p>
+            {actionError ? (
+              <p className="info-note error">{actionError}</p>
+            ) : null}
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => {
+                  setPendingAction(null)
+                  setActionError('')
+                }}
+                disabled={actionBusy}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={() => void confirmAction()}
+                disabled={actionBusy}
+              >
+                {actionBusy
+                  ? 'Working…'
+                  : pendingAction === 'delete'
+                    ? 'Delete'
+                    : 'Leave'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

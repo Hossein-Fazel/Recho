@@ -20,14 +20,16 @@ const (
 type GroupService struct {
 	GroupRepo        GroupRepo
 	ConversationRepo ConversationRepo
+	Sender           Sender
 }
 
-func NewGroupService(groupRepo GroupRepo, conversationRepo ConversationRepo) *GroupService {
+func NewGroupService(groupRepo GroupRepo, conversationRepo ConversationRepo, sender Sender) *GroupService {
 	pkg.Logger.Info().Msg("Initializing Group service")
 
 	return &GroupService{
 		GroupRepo:        groupRepo,
 		ConversationRepo: conversationRepo,
+		Sender:           sender,
 	}
 }
 
@@ -92,8 +94,6 @@ func (s *GroupService) Create(ctx context.Context, createdBy uuid.UUID, name, bi
 	return nil, apperr.Internal("group service", lastErr)
 }
 
-// PreviewByInviteCode returns the public details of the group behind an invite
-// code, along with whether the requesting user is already a member.
 func (s *GroupService) PreviewByInviteCode(ctx context.Context, userID uuid.UUID, code string) (*model.GroupPreview, error) {
 	code = strings.TrimSpace(code)
 
@@ -144,4 +144,73 @@ func (s *GroupService) JoinByInviteCode(ctx context.Context, userID uuid.UUID, c
 	preview.MemberCount++
 
 	return preview, nil
+}
+
+func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID) error {
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Str("group id", groupID.String()).
+		Msg("Leaving group")
+
+	if userID == uuid.Nil || groupID == uuid.Nil {
+		return apperr.InvalidInput("group service", "user and group id are required", nil)
+	}
+
+	isMember, err := s.ConversationRepo.IsConversationMember(ctx, userID, groupID)
+	if err != nil {
+		return err
+	}
+
+	if !isMember {
+		return apperr.InvalidInput("group service", "invalid group", nil)
+	}
+
+	if err := s.GroupRepo.RemoveMember(ctx, groupID, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *GroupService) Delete(ctx context.Context, userID, groupID uuid.UUID) error {
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Str("group id", groupID.String()).
+		Msg("request to delete group")
+
+	if userID == uuid.Nil || groupID == uuid.Nil {
+		return apperr.InvalidInput("group service", "user and group id are required", nil)
+	}
+
+	role, err := s.GroupRepo.GetMemberRole(ctx, groupID, userID)
+	if err != nil {
+		return err
+	}
+
+	if role == "" {
+		return apperr.InvalidInput("group service", "invalid group", nil)
+	}
+
+	if role == model.GroupMemberRoleAdmin || role == model.GroupMemberRoleMember {
+		return apperr.InvalidInput("group service", "you are not an owner", nil)
+	}
+
+	members, err := s.ConversationRepo.GetConversationUsers(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	err = s.GroupRepo.DeleteGroup(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	s.Sender.Broadcast(SendItem{
+		RequestID: uuid.New(),
+		Event:     model.ConversationDeleteEvent,
+		Content:   groupID,
+		Recievers: members,
+	})
+
+	return nil
 }
