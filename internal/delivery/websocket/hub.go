@@ -13,7 +13,7 @@ type Hub struct {
 	Clients    map[uuid.UUID][]*Client
 	Register   chan *Client
 	Unregister chan *Client
-	Deliver    chan application.SendItems
+	Deliver    chan application.SendItem
 }
 
 func NewHub() *Hub {
@@ -21,7 +21,7 @@ func NewHub() *Hub {
 		Clients:    make(map[uuid.UUID][]*Client),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
-		Deliver:    make(chan application.SendItems),
+		Deliver:    make(chan application.SendItem),
 	}
 }
 
@@ -72,11 +72,11 @@ func (h *Hub) unregisterClient(client *Client) {
 	close(client.Send)
 }
 
-func (h *Hub) Send(params application.SendItems) {
+func (h *Hub) Send(params application.SendItem) {
 	h.Deliver <- params
 }
 
-func createResponse(v application.SendItems) []byte {
+func createResponse(v application.SendItem) []byte {
 	var response dto.WSResponse
 	response.RequestID = v.RequestID
 	response.Type = string(v.Event)

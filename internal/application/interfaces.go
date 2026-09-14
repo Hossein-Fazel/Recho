@@ -55,7 +55,7 @@ type MessaageRepo interface {
 
 // Sender
 
-type SendItems struct {
+type SendItem struct {
 	RequestID uuid.UUID
 	Event     model.Event
 	Content   any
@@ -63,7 +63,7 @@ type SendItems struct {
 }
 
 type Sender interface {
-	Send(items SendItems)
+	Send(items SendItem)
 }
 
 // Token Manager
