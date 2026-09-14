@@ -377,6 +377,26 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         void refreshConversations()
       }
     },
+
+    onConversationDeleted: (deleted) => {
+      setConversations((current) =>
+        current.filter(
+          (conversation) =>
+            conversation.conversation_id !== deleted.conversation_id,
+        ),
+      )
+
+      if (deleted.conversation_id === loadedFor.current) {
+        setActiveId((current) =>
+          current === deleted.conversation_id ? null : current,
+        )
+        setMessages([])
+        setMessageStatuses(new Map())
+        setNextMessageCursor('')
+        setInfoOpen(false)
+        setMobileChat(false)
+      }
+    },
   })
 
   function selectConversation(conversation: Conversation) {

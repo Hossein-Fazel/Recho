@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type {
+  ConversationDeleted,
   MessageCreated,
   MessageDeleted,
   MessageEdited,
@@ -10,6 +11,7 @@ type Handlers = {
   onMessage: (message: MessageCreated) => void
   onMessageEdited: (message: MessageEdited) => void
   onMessageDeleted: (deleted: MessageDeleted) => void
+  onConversationDeleted: (deleted: ConversationDeleted) => void
   enabled: boolean
 }
 
@@ -22,11 +24,13 @@ export function useWebSocket({
   onMessage,
   onMessageEdited,
   onMessageDeleted,
+  onConversationDeleted,
   enabled,
 }: Handlers) {
   const onMessageRef = useRef(onMessage)
   const onMessageEditedRef = useRef(onMessageEdited)
   const onMessageDeletedRef = useRef(onMessageDeleted)
+  const onConversationDeletedRef = useRef(onConversationDeleted)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(false)
@@ -38,6 +42,7 @@ export function useWebSocket({
   onMessageRef.current = onMessage
   onMessageEditedRef.current = onMessageEdited
   onMessageDeletedRef.current = onMessageDeleted
+  onConversationDeletedRef.current = onConversationDeleted
 
   useEffect(() => {
     if (!enabled) {
@@ -115,6 +120,13 @@ export function useWebSocket({
                 id: deleted.id,
                 conversation_id: deleted.conversation_id,
                 request_id: payload.request_id,
+              })
+            }
+          } else if (type === 'conversation.delete' && data) {
+            const deleted = data as ConversationDeleted
+            if (deleted.conversation_id) {
+              onConversationDeletedRef.current({
+                conversation_id: deleted.conversation_id,
               })
             }
           }
