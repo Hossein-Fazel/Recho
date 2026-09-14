@@ -72,8 +72,8 @@ func (h *Hub) unregisterClient(client *Client) {
 	close(client.Send)
 }
 
-func (h *Hub) Broadcast(params application.SendItem) {
-	h.Deliver <- params
+func (h *Hub) Broadcast(param application.SendItem) {
+	h.Deliver <- param
 }
 
 func createResponse(v application.SendItem) []byte {
@@ -97,6 +97,13 @@ func createResponse(v application.SendItem) []byte {
 			response.Data = dto.MessageDeleteResponse{
 				ID:             msg.ID,
 				ConversationID: msg.ConversationID,
+			}
+		}
+
+	case model.ConversationDeleteEvent:
+		if id, ok := v.Content.(uuid.UUID); ok {
+			response.Data = dto.ConversationDeleteResponse{
+				ConversationID: id,
 			}
 		}
 	}

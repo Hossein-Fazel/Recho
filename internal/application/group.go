@@ -20,14 +20,16 @@ const (
 type GroupService struct {
 	GroupRepo        GroupRepo
 	ConversationRepo ConversationRepo
+	Sender           Sender
 }
 
-func NewGroupService(groupRepo GroupRepo, conversationRepo ConversationRepo) *GroupService {
+func NewGroupService(groupRepo GroupRepo, conversationRepo ConversationRepo, sender Sender) *GroupService {
 	pkg.Logger.Info().Msg("Initializing Group service")
 
 	return &GroupService{
 		GroupRepo:        groupRepo,
 		ConversationRepo: conversationRepo,
+		Sender:           sender,
 	}
 }
 
@@ -189,13 +191,26 @@ func (s *GroupService) Delete(ctx context.Context, userID, groupID uuid.UUID) er
 		return apperr.InvalidInput("group service", "invalid group", nil)
 	}
 
-	if role == model.GroupMemberRoleOwner {
-		err = s.GroupRepo.DeleteGroup(ctx, groupID)
-		if err != nil {
-			return err
-		}
-		return nil
+	if role == model.GroupMemberRoleAdmin || role == model.GroupMemberRoleMember {
+		return apperr.InvalidInput("group service", "you are not an owner", nil)
 	}
 
-	return apperr.InvalidInput("group service", "you are not an owner", nil)
+	members, err := s.ConversationRepo.GetConversationUsers(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	err = s.GroupRepo.DeleteGroup(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	s.Sender.Broadcast(SendItem{
+		RequestID: uuid.New(),
+		Event:     model.ConversationDeleteEvent,
+		Content:   groupID,
+		Recievers: members,
+	})
+
+	return nil
 }
