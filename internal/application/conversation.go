@@ -39,7 +39,7 @@ func (c *ConversationService) GetUserConversations(ctx context.Context, userID u
 		return nil, "", apperr.InvalidInput("conversation service", "user id required", nil)
 	}
 
-	cursorItem, err := decodeConvCursor(cursor)
+	cursorItem, err := pkg.DecodeConvCursor(cursor)
 	if err != nil {
 		return []*model.UserConversation{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
 	}
@@ -61,7 +61,7 @@ func (c *ConversationService) GetUserConversations(ctx context.Context, userID u
 		newCursor = ""
 	} else {
 		last := list[len(list)-1]
-		newCursor, err = encodeConvCursor(
+		newCursor, err = pkg.EncodeConvCursor(
 			last.UpdatedAt,
 			last.ConversationID,
 		)
@@ -134,7 +134,7 @@ func (c *ConversationService) GetConversationMessages(ctx context.Context, userI
 		return []*model.Message{}, "", apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
-	CursorItem, err := decodeMessageCursor(cursor)
+	CursorItem, err := pkg.DecodeMessageCursor(cursor)
 	if err != nil {
 		return []*model.Message{}, "", apperr.InvalidInput("conversation service", "invalid cursor", err)
 	}
@@ -155,7 +155,7 @@ func (c *ConversationService) GetConversationMessages(ctx context.Context, userI
 		newCursor = ""
 	} else {
 		last := list[len(list)-1]
-		newCursor, err = encodeMessageCursor(
+		newCursor, err = pkg.EncodeMessageCursor(
 			last.UpdatedAt,
 			last.ID,
 		)
@@ -202,7 +202,7 @@ func (c *ConversationService) GetGroupMembers(ctx context.Context, params GetGro
 		return []*model.GroupMember{}, "", apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
-	cursor, err := decodeGroupMemberCursor(params.Cursor)
+	cursor, err := pkg.DecodeGroupMemberCursor(params.Cursor)
 
 	members, err := c.ConversationRepo.GetGroupMembers(ctx, params.GroupID, cursor.ID, params.Limit)
 	if err != nil {
@@ -215,7 +215,7 @@ func (c *ConversationService) GetGroupMembers(ctx context.Context, params GetGro
 		newCursor = ""
 	} else {
 		last := members[len(members)-1]
-		newCursor, err = encodeGroupMemberCursor(
+		newCursor, err = pkg.EncodeGroupMemberCursor(
 			last.UserID,
 		)
 	}
