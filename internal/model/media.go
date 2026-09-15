@@ -49,7 +49,7 @@ type Media struct {
 type LimitedReader struct {
 	Reader io.Reader
 	Max    int64
-	Readed   int64
+	Readed int64
 }
 
 func (l *LimitedReader) Read(p []byte) (int, error) {

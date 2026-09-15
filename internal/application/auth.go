@@ -91,7 +91,7 @@ func (s *AuthService) Login(ctx context.Context, username string, password strin
 	pkg.Logger.Info().
 		Str("username", username).
 		Msg("Loging in user")
-	
+
 	if strings.TrimSpace(username) == "" || strings.TrimSpace(password) == "" {
 		return nil, apperr.InvalidInput("auth service", "username and password are required", nil)
 	}

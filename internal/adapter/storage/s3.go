@@ -36,7 +36,6 @@ type S3Config struct {
 	PresignExpiry   time.Duration `env:"PRESIGN_EXPIRY" envDefault:"15m"`
 }
 
-
 type S3 struct {
 	cfg      S3Config
 	client   *s3.Client
