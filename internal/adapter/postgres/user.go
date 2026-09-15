@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -18,6 +19,8 @@ import (
 type User struct {
 	sql *sqlc.Queries
 }
+
+var _ application.UserRepo = (*User)(nil)
 
 func NewUserRepo(sql *sqlc.Queries) *User {
 	pkg.Logger.Info().Msg("Initializing User Repository")

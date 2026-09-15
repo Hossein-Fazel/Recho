@@ -23,6 +23,8 @@ type Group struct {
 	db  *pgxpool.Pool
 }
 
+var _ application.GroupRepo = (*Group)(nil)
+
 func NewGroupRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Group {
 	pkg.Logger.Info().Msg("Initializing Group Repository")
 

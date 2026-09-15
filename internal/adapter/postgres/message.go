@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -18,6 +19,8 @@ type Message struct {
 	db  *pgxpool.Pool
 	sql *sqlc.Queries
 }
+
+var _ application.MessaageRepo = (*Message)(nil)
 
 func NewMessageRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Message {
 	pkg.Logger.Info().Msg("Initializing Message Repository")

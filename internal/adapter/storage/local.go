@@ -23,6 +23,8 @@ type Local struct {
 	cfg LocalConfig
 }
 
+var _ application.Storage = (*Local)(nil)
+
 func NewLocal(cfg LocalConfig) (application.Storage, error) {
 	if err := os.MkdirAll(cfg.RootPath, defaultDirectoryPermision); err != nil {
 		return nil, apperr.InvalidInput("storage", "failed to create local storage root path", err)
