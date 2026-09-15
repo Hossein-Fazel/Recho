@@ -6,12 +6,15 @@ import (
 	"encoding/base64"
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 )
 
 type RefreshTokenService struct {
 	ttl time.Duration
 }
+
+var _ application.RefreshToken = (*RefreshTokenService)(nil)
 
 func NewRefreshTokenService(conf Config) *RefreshTokenService {
 	return &RefreshTokenService{

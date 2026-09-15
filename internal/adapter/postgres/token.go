@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -19,6 +20,8 @@ type Token struct {
 	db  *pgxpool.Pool
 	sql *sqlc.Queries
 }
+
+var _ application.RefreshTokenRepo = (*Token)(nil)
 
 func NewRefreshTokenRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Token {
 	pkg.Logger.Info().Msg("Initializing Token Repository")

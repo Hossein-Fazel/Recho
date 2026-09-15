@@ -16,6 +16,8 @@ type Hub struct {
 	Deliver    chan application.SendItem
 }
 
+var _ application.Sender = (*Hub)(nil)
+
 func NewHub() *Hub {
 	return &Hub{
 		Clients:    make(map[uuid.UUID][]*Client),

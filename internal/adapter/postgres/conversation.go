@@ -20,6 +20,8 @@ type Conversation struct {
 	db  *pgxpool.Pool
 }
 
+var _ application.ConversationRepo = (*Conversation)(nil)
+
 func NewConversationRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Conversation {
 	pkg.Logger.Info().Msg("Initializing Conversation Repository")
 
