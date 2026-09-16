@@ -156,7 +156,7 @@ SELECT
     display_name,
     avatar_key
 FROM users
-WHERE username LIKE $1 || '%'
+WHERE username LIKE '%' || $1 || '%'
 ORDER BY username
 LIMIT 20
 `

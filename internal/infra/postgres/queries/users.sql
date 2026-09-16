@@ -82,6 +82,6 @@ SELECT
     display_name,
     avatar_key
 FROM users
-WHERE username LIKE sqlc.arg(query) || '%'
+WHERE username LIKE '%' || sqlc.arg(query) || '%'
 ORDER BY username
 LIMIT 20;
