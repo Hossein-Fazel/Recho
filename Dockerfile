@@ -44,6 +44,8 @@ COPY --from=go-builder /app/recho ./recho
 COPY --from=go-builder /app/internal/infra/postgres/migrations ./internal/infra/postgres/migrations
 COPY --from=ui-builder /app/UI/dist ./UI/dist
 
+RUN mkdir -p /app/uploads && chown -R recho:recho /app/uploads
+
 USER recho
 
 EXPOSE 8000
