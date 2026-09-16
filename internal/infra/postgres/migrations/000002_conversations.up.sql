@@ -47,7 +47,7 @@ CREATE INDEX idx_direct_conversations_user_two ON direct_conversations(user_two_
 CREATE TABLE groups (
     conversation_id UUID PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE,
     name            VARCHAR(100) NOT NULL,
-    avatar_url      TEXT,
+    avatar_key      TEXT,
     invite_code     VARCHAR(100) UNIQUE,
     bio             VARCHAR(250),
     created_by      UUID         NOT NULL REFERENCES users(id),

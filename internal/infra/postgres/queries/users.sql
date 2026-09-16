@@ -12,7 +12,7 @@ RETURNING
     username,
     password_hash,
     display_name,
-    avatar_url,
+    avatar_key,
     bio,
     created_at,
     updated_at;
@@ -24,7 +24,7 @@ SELECT
     username,
     password_hash,
     display_name,
-    avatar_url,
+    avatar_key,
     bio,
     created_at,
     updated_at
@@ -39,13 +39,32 @@ SELECT
     username,
     password_hash,
     display_name,
-    avatar_url,
+    avatar_key,
     bio,
     created_at,
     updated_at
 FROM users
 WHERE id = $1
 LIMIT 1;
+
+
+-- name: UpdateUser :one
+UPDATE users
+SET
+    display_name = $2,
+    avatar_key   = $3,
+    bio          = $4,
+    updated_at   = NOW()
+WHERE id = $1
+RETURNING
+    id,
+    username,
+    password_hash,
+    display_name,
+    avatar_key,
+    bio,
+    created_at,
+    updated_at;
 
 
 -- name: UsernameExists :one
@@ -60,7 +79,7 @@ SELECT
     id,
     username,
     display_name,
-    avatar_url
+    avatar_key
 FROM users
 WHERE username LIKE sqlc.arg(query) || '%'
 ORDER BY username
