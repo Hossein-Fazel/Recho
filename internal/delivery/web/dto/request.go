@@ -16,6 +16,11 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+type UpdateProfileRequest struct {
+	DisplayName *string `json:"display_name"`
+	Bio         *string `json:"bio"`
+}
+
 type GetOrCreateDirectConversationRequest struct {
 	UserID uuid.UUID `json:"user_id"`
 }

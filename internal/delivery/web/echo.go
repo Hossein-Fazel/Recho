@@ -2,7 +2,10 @@ package web
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
+	storageAdapter "github.com/Hossein-Fazel/Recho/internal/adapter/storage"
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/api"
 	rechoMiddleware "github.com/Hossein-Fazel/Recho/internal/delivery/web/middleware"
@@ -39,7 +42,7 @@ type Services struct {
 // @securityDefinitions.apikey CookieAuth
 // @in cookie
 // @name access_token
-func Init(svcs Services, conf Config) *echo.Echo {
+func Init(svcs Services, conf Config, storageConf storageAdapter.Config) *echo.Echo {
 	pkg.Logger.Info().Msg("Initializing server")
 
 	webServer := echo.New()
@@ -99,6 +102,8 @@ func Init(svcs Services, conf Config) *echo.Echo {
 	groupHandler := api.NewGroupHandler(svcs.Group)
 	groupHandler.RegisterRoutes(groupGroup)
 
+	mountLocalStorage(webServer, storageConf)
+
 	if !webServer.Debug {
 		pkg.Logger.Info().Msg("Serving frontend")
 		webServer.Static("/assets", "UI/dist/assets")
@@ -111,4 +116,44 @@ func Init(svcs Services, conf Config) *echo.Echo {
 	}
 
 	return webServer
+}
+
+func mountLocalStorage(e *echo.Echo, cfg storageAdapter.Config) {
+	if cfg.Driver != storageAdapter.DriverLocal && cfg.Driver != "" {
+		return
+	}
+
+	if cfg.Local.RootPath == "" {
+		return
+	}
+
+	mount := localMountPath(cfg.Local.BaseURL)
+	if mount == "" {
+		return
+	}
+
+	pkg.Logger.Info().
+		Str("path", mount).
+		Str("root", cfg.Local.RootPath).
+		Msg("serving local storage")
+
+	e.Static(mount, cfg.Local.RootPath)
+}
+
+func localMountPath(baseURL string) string {
+	if baseURL == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return ""
+	}
+
+	path := strings.TrimRight(parsed.Path, "/")
+	if path == "" {
+		return ""
+	}
+
+	return path
 }
