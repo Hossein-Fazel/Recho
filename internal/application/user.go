@@ -101,12 +101,19 @@ func (u *UserService) UpdateProfile(ctx context.Context, userID uuid.UUID, param
 		Str("id", userID.String()).
 		Msg("Updating user profile")
 
-	return u.userRepo.Update(ctx, UpdateUserParams{
+	updated, err := u.userRepo.Update(ctx, UpdateUserParams{
 		ID:          userID,
 		DisplayName: user.DisplayName,
 		AvatarKey:   user.AvatarKey,
 		Bio:         user.Bio,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	updated.AvatarKey = u.fixUrl(ctx, updated.AvatarKey)
+
+	return updated, nil
 }
 
 func (u *UserService) UpdateAvatar(ctx context.Context, userID uuid.UUID, file model.UploadedFile) (*model.User, error) {
@@ -153,6 +160,8 @@ func (u *UserService) UpdateAvatar(ctx context.Context, userID uuid.UUID, file m
 				Msg("failed to delete previous avatar")
 		}
 	}
+
+	updated.AvatarKey = u.fixUrl(ctx, updated.AvatarKey)
 
 	return updated, nil
 }
