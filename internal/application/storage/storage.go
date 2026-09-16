@@ -28,7 +28,7 @@ const (
 	maxFileNameLength = 255
 )
 
-type UploadFile struct {
+type UploadedFile struct {
 	Content  io.Reader
 	Size     int64
 	FileName string
@@ -46,7 +46,7 @@ func NewStorageService(storage application.Storage) *StorageService {
 	}
 }
 
-func (s *StorageService) UploadAvatar(ctx context.Context, ID uuid.UUID, file UploadFile) (*model.Media, error) {
+func (s *StorageService) UploadAvatar(ctx context.Context, ID uuid.UUID, convType string, file UploadedFile) (*model.Media, error) {
 	if ID == uuid.Nil {
 		return nil, apperr.InvalidInput(storageModule, "id is required", nil)
 	}
@@ -54,15 +54,24 @@ func (s *StorageService) UploadAvatar(ctx context.Context, ID uuid.UUID, file Up
 	pkg.Logger.Info().
 		Str("id", ID.String()).
 		Msg("Uploading avatar")
+	
+	var prefix string
 
-	return s.upload(ctx, path.Join(userAvatarPrefix, ID.String()), model.MediaCategoryAvatar, file)
+	switch strings.ToLower(convType) {
+	case "user":
+		prefix = userAvatarPrefix
+	case "group":
+		prefix = groupAvatarPrefix
+	}
+
+	return s.upload(ctx, path.Join(prefix, ID.String()), model.MediaCategoryAvatar, file)
 }
 
 func (s *StorageService) UploadMessageMedia(
 	ctx context.Context,
 	conversationID uuid.UUID,
 	category model.MediaCategory,
-	file UploadFile,
+	file UploadedFile,
 ) (*model.Media, error) {
 	if conversationID == uuid.Nil {
 		return nil, apperr.InvalidInput(storageModule, "conversation id is required", nil)
@@ -129,7 +138,7 @@ func (s *StorageService) upload(
 	ctx context.Context,
 	prefix string,
 	category model.MediaCategory,
-	file UploadFile,
+	file UploadedFile,
 ) (*model.Media, error) {
 	rule, ok := mediaRules[category]
 	if !ok {
