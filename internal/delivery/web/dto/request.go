@@ -17,6 +17,7 @@ type RefreshRequest struct {
 }
 
 type UpdateProfileRequest struct {
+	Username    *string `json:"username"`
 	DisplayName *string `json:"display_name"`
 	Bio         *string `json:"bio"`
 }

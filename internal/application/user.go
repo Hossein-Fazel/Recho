@@ -13,11 +13,14 @@ import (
 const (
 	userModule = "user service"
 
+	minUsernameLength    = 3
+	maxUsernameLength    = 30
 	maxDisplayNameLength = 100
 	maxBioLength         = 250
 )
 
 type UpdateProfileParams struct {
+	Username    *string
 	DisplayName *string
 	Bio         *string
 }
@@ -77,6 +80,27 @@ func (u *UserService) UpdateProfile(ctx context.Context, userID uuid.UUID, param
 		return nil, err
 	}
 
+	if params.Username != nil {
+		username := strings.TrimSpace(*params.Username)
+
+		if length := len([]rune(username)); length < minUsernameLength || length > maxUsernameLength {
+			return nil, apperr.InvalidInput(userModule, "username must be between 3 and 30 characters", nil)
+		}
+
+		if !strings.EqualFold(username, user.Username) {
+			exists, err := u.userRepo.Exists(ctx, username)
+			if err != nil {
+				return nil, err
+			}
+
+			if exists {
+				return nil, apperr.Conflict(userModule, "username already exists", nil)
+			}
+		}
+
+		user.Username = username
+	}
+
 	if params.DisplayName != nil {
 		displayName := strings.TrimSpace(*params.DisplayName)
 
@@ -103,6 +127,7 @@ func (u *UserService) UpdateProfile(ctx context.Context, userID uuid.UUID, param
 
 	updated, err := u.userRepo.Update(ctx, UpdateUserParams{
 		ID:          userID,
+		Username:    user.Username,
 		DisplayName: user.DisplayName,
 		AvatarKey:   user.AvatarKey,
 		Bio:         user.Bio,
@@ -137,6 +162,7 @@ func (u *UserService) UpdateAvatar(ctx context.Context, userID uuid.UUID, file m
 
 	updated, err := u.userRepo.Update(ctx, UpdateUserParams{
 		ID:          userID,
+		Username:    user.Username,
 		DisplayName: user.DisplayName,
 		AvatarKey:   media.Key,
 		Bio:         user.Bio,

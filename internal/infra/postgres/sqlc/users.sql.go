@@ -196,9 +196,10 @@ func (q *Queries) SearchUsers(ctx context.Context, query pgtype.Text) ([]SearchU
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
-    display_name = $2,
-    avatar_key   = $3,
-    bio          = $4,
+    username     = $2,
+    display_name = $3,
+    avatar_key   = $4,
+    bio          = $5,
     updated_at   = NOW()
 WHERE id = $1
 RETURNING
@@ -214,6 +215,7 @@ RETURNING
 
 type UpdateUserParams struct {
 	ID          uuid.UUID
+	Username    string
 	DisplayName pgtype.Text
 	AvatarKey   pgtype.Text
 	Bio         pgtype.Text
@@ -233,6 +235,7 @@ type UpdateUserRow struct {
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.ID,
+		arg.Username,
 		arg.DisplayName,
 		arg.AvatarKey,
 		arg.Bio,

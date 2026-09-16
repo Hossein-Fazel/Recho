@@ -9,6 +9,8 @@ type ProfileModalProps = {
 
 const NAME_LIMIT = 100
 const BIO_LIMIT = 250
+const USERNAME_MIN = 3
+const USERNAME_LIMIT = 30
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 
@@ -21,6 +23,7 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
   const { user, updateProfile, updateAvatar } = useAuth()
 
   const [displayName, setDisplayName] = useState(() => user?.display_name ?? '')
+  const [username, setUsername] = useState(() => user?.username ?? '')
   const [bio, setBio] = useState(() => user?.bio ?? '')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -48,13 +51,16 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
 
   const name = personName(user)
   const trimmedName = displayName.trim()
+  const trimmedUsername = username.trim()
   const trimmedBio = bio.trim()
   const currentName = (user.display_name ?? '').trim()
+  const currentUsername = (user.username ?? '').trim()
   const currentBio = (user.bio ?? '').trim()
 
   const nameDirty = trimmedName !== currentName
+  const usernameDirty = trimmedUsername !== currentUsername
   const bioDirty = trimmedBio !== currentBio
-  const dirty = nameDirty || bioDirty
+  const dirty = nameDirty || usernameDirty || bioDirty
   const busy = saving || uploading
 
   async function pickAvatar(event: React.ChangeEvent<HTMLInputElement>) {
@@ -96,11 +102,17 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
       return
     }
 
+    if (usernameDirty && trimmedUsername.length < USERNAME_MIN) {
+      setError(`Username must be at least ${USERNAME_MIN} characters`)
+      return
+    }
+
     setSaving(true)
     setError('')
 
     try {
-      const patch: { display_name?: string; bio?: string } = {}
+      const patch: { username?: string; display_name?: string; bio?: string } = {}
+      if (usernameDirty) patch.username = trimmedUsername
       if (nameDirty) patch.display_name = trimmedName
       if (bioDirty) patch.bio = trimmedBio
 
@@ -199,8 +211,19 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
 
           <label>
             Username
-            <input value={`@${user.username}`} readOnly aria-label="Username" />
+            <input
+              value={username}
+              maxLength={USERNAME_LIMIT}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="username"
+              autoComplete="username"
+              spellCheck={false}
+              aria-label="Username"
+            />
           </label>
+          <span className="profile-counter">
+            {username.length}/{USERNAME_LIMIT}
+          </span>
 
           {error ? <p className="form-error">{error}</p> : null}
 

@@ -55,7 +55,7 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 
 // UpdateProfile godoc
 // @Summary Update current user profile
-// @Description Updates the display name and/or bio. Omitted fields stay unchanged.
+// @Description Updates the username, display name and/or bio. Omitted fields stay unchanged.
 // @Tags user
 // @Accept json
 // @Produce json
@@ -82,6 +82,7 @@ func (h *UserHandler) UpdateProfile(c echo.Context) error {
 		c.Request().Context(),
 		userID,
 		application.UpdateProfileParams{
+			Username:    req.Username,
 			DisplayName: req.DisplayName,
 			Bio:         req.Bio,
 		},

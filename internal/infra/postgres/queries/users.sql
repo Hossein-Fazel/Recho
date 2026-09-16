@@ -51,9 +51,10 @@ LIMIT 1;
 -- name: UpdateUser :one
 UPDATE users
 SET
-    display_name = $2,
-    avatar_key   = $3,
-    bio          = $4,
+    username     = $2,
+    display_name = $3,
+    avatar_key   = $4,
+    bio          = $5,
     updated_at   = NOW()
 WHERE id = $1
 RETURNING

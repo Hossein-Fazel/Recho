@@ -139,6 +139,7 @@ func (u *User) Update(ctx context.Context, params application.UpdateUserParams) 
 
 	user, err := u.sql.UpdateUser(ctx, sqlc.UpdateUserParams{
 		ID:          params.ID,
+		Username:    params.Username,
 		DisplayName: nullText(params.DisplayName),
 		AvatarKey:   nullText(params.AvatarKey),
 		Bio:         nullText(params.Bio),
@@ -149,6 +150,15 @@ func (u *User) Update(ctx context.Context, params application.UpdateUserParams) 
 			return nil, apperr.NotFound(
 				"user repo",
 				"user not found",
+				err,
+			)
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, apperr.Conflict(
+				"user repo",
+				"username already exists",
 				err,
 			)
 		}

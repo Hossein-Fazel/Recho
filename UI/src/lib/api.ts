@@ -16,6 +16,7 @@ import type {
 } from './types'
 
 export type UpdateProfileInput = {
+  username?: string
   display_name?: string
   bio?: string
 }

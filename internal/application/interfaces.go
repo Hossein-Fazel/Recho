@@ -13,6 +13,7 @@ import (
 
 type UpdateUserParams struct {
 	ID          uuid.UUID
+	Username    string
 	DisplayName string
 	AvatarKey   string
 	Bio         string
