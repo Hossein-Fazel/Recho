@@ -3,6 +3,7 @@ import { Composer } from '../components/Composer'
 import { ConversationInfoPanel } from '../components/ConversationInfoPanel'
 import { JoinGroupModal } from '../components/JoinGroupModal'
 import { NewGroupModal } from '../components/NewGroupModal'
+import { ProfileModal } from '../components/ProfileModal'
 import { Sidebar } from '../components/Sidebar'
 import { Thread } from '../components/Thread'
 import { useAuth } from '../context/AuthContext'
@@ -40,6 +41,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
   const [newGroupOpen, setNewGroupOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(Boolean(inviteCode))
   const [joinCode, setJoinCode] = useState(inviteCode)
   const [groupSenders, setGroupSenders] = useState<Map<string, GroupMember>>(new Map())
@@ -678,6 +680,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           setJoinCode('')
           setJoinOpen(true)
         }}
+        onOpenProfile={() => setProfileOpen(true)}
         onLogout={() => void logout()}
       />
 
@@ -728,6 +731,10 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         onClose={() => setNewGroupOpen(false)}
         onCreated={onGroupCreated}
       />
+
+      {profileOpen ? (
+        <ProfileModal onClose={() => setProfileOpen(false)} />
+      ) : null}
 
       <JoinGroupModal
         open={joinOpen}

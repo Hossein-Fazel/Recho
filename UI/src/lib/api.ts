@@ -15,6 +15,11 @@ import type {
   UserSearch,
 } from './types'
 
+export type UpdateProfileInput = {
+  display_name?: string
+  bio?: string
+}
+
 class ApiError extends Error {
   status: number
 
@@ -34,11 +39,15 @@ async function parseError(res: Response): Promise<string> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Let the browser set the multipart boundary for FormData bodies; forcing
+  // JSON there would make the server reject the request.
+  const isFormData = init?.body instanceof FormData
+
   const res = await fetch(path, {
     ...init,
     credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(init?.headers ?? {}),
     },
   })
@@ -99,6 +108,26 @@ export const api = {
   searchUsers(q: string) {
     const params = new URLSearchParams({ q })
     return request<{ users: UserSearch[] | null }>(`/api/user/search?${params}`)
+  },
+
+  getMe() {
+    return request<User>('/api/user/me')
+  },
+
+  updateProfile(patch: UpdateProfileInput) {
+    return request<User>('/api/user/me', {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+  },
+
+  updateAvatar(file: File) {
+    const body = new FormData()
+    body.append('avatar', file)
+    return request<User>('/api/user/me/avatar', {
+      method: 'POST',
+      body,
+    })
   },
 
   conversation(conversationId: string) {
