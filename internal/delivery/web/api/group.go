@@ -67,7 +67,7 @@ func (h *GroupHandler) CreateGroup(c echo.Context) error {
 		ConversationID: group.ID,
 		Name:           group.Name,
 		Bio:            group.Bio,
-		AvatarURL:      group.AvatarURL,
+		AvatarURL:      group.AvatarKey,
 		InviteCode:     group.InviteCode,
 		CreatedAt:      group.CreatedAt,
 		UpdatedAt:      group.UpdatedAt,

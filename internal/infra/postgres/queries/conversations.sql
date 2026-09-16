@@ -11,11 +11,11 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
 
     -- group
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
 
     -- last message
     c.last_message_id,
@@ -77,11 +77,11 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
 
     -- group
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
 
     -- last message
     c.last_message_id,
@@ -212,12 +212,12 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
     u.bio,
 
     g.conversation_id AS group_id,
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
     g.bio AS group_bio,
     g.invite_code,
     gm.role AS viewer_role,
@@ -243,7 +243,7 @@ SELECT
     u.id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
     gm.role AS member_role
 FROM group_members gm
 JOIN users u ON u.id = gm.user_id

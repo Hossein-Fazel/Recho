@@ -62,7 +62,7 @@ func (u *User) Create(ctx context.Context, username, passHash string) (*model.Us
 		ID:          user.ID,
 		Username:    user.Username,
 		DisplayName: user.DisplayName.String,
-		AvatarURL:   user.AvatarUrl.String,
+		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
@@ -94,7 +94,7 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 		Username:    user.Username,
 		PassHash:    user.PasswordHash,
 		DisplayName: user.DisplayName.String,
-		AvatarURL:   user.AvatarUrl.String,
+		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
@@ -125,7 +125,53 @@ func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 		Username:    user.Username,
 		PassHash:    user.PasswordHash,
 		DisplayName: user.DisplayName.String,
-		AvatarURL:   user.AvatarUrl.String,
+		AvatarKey:   user.AvatarKey.String,
+		Bio:         user.Bio.String,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+	}, nil
+}
+
+func (u *User) Update(ctx context.Context, params application.UpdateUserParams) (*model.User, error) {
+	pkg.Logger.Info().
+		Str("id", params.ID.String()).
+		Msg("Updating user")
+
+	user, err := u.sql.UpdateUser(ctx, sqlc.UpdateUserParams{
+		ID:          params.ID,
+		Username:    params.Username,
+		DisplayName: nullText(params.DisplayName),
+		AvatarKey:   nullText(params.AvatarKey),
+		Bio:         nullText(params.Bio),
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"user repo",
+				"user not found",
+				err,
+			)
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, apperr.Conflict(
+				"user repo",
+				"username already exists",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("user repo", err)
+	}
+
+	return &model.User{
+		ID:          user.ID,
+		Username:    user.Username,
+		PassHash:    user.PasswordHash,
+		DisplayName: user.DisplayName.String,
+		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,

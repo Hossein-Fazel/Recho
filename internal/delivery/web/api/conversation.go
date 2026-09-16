@@ -292,7 +292,7 @@ func (h *ConversationHandler) GetConversationInfo(c echo.Context) error {
 			ID:          info.User.UserID,
 			Username:    info.User.Username,
 			DisplayName: info.User.DisplayName,
-			AvatarURL:   info.User.AvatarUrl,
+			AvatarURL:   info.User.AvatarKey,
 			Bio:         info.User.Bio,
 		}
 	}
@@ -300,7 +300,7 @@ func (h *ConversationHandler) GetConversationInfo(c echo.Context) error {
 		group := &dto.GroupInfo{
 			ID:          info.Group.GroupID,
 			Name:        info.Group.GroupName,
-			AvatarURL:   info.Group.GroupAvatarUrl,
+			AvatarURL:   info.Group.GroupAvatarKey,
 			Bio:         info.Group.GroupBio,
 			Role:        info.Group.ViewerRole,
 			MemberCount: info.Group.MemberCount,
@@ -383,7 +383,7 @@ func (h *ConversationHandler) GetGroupMembers(c echo.Context) error {
 				UserID:      member.UserID,
 				Username:    member.Username,
 				DisplayName: member.DisplayName,
-				AvatarURL:   member.AvatarURL,
+				AvatarURL:   member.AvatarKey,
 				Role:        member.Role,
 			},
 		)

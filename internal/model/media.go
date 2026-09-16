@@ -46,6 +46,12 @@ type Media struct {
 	UploadedAt  time.Time
 }
 
+type UploadedFile struct {
+	Content  io.Reader
+	Size     int64
+	FileName string
+}
+
 type LimitedReader struct {
 	Reader io.Reader
 	Max    int64

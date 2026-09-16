@@ -83,11 +83,11 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
 
     -- group
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
 
     -- last message
     c.last_message_id,
@@ -135,9 +135,9 @@ type GetConversationByIDRow struct {
 	UserID               pgtype.UUID
 	Username             pgtype.Text
 	DisplayName          pgtype.Text
-	AvatarUrl            pgtype.Text
+	AvatarKey            pgtype.Text
 	GroupName            pgtype.Text
-	GroupAvatarUrl       pgtype.Text
+	GroupAvatarKey       pgtype.Text
 	LastMessageID        pgtype.Int8
 	LastMessageType      NullMessageType
 	LastMessageText      pgtype.Text
@@ -154,9 +154,9 @@ func (q *Queries) GetConversationByID(ctx context.Context, arg GetConversationBy
 		&i.UserID,
 		&i.Username,
 		&i.DisplayName,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.GroupName,
-		&i.GroupAvatarUrl,
+		&i.GroupAvatarKey,
 		&i.LastMessageID,
 		&i.LastMessageType,
 		&i.LastMessageText,
@@ -177,12 +177,12 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
     u.bio,
 
     g.conversation_id AS group_id,
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
     g.bio AS group_bio,
     g.invite_code,
     gm.role AS viewer_role,
@@ -215,11 +215,11 @@ type GetConversationInfoRow struct {
 	UserID           pgtype.UUID
 	Username         pgtype.Text
 	DisplayName      pgtype.Text
-	AvatarUrl        pgtype.Text
+	AvatarKey        pgtype.Text
 	Bio              pgtype.Text
 	GroupID          pgtype.UUID
 	GroupName        pgtype.Text
-	GroupAvatarUrl   pgtype.Text
+	GroupAvatarKey   pgtype.Text
 	GroupBio         pgtype.Text
 	InviteCode       pgtype.Text
 	ViewerRole       NullGroupMemberRole
@@ -235,11 +235,11 @@ func (q *Queries) GetConversationInfo(ctx context.Context, arg GetConversationIn
 		&i.UserID,
 		&i.Username,
 		&i.DisplayName,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.Bio,
 		&i.GroupID,
 		&i.GroupName,
-		&i.GroupAvatarUrl,
+		&i.GroupAvatarKey,
 		&i.GroupBio,
 		&i.InviteCode,
 		&i.ViewerRole,
@@ -347,7 +347,7 @@ SELECT
     u.id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
     gm.role AS member_role
 FROM group_members gm
 JOIN users u ON u.id = gm.user_id
@@ -368,7 +368,7 @@ type GetGroupMembersRow struct {
 	ID          uuid.UUID
 	Username    string
 	DisplayName pgtype.Text
-	AvatarUrl   pgtype.Text
+	AvatarKey   pgtype.Text
 	MemberRole  GroupMemberRole
 }
 
@@ -385,7 +385,7 @@ func (q *Queries) GetGroupMembers(ctx context.Context, arg GetGroupMembersParams
 			&i.ID,
 			&i.Username,
 			&i.DisplayName,
-			&i.AvatarUrl,
+			&i.AvatarKey,
 			&i.MemberRole,
 		); err != nil {
 			return nil, err
@@ -411,11 +411,11 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
 
     -- group
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
 
     -- last message
     c.last_message_id,
@@ -478,9 +478,9 @@ type GetUserConversationsRow struct {
 	UserID               pgtype.UUID
 	Username             pgtype.Text
 	DisplayName          pgtype.Text
-	AvatarUrl            pgtype.Text
+	AvatarKey            pgtype.Text
 	GroupName            pgtype.Text
-	GroupAvatarUrl       pgtype.Text
+	GroupAvatarKey       pgtype.Text
 	LastMessageID        pgtype.Int8
 	LastMessageType      NullMessageType
 	LastMessageText      pgtype.Text
@@ -508,9 +508,9 @@ func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversat
 			&i.UserID,
 			&i.Username,
 			&i.DisplayName,
-			&i.AvatarUrl,
+			&i.AvatarKey,
 			&i.GroupName,
-			&i.GroupAvatarUrl,
+			&i.GroupAvatarKey,
 			&i.LastMessageID,
 			&i.LastMessageType,
 			&i.LastMessageText,

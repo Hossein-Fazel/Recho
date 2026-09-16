@@ -44,9 +44,72 @@ services:
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
 
+    volumes:
+      - uploads_data:/app/uploads
+
     depends_on:
       postgres:
         condition: service_healthy
 
+  minio:
+    image: minio/minio:latest
+    container_name: recho-minio
+
+    profiles:
+      - s3
+
+    restart: unless-stopped
+
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_S3_SECRET_ACCESS_KEY:-minioadmin}
+
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+    volumes:
+      - minio_data:/data
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mc",
+          "ready",
+          "local"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: recho-minio-init
+
+    profiles:
+      - s3
+
+    depends_on:
+      minio:
+        condition: service_healthy
+
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_S3_SECRET_ACCESS_KEY:-minioadmin}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-recho}
+
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+      mc mb --ignore-existing local/$$STORAGE_S3_BUCKET &&
+      mc anonymous set download local/$$STORAGE_S3_BUCKET &&
+      echo 'MinIO bucket ready'
+      "
+
 volumes:
   postgres_data:
+  minio_data:
+  uploads_data:

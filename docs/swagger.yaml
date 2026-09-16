@@ -118,6 +118,13 @@ definitions:
       username:
         type: string
     type: object
+  dto.UpdateProfileRequest:
+    properties:
+      bio:
+        type: string
+      display_name:
+        type: string
+    type: object
   dto.User:
     properties:
       avatar_url:
@@ -724,6 +731,110 @@ paths:
       summary: Join a group using an invite code
       tags:
       - group
+  /api/user/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - user
+    patch:
+      consumes:
+      - application/json
+      description: Updates the display name and/or bio. Omitted fields stay unchanged.
+      parameters:
+      - description: profile
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - user
+  /api/user/me/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Replaces the current user's avatar with the uploaded image.
+      parameters:
+      - description: avatar image
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user avatar
+      tags:
+      - user
   /api/user/search:
     get:
       consumes:

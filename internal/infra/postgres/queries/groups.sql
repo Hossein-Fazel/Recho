@@ -16,7 +16,7 @@ VALUES (
 RETURNING
     conversation_id,
     name,
-    avatar_url,
+    avatar_key,
     invite_code,
     bio,
     created_by,
@@ -40,7 +40,7 @@ ON CONFLICT (group_id, user_id) DO NOTHING;
 SELECT
     g.conversation_id,
     g.name,
-    g.avatar_url,
+    g.avatar_key,
     g.invite_code,
     g.bio,
     g.created_by,

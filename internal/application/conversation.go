@@ -13,13 +13,15 @@ import (
 
 type ConversationService struct {
 	conversationRepo ConversationRepo
+	storage          *StorageService
 }
 
-func NewConversationService(conversationRepo ConversationRepo) *ConversationService {
+func NewConversationService(conversationRepo ConversationRepo, storage *StorageService) *ConversationService {
 	pkg.Logger.Info().Msg("Initializing Converasion service")
 
 	return &ConversationService{
 		conversationRepo: conversationRepo,
+		storage:          storage,
 	}
 }
 
@@ -55,6 +57,13 @@ func (c *ConversationService) GetUserConversations(ctx context.Context, userID u
 		return []*model.UserConversation{}, "", err
 	}
 
+	for idx, item := range list {
+		item.AvatarKey = c.fixUrl(ctx, item.AvatarKey)
+		item.GroupAvatarKey = c.fixUrl(ctx, item.GroupAvatarKey)
+
+		list[idx] = item
+	}
+
 	var newCursor string
 
 	if len(list) < int(limit) {
@@ -75,7 +84,15 @@ func (c *ConversationService) GetConversationByID(ctx context.Context, userID uu
 		return nil, apperr.InvalidInput("conversation service", "conversation id is required", nil)
 	}
 
-	return c.conversationRepo.GetConversationByID(ctx, userID, conversationID)
+	conv, err := c.conversationRepo.GetConversationByID(ctx, userID, conversationID)
+	if err != nil {
+		return nil, err
+	}
+
+	conv.AvatarKey = c.fixUrl(ctx, conv.AvatarKey)
+	conv.GroupAvatarKey = c.fixUrl(ctx, conv.GroupAvatarKey)
+
+	return conv, nil
 }
 
 func (c *ConversationService) GetOrCreateDC(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
@@ -238,4 +255,16 @@ func (c *ConversationService) GetConversationInfo(ctx context.Context, userID, c
 	}
 
 	return c.conversationRepo.GetInfo(ctx, userID, convID)
+}
+
+func (c *ConversationService) fixUrl(ctx context.Context, key string) string {
+	if key == "" {
+		return ""
+	}
+
+	url, err := c.storage.URL(ctx, key)
+	if err != nil {
+		return ""
+	}
+	return url
 }

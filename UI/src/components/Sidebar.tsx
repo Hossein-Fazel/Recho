@@ -18,6 +18,7 @@ type SidebarProps = {
   onCreated: (conversationId: string, peer: UserSearch) => void
   onNewGroup: () => void
   onJoinGroup: () => void
+  onOpenProfile: () => void
   onLogout: () => void
 }
 
@@ -29,6 +30,7 @@ export function Sidebar({
   onCreated,
   onNewGroup,
   onJoinGroup,
+  onOpenProfile,
   onLogout,
 }: SidebarProps) {
   const [query, setQuery] = useState('')
@@ -196,11 +198,19 @@ export function Sidebar({
       </ul>
 
       <footer className="sidebar-foot">
-        <Avatar id={user.id} name={myName} url={user.avatar_url} />
-        <div className="conv-meta">
-          <span className="conv-name">{myName}</span>
-          {myHandle ? <span className="conv-preview">{myHandle}</span> : null}
-        </div>
+        <button
+          type="button"
+          className="profile-button"
+          onClick={onOpenProfile}
+          aria-label="Edit profile"
+          title="Edit profile"
+        >
+          <Avatar id={user.id} name={myName} url={user.avatar_url} />
+          <span className="conv-meta">
+            <span className="conv-name">{myName}</span>
+            {myHandle ? <span className="conv-preview">{myHandle}</span> : null}
+          </span>
+        </button>
         <button type="button" className="logout-button" onClick={() => void onLogout()} aria-label="Log out" title="Log out">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10" />

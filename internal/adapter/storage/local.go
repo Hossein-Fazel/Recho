@@ -15,8 +15,8 @@ import (
 const defaultDirectoryPermision = 0750 // Owner: RWX, Group: R-X, Other: ---
 
 type LocalConfig struct {
-	RootPath string `env:"ROOT_PATH"`
-	BaseURL  string `env:"BASE_URL"`
+	RootPath string `env:"ROOT_PATH" envDefault:"./uploads"`
+	BaseURL  string `env:"BASE_URL" envDefault:"http://localhost:8000/uploads"`
 }
 
 type Local struct {

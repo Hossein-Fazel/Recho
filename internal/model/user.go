@@ -11,7 +11,7 @@ type User struct {
 	Username    string
 	PassHash    string
 	DisplayName string
-	AvatarURL   string
+	AvatarKey   string
 	Bio         string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -21,5 +21,5 @@ type UserSearch struct {
 	ID          uuid.UUID
 	Username    string
 	DisplayName string
-	AvatarURL   string
+	AvatarKey   string
 }

@@ -161,7 +161,7 @@ type DirectConversation struct {
 type Group struct {
 	ConversationID uuid.UUID
 	Name           string
-	AvatarUrl      pgtype.Text
+	AvatarKey      pgtype.Text
 	InviteCode     pgtype.Text
 	Bio            pgtype.Text
 	CreatedBy      uuid.UUID
@@ -204,7 +204,7 @@ type User struct {
 	ID           uuid.UUID
 	Username     string
 	DisplayName  pgtype.Text
-	AvatarUrl    pgtype.Text
+	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
 	PasswordHash string
 	CreatedAt    time.Time

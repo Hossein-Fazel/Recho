@@ -410,8 +410,7 @@ export function Thread({
       <h2>Pick a conversation</h2>
 
       <p>
-        Search a username and start a live thread. New messages
-        appear instantly.
+        Search a username and start a conversation
       </p>
     </div>
     </section>

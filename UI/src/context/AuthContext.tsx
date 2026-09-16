@@ -7,7 +7,13 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { api, clearUser, loadUser, saveUser } from '../lib/api'
+import {
+  api,
+  clearUser,
+  loadUser,
+  saveUser,
+  type UpdateProfileInput,
+} from '../lib/api'
 import type { User } from '../lib/types'
 
 type AuthContextValue = {
@@ -17,6 +23,8 @@ type AuthContextValue = {
   login: (username: string, password: string) => Promise<void>
   register: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  updateProfile: (patch: UpdateProfileInput) => Promise<void>
+  updateAvatar: (file: File) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -31,20 +39,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function boot() {
       const cached = loadUser()
+
       try {
         await api.verify()
-        if (!cancelled) setUser(cached)
       } catch {
         try {
           await api.refresh()
           await api.verify()
-          if (!cancelled) setUser(cached)
         } catch {
           clearUser()
           if (!cancelled) setUser(null)
+          if (!cancelled) setLoading(false)
+          return
         }
-      } finally {
-        if (!cancelled) setLoading(false)
+      }
+
+      // Prefer the freshly fetched profile so edits made elsewhere (or a
+      // rotated avatar URL) are reflected, but keep the cached copy if the
+      // request fails rather than signing the user out.
+      let profile = cached
+      try {
+        profile = await api.getMe()
+        saveUser(profile)
+      } catch {
+        // Fall back to the cached user.
+      }
+
+      if (!cancelled) {
+        setUser(profile)
+        setLoading(false)
       }
     }
 
@@ -77,9 +100,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const applyUser = useCallback((updated: User) => {
+    saveUser(updated)
+    setUser(updated)
+  }, [])
+
+  const updateProfile = useCallback(
+    async (patch: UpdateProfileInput) => {
+      applyUser(await api.updateProfile(patch))
+    },
+    [applyUser],
+  )
+
+  const updateAvatar = useCallback(
+    async (file: File) => {
+      applyUser(await api.updateAvatar(file))
+    },
+    [applyUser],
+  )
+
   const value = useMemo(
-    () => ({ user, loading, error, login, register, logout }),
-    [user, loading, error, login, register, logout],
+    () => ({
+      user,
+      loading,
+      error,
+      login,
+      register,
+      logout,
+      updateProfile,
+      updateAvatar,
+    }),
+    [
+      user,
+      loading,
+      error,
+      login,
+      register,
+      logout,
+      updateProfile,
+      updateAvatar,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

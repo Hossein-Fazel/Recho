@@ -40,7 +40,7 @@ const getGroupByInviteCode = `-- name: GetGroupByInviteCode :one
 SELECT
     g.conversation_id,
     g.name,
-    g.avatar_url,
+    g.avatar_key,
     g.invite_code,
     g.bio,
     g.created_by,
@@ -58,7 +58,7 @@ WHERE g.invite_code = $1
 type GetGroupByInviteCodeRow struct {
 	ConversationID uuid.UUID
 	Name           string
-	AvatarUrl      pgtype.Text
+	AvatarKey      pgtype.Text
 	InviteCode     pgtype.Text
 	Bio            pgtype.Text
 	CreatedBy      uuid.UUID
@@ -73,7 +73,7 @@ func (q *Queries) GetGroupByInviteCode(ctx context.Context, inviteCode pgtype.Te
 	err := row.Scan(
 		&i.ConversationID,
 		&i.Name,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.InviteCode,
 		&i.Bio,
 		&i.CreatedBy,
@@ -121,7 +121,7 @@ VALUES (
 RETURNING
     conversation_id,
     name,
-    avatar_url,
+    avatar_key,
     invite_code,
     bio,
     created_by,
@@ -149,7 +149,7 @@ func (q *Queries) InsertGroup(ctx context.Context, arg InsertGroupParams) (Group
 	err := row.Scan(
 		&i.ConversationID,
 		&i.Name,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.InviteCode,
 		&i.Bio,
 		&i.CreatedBy,
