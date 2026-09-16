@@ -1,4 +1,4 @@
-package storage
+package application
 
 import (
 	"bytes"
@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
-	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
@@ -28,17 +27,11 @@ const (
 	maxFileNameLength = 255
 )
 
-type UploadedFile struct {
-	Content  io.Reader
-	Size     int64
-	FileName string
-}
-
 type StorageService struct {
-	storage application.Storage
+	storage Storage
 }
 
-func NewStorageService(storage application.Storage) *StorageService {
+func NewStorageService(storage Storage) *StorageService {
 	pkg.Logger.Info().Msg("Initializing Storage service")
 
 	return &StorageService{
@@ -46,7 +39,7 @@ func NewStorageService(storage application.Storage) *StorageService {
 	}
 }
 
-func (s *StorageService) UploadAvatar(ctx context.Context, ID uuid.UUID, convType string, file UploadedFile) (*model.Media, error) {
+func (s *StorageService) UploadAvatar(ctx context.Context, ID uuid.UUID, convType string, file model.UploadedFile) (*model.Media, error) {
 	if ID == uuid.Nil {
 		return nil, apperr.InvalidInput(storageModule, "id is required", nil)
 	}
@@ -54,14 +47,16 @@ func (s *StorageService) UploadAvatar(ctx context.Context, ID uuid.UUID, convTyp
 	pkg.Logger.Info().
 		Str("id", ID.String()).
 		Msg("Uploading avatar")
-	
+
 	var prefix string
 
-	switch strings.ToLower(convType) {
+	switch strings.ToLower(strings.TrimSpace(convType)) {
 	case "user":
 		prefix = userAvatarPrefix
 	case "group":
 		prefix = groupAvatarPrefix
+	default:
+		return nil, apperr.InvalidInput(storageModule, "unsupported avatar target: "+convType, nil)
 	}
 
 	return s.upload(ctx, path.Join(prefix, ID.String()), model.MediaCategoryAvatar, file)
@@ -71,7 +66,7 @@ func (s *StorageService) UploadMessageMedia(
 	ctx context.Context,
 	conversationID uuid.UUID,
 	category model.MediaCategory,
-	file UploadedFile,
+	file model.UploadedFile,
 ) (*model.Media, error) {
 	if conversationID == uuid.Nil {
 		return nil, apperr.InvalidInput(storageModule, "conversation id is required", nil)
@@ -106,18 +101,6 @@ func (s *StorageService) Delete(ctx context.Context, key string) error {
 	return s.storage.Delete(ctx, key)
 }
 
-func (s *StorageService) DeleteAll(ctx context.Context, keys ...string) error {
-	var firstErr error
-
-	for _, key := range keys {
-		if err := s.Delete(ctx, key); err != nil && firstErr == nil {
-			firstErr = err
-		}
-	}
-
-	return firstErr
-}
-
 func (s *StorageService) URL(ctx context.Context, key string) (string, error) {
 	if err := validateKey(key); err != nil {
 		return "", err
@@ -138,7 +121,7 @@ func (s *StorageService) upload(
 	ctx context.Context,
 	prefix string,
 	category model.MediaCategory,
-	file UploadedFile,
+	file model.UploadedFile,
 ) (*model.Media, error) {
 	rule, ok := mediaRules[category]
 	if !ok {

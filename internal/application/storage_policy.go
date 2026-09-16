@@ -1,4 +1,4 @@
-package storage
+package application
 
 import "github.com/Hossein-Fazel/Recho/internal/model"
 
