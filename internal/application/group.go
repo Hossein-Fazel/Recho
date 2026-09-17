@@ -214,3 +214,50 @@ func (s *GroupService) Delete(ctx context.Context, userID, groupID uuid.UUID) er
 
 	return nil
 }
+
+func (s *GroupService) RotateInviteCode(ctx context.Context, userID, groupID uuid.UUID) (string, error) {
+	pkg.Logger.Info().
+		Str("user id", userID.String()).
+		Str("group id", groupID.String()).
+		Msg("rotate invite code")
+
+	if userID == uuid.Nil || groupID == uuid.Nil {
+		return "", apperr.InvalidInput("group service", "user and group id are required", nil)
+	}
+
+	role, err := s.groupRepo.GetMemberRole(ctx, groupID, userID)
+	if err != nil {
+		return "", err
+	}
+
+	if role == "" {
+		return "", apperr.InvalidInput("group service", "invalid group", nil)
+	}
+
+	if role == model.GroupMemberRoleAdmin || role == model.GroupMemberRoleMember {
+		return "", apperr.InvalidInput("group service", "you are not an owner", nil)
+	}
+
+	var lastErr error
+	for range inviteCodeAttempts {
+		code, err := pkg.NewInviteCode()
+		if err != nil {
+			return "", apperr.Internal("group service", err)
+		}
+
+		err = s.groupRepo.UpdateInviteCode(ctx, groupID, code)
+		if err == nil {
+			return code, nil
+		}
+
+		var appErr *apperr.AppError
+		if errors.As(err, &appErr) && appErr.Type == apperr.ErrConflict {
+			lastErr = err
+			continue
+		}
+
+		return "", err
+	}
+
+	return "", apperr.Internal("group service", lastErr)
+}

@@ -199,3 +199,22 @@ func (q *Queries) RemoveGroupMember(ctx context.Context, arg RemoveGroupMemberPa
 	_, err := q.db.Exec(ctx, removeGroupMember, arg.GroupID, arg.UserID)
 	return err
 }
+
+const updateInviteCode = `-- name: UpdateInviteCode :one
+UPDATE groups AS g
+SET invite_code = $1
+WHERE g.conversation_id = $2
+RETURNING g.invite_code
+`
+
+type UpdateInviteCodeParams struct {
+	InviteCode pgtype.Text
+	GroupID    uuid.UUID
+}
+
+func (q *Queries) UpdateInviteCode(ctx context.Context, arg UpdateInviteCodeParams) (pgtype.Text, error) {
+	row := q.db.QueryRow(ctx, updateInviteCode, arg.InviteCode, arg.GroupID)
+	var invite_code pgtype.Text
+	err := row.Scan(&invite_code)
+	return invite_code, err
+}

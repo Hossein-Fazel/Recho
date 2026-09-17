@@ -144,3 +144,7 @@ type GroupMember struct {
 	AvatarURL   string                `json:"avatar_url"`
 	Role        model.GroupMemberRole `json:"role"`
 }
+
+type RotateInviteCodeResponse struct {
+	NewInviteCode string `json:"new_invite_code"`
+}

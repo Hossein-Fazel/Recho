@@ -55,6 +55,7 @@ type GroupRepo interface {
 	RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error
 	DeleteGroup(ctx context.Context, groupID uuid.UUID) error
 	GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (model.GroupMemberRole, error)
+	UpdateInviteCode(ctx context.Context, groupID uuid.UUID, newInviteCode string) error
 }
 
 type MessaageRepo interface {

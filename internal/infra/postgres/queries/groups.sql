@@ -73,3 +73,9 @@ WHERE group_id = sqlc.arg(group_id)
 -- name: DeleteGroup :exec
 DELETE FROM conversations
 WHERE id = sqlc.arg(group_id) AND type = 'group';
+
+-- name: UpdateInviteCode :one
+UPDATE groups AS g
+SET invite_code = sqlc.arg(invite_code)
+WHERE g.conversation_id = sqlc.arg(group_id)
+RETURNING g.invite_code;

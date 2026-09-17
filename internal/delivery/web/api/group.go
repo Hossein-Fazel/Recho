@@ -27,6 +27,8 @@ func (h *GroupHandler) RegisterRoutes(g *echo.Group) {
 	g.POST("/join", h.JoinGroup)
 	g.POST("/:id/leave", h.LeaveGroup)
 	g.DELETE("/:id", h.DeleteGroup)
+	// POST /groups/{group_id}/invite-code/rotate
+	// g.POST("/:id/invite-code/rotate",)
 }
 
 // CreateGroup godoc
@@ -210,5 +212,39 @@ func (h *GroupHandler) DeleteGroup(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dto.MessageResponse{
 		Message: "the group was deleted successfully",
+	})
+}
+
+// RotateInviteCode godoc
+// @Summary rotate the invite code
+// @Tags group
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Group ID"
+// @Success 200 {object} dto.RotateInviteCodeResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/group/{group_id}/invite-code/rotate [post]
+func (h *GroupHandler) RotateInviteCode(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid group id", err)
+	}
+
+	newCode, err := h.groupSvc.RotateInviteCode(c.Request().Context(), userID, groupID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, dto.RotateInviteCodeResponse{
+		NewInviteCode: newCode,
 	})
 }
