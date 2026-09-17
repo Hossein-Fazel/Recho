@@ -28,7 +28,7 @@ func (q *Queries) CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int
 
 const deleteGroup = `-- name: DeleteGroup :exec
 DELETE FROM conversations
-WHERE id = $1
+WHERE id = $1 AND type = 'group'
 `
 
 func (q *Queries) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {

@@ -72,4 +72,4 @@ WHERE group_id = sqlc.arg(group_id)
 
 -- name: DeleteGroup :exec
 DELETE FROM conversations
-WHERE id = sqlc.arg(group_id);
+WHERE id = sqlc.arg(group_id) AND type = 'group';
