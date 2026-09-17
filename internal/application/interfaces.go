@@ -48,13 +48,23 @@ type ConversationRepo interface {
 	GetGroupMembers(ctx context.Context, GID uuid.UUID, cursorUID uuid.UUID, limit int32) ([]*model.GroupMember, error)
 }
 
+type UpdateGroupParams struct {
+	GroupID   uuid.UUID
+	Name      string
+	Bio       string
+	AvatarKey string
+}
+
 type GroupRepo interface {
 	Create(ctx context.Context, params CreateGroupParams) (*model.Group, error)
+	GetByID(ctx context.Context, groupID uuid.UUID) (*model.Group, error)
 	GetByInviteCode(ctx context.Context, code string) (*model.GroupPreview, error)
 	AddMember(ctx context.Context, groupID, userID uuid.UUID) error
 	RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error
 	DeleteGroup(ctx context.Context, groupID uuid.UUID) error
 	GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (model.GroupMemberRole, error)
+	UpdateInviteCode(ctx context.Context, groupID uuid.UUID, newInviteCode string) error
+	Update(ctx context.Context, params UpdateGroupParams) (*model.Group, error)
 }
 
 type MessaageRepo interface {

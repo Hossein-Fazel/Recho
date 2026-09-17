@@ -8,6 +8,7 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/dto"
+	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -26,7 +27,10 @@ func (h *GroupHandler) RegisterRoutes(g *echo.Group) {
 	g.GET("/invite/:code", h.GetGroupByInviteCode)
 	g.POST("/join", h.JoinGroup)
 	g.POST("/:id/leave", h.LeaveGroup)
+	g.PATCH("/:id", h.UpdateGroup)
+	g.POST("/:id/avatar", h.UploadGroupAvatar)
 	g.DELETE("/:id", h.DeleteGroup)
+	g.POST("/:id/invite-code/rotate", h.RotateInviteCode)
 }
 
 // CreateGroup godoc
@@ -211,4 +215,143 @@ func (h *GroupHandler) DeleteGroup(c echo.Context) error {
 	return c.JSON(http.StatusOK, dto.MessageResponse{
 		Message: "the group was deleted successfully",
 	})
+}
+
+// RotateInviteCode godoc
+// @Summary rotate the invite code
+// @Tags group
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Group ID"
+// @Success 200 {object} dto.RotateInviteCodeResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/group/{id}/invite-code/rotate [post]
+func (h *GroupHandler) RotateInviteCode(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid group id", err)
+	}
+
+	newCode, err := h.groupSvc.RotateInviteCode(c.Request().Context(), userID, groupID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, dto.RotateInviteCodeResponse{
+		NewInviteCode: newCode,
+	})
+}
+
+// UpdateGroup godoc
+// @Summary Update a group
+// @Description Updates the group name and/or bio. Omitted fields stay unchanged. Only the group owner can do this.
+// @Tags group
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Group ID"
+// @Param request body dto.UpdateGroupRequest true "group"
+// @Success 200 {object} dto.UpdateGroupResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/group/{id} [patch]
+func (h *GroupHandler) UpdateGroup(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid group id", err)
+	}
+
+	var req dto.UpdateGroupRequest
+	if err := c.Bind(&req); err != nil {
+		return apperr.InvalidInput("web", "invalid request body", err)
+	}
+
+	group, err := h.groupSvc.Update(
+		c.Request().Context(),
+		userID,
+		groupID,
+		application.UpdateGroupProfileParams{
+			Name: req.Name,
+			Bio:  req.Bio,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, group2res(group))
+}
+
+// UploadGroupAvatar godoc
+// @Summary Update a group avatar
+// @Description Replaces the group's avatar with the uploaded image. Only the group owner can do this.
+// @Tags group
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Group ID"
+// @Param avatar formData file true "avatar image"
+// @Success 200 {object} dto.UpdateGroupResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/group/{id}/avatar [post]
+func (h *GroupHandler) UploadGroupAvatar(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	groupID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid group id", err)
+	}
+
+	header, err := c.FormFile("avatar")
+	if err != nil {
+		return apperr.InvalidInput("web", "avatar file is required", err)
+	}
+
+	file, err := header.Open()
+	if err != nil {
+		return apperr.Internal("web", err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			c.Logger().Errorf("failed to close avatar upload: %v", err)
+		}
+	}()
+
+	group, err := h.groupSvc.UpdateAvatar(
+		c.Request().Context(),
+		userID,
+		groupID,
+		model.UploadedFile{
+			Content:  file,
+			Size:     header.Size,
+			FileName: header.Filename,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, group2res(group))
 }

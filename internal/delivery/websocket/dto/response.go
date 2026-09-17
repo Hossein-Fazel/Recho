@@ -77,6 +77,13 @@ type ConversationDeleteResponse struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
 }
 
+type GroupUpdateResponse struct {
+	GroupID   uuid.UUID `json:"group_id"`
+	Name      string    `json:"name"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+}
+
 type TextMessage struct {
 	Content string `json:"content,omitempty"`
 }

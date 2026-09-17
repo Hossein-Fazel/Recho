@@ -93,11 +93,19 @@ export type ConversationDeleted = {
   conversation_id: string
 }
 
+export type GroupUpdated = {
+  group_id: string
+  name: string
+  avatar_url: string
+  bio: string
+}
+
 export type WSEvent =
   | { type: 'message.create'; request_id: string; data: MessageCreated }
   | { type: 'message.edit'; request_id: string; data: MessageEdited }
   | { type: 'message.delete'; request_id: string; data: MessageDeleted }
   | { type: 'conversation.delete'; request_id: string; data: ConversationDeleted }
+  | { type: 'group.update'; request_id: string; data: GroupUpdated }
 
 export type ConversationInfo = {
   conversation_id: string
@@ -133,6 +141,23 @@ export type CreateGroupResponse = {
   invite_code: string
   created_at: string
   updated_at: string
+}
+
+export type RotateInviteCodeResponse = {
+  new_invite_code: string
+}
+
+export type UpdateGroupResponse = {
+  id: string
+  name: string
+  avatar_url: string
+  bio: string
+  updated_at: string
+}
+
+export type UpdateGroupInput = {
+  name?: string
+  bio?: string
 }
 
 export type GroupPreview = {

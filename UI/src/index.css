@@ -2225,6 +2225,11 @@ textarea:focus {
   line-height: 1.45;
 }
 
+.invite-rotate {
+  justify-self: start;
+  padding: 7px 11px;
+}
+
 .label-hint {
   color: var(--muted-2);
   font-weight: 400;

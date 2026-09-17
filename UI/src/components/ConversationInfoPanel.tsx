@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Avatar } from './Avatar'
+import { GroupEditModal } from './GroupEditModal'
 import { InviteCode } from './InviteCode'
 import { LinkedText } from './LinkedText'
 import { api } from '../lib/api'
@@ -8,6 +9,7 @@ import type {
   Conversation,
   ConversationInfo,
   GroupMember,
+  UpdateGroupResponse,
 } from '../lib/types'
 
 type ConversationInfoPanelProps = {
@@ -16,9 +18,12 @@ type ConversationInfoPanelProps = {
   open: boolean
   onClose: () => void
   onLeft: (conversationId: string, deleted: boolean) => void
+  onGroupUpdated?: (group: UpdateGroupResponse) => void
+  /** Bump to refetch the info, e.g. after a live group.update event. */
+  refreshKey?: number
 }
 
-type GroupAction = 'leave' | 'delete'
+type GroupAction = 'leave' | 'delete' | 'rotate'
 
 const roleLabel: Record<GroupMember['role'], string> = {
   owner: 'Owner',
@@ -52,6 +57,8 @@ export function ConversationInfoPanel({
   open,
   onClose,
   onLeft,
+  onGroupUpdated,
+  refreshKey = 0,
 }: ConversationInfoPanelProps) {
   const [info, setInfo] = useState<ConversationInfo | null>(null)
   const [loading, setLoading] = useState(false)
@@ -63,6 +70,7 @@ export function ConversationInfoPanel({
   const [pendingAction, setPendingAction] = useState<GroupAction | null>(null)
   const [actionBusy, setActionBusy] = useState(false)
   const [actionError, setActionError] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
 
   const conversationId = conversation?.conversation_id ?? null
   const isGroup = conversation?.conversation_type === 'group'
@@ -78,6 +86,7 @@ export function ConversationInfoPanel({
   const closePanel = useCallback(() => {
     setPendingAction(null)
     setActionError('')
+    setEditOpen(false)
     onClose()
   }, [onClose])
 
@@ -117,7 +126,7 @@ export function ConversationInfoPanel({
     return () => {
       cancelled = true
     }
-  }, [open, conversationId])
+  }, [open, conversationId, refreshKey])
 
   useEffect(() => {
     if (!open || !conversationId || !isGroup) return
@@ -171,6 +180,20 @@ export function ConversationInfoPanel({
     setActionError('')
 
     try {
+      if (pendingAction === 'rotate') {
+        const { new_invite_code } = await api.rotateInviteCode(conversationId)
+        setInfo((current) =>
+          current?.group
+            ? {
+                ...current,
+                group: { ...current.group, invite_code: new_invite_code },
+              }
+            : current,
+        )
+        setPendingAction(null)
+        return
+      }
+
       if (pendingAction === 'delete') {
         await api.deleteGroup(conversationId)
       } else {
@@ -187,6 +210,24 @@ export function ConversationInfoPanel({
     } finally {
       setActionBusy(false)
     }
+  }
+
+  function handleGroupSaved(updated: UpdateGroupResponse) {
+    setInfo((current) =>
+      current?.group
+        ? {
+            ...current,
+            group: {
+              ...current.group,
+              name: updated.name,
+              avatar_url: updated.avatar_url,
+              bio: updated.bio,
+            },
+          }
+        : current,
+    )
+
+    onGroupUpdated?.(updated)
   }
 
   if (!open || !conversation) return null
@@ -303,7 +344,17 @@ export function ConversationInfoPanel({
                 <InfoRow label="About" value={bio} />
               </dl>
 
-              {inviteCode ? <InviteCode code={inviteCode} /> : null}
+              {inviteCode ? (
+                <InviteCode
+                  code={inviteCode}
+                  canRotate={myRole === 'owner'}
+                  rotating={actionBusy && pendingAction === 'rotate'}
+                  onRotate={() => {
+                    setActionError('')
+                    setPendingAction('rotate')
+                  }}
+                />
+              ) : null}
 
               <section className="info-members">
                 <p className="list-label">
@@ -373,6 +424,16 @@ export function ConversationInfoPanel({
                     <>
                       <button
                         type="button"
+                        className="ghost-btn info-action"
+                        onClick={() => setEditOpen(true)}
+                      >
+                        Edit group
+                      </button>
+                      <p className="info-action-hint">
+                        Change the group name, photo and bio.
+                      </p>
+                      <button
+                        type="button"
                         className="danger-btn info-action"
                         onClick={() => {
                           setActionError('')
@@ -414,12 +475,18 @@ export function ConversationInfoPanel({
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal">
             <h3>
-              {pendingAction === 'delete' ? 'Delete group?' : 'Leave group?'}
+              {pendingAction === 'delete'
+                ? 'Delete group?'
+                : pendingAction === 'rotate'
+                  ? 'Rotate invite code?'
+                  : 'Leave group?'}
             </h3>
             <p>
               {pendingAction === 'delete'
                 ? 'This group and all of its messages will be deleted for everyone.'
-                : 'You will no longer be a member of this group.'}
+                : pendingAction === 'rotate'
+                  ? 'The current code and link will stop working immediately. A new code will be generated.'
+                  : 'You will no longer be a member of this group.'}
             </p>
             {actionError ? (
               <p className="info-note error">{actionError}</p>
@@ -438,7 +505,9 @@ export function ConversationInfoPanel({
               </button>
               <button
                 type="button"
-                className="danger-btn"
+                className={
+                  pendingAction === 'rotate' ? 'primary compact' : 'danger-btn'
+                }
                 onClick={() => void confirmAction()}
                 disabled={actionBusy}
               >
@@ -446,11 +515,24 @@ export function ConversationInfoPanel({
                   ? 'Working…'
                   : pendingAction === 'delete'
                     ? 'Delete'
-                    : 'Leave'}
+                    : pendingAction === 'rotate'
+                      ? 'Rotate'
+                      : 'Leave'}
               </button>
             </div>
           </div>
         </div>
+      ) : null}
+
+      {editOpen && isGroup ? (
+        <GroupEditModal
+          groupId={group?.id || conversation.conversation_id}
+          initialName={groupName}
+          initialBio={bio}
+          initialAvatarUrl={avatarUrl}
+          onClose={() => setEditOpen(false)}
+          onSaved={handleGroupSaved}
+        />
       ) : null}
     </>
   )

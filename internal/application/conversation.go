@@ -226,6 +226,11 @@ func (c *ConversationService) GetGroupMembers(ctx context.Context, params GetGro
 		return []*model.GroupMember{}, "", err
 	}
 
+	for idx, member := range members {
+		member.AvatarKey = c.fixUrl(ctx, member.AvatarKey)
+		members[idx] = member
+	}
+
 	var newCursor string
 
 	if len(members) < int(params.Limit) {
@@ -254,7 +259,20 @@ func (c *ConversationService) GetConversationInfo(ctx context.Context, userID, c
 		return nil, apperr.NotFound("conversation service", "Conversation not found", nil)
 	}
 
-	return c.conversationRepo.GetInfo(ctx, userID, convID)
+	info, err := c.conversationRepo.GetInfo(ctx, userID, convID)
+	if err != nil {
+		return nil, err
+	}
+
+	if info.User != nil {
+		info.User.AvatarKey = c.fixUrl(ctx, info.User.AvatarKey)
+	}
+
+	if info.Group != nil {
+		info.Group.GroupAvatarKey = c.fixUrl(ctx, info.Group.GroupAvatarKey)
+	}
+
+	return info, nil
 }
 
 func (c *ConversationService) fixUrl(ctx context.Context, key string) string {

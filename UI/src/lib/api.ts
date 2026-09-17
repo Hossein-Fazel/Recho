@@ -10,6 +10,9 @@ import type {
   GroupMembersResponse,
   GroupPreview,
   Message,
+  RotateInviteCodeResponse,
+  UpdateGroupInput,
+  UpdateGroupResponse,
   User,
   UserConversationsResponse,
   UserSearch,
@@ -207,6 +210,35 @@ export const api = {
     return request<{ message: string }>(
       `/api/group/${encodeURIComponent(groupId)}`,
       { method: 'DELETE' },
+    )
+  },
+
+  rotateInviteCode(groupId: string) {
+    return request<RotateInviteCodeResponse>(
+      `/api/group/${encodeURIComponent(groupId)}/invite-code/rotate`,
+      { method: 'POST' },
+    )
+  },
+
+  updateGroup(groupId: string, patch: UpdateGroupInput) {
+    return request<UpdateGroupResponse>(
+      `/api/group/${encodeURIComponent(groupId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      },
+    )
+  },
+
+  updateGroupAvatar(groupId: string, file: File) {
+    const body = new FormData()
+    body.append('avatar', file)
+    return request<UpdateGroupResponse>(
+      `/api/group/${encodeURIComponent(groupId)}/avatar`,
+      {
+        method: 'POST',
+        body,
+      },
     )
   },
 }

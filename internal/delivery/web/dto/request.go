@@ -31,6 +31,11 @@ type CreateGroupRequest struct {
 	Bio  string `json:"bio"`
 }
 
+type UpdateGroupRequest struct {
+	Name *string `json:"name"`
+	Bio  *string `json:"bio"`
+}
+
 type JoinGroupRequest struct {
 	InviteCode string `json:"invite_code"`
 }

@@ -7,4 +7,5 @@ const (
 	MessageEditEvent        Event = "message.edit"
 	MessageDeleteEvent      Event = "message.delete"
 	ConversationDeleteEvent Event = "conversation.delete"
+	GroupUpdateEvent        Event = "group.update"
 )
