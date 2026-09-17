@@ -118,6 +118,8 @@ func (s *GroupService) PreviewByInviteCode(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
+	preview.AvatarKey = s.fixUrl(ctx, preview.AvatarKey)
+
 	if userID != uuid.Nil {
 		role, err := s.groupRepo.GetMemberRole(ctx, preview.GroupID, userID)
 		if err != nil {
