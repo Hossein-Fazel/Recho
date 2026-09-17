@@ -10,6 +10,7 @@ import type {
   GroupMembersResponse,
   GroupPreview,
   Message,
+  RotateInviteCodeResponse,
   User,
   UserConversationsResponse,
   UserSearch,
@@ -207,6 +208,13 @@ export const api = {
     return request<{ message: string }>(
       `/api/group/${encodeURIComponent(groupId)}`,
       { method: 'DELETE' },
+    )
+  },
+
+  rotateInviteCode(groupId: string) {
+    return request<RotateInviteCodeResponse>(
+      `/api/group/${encodeURIComponent(groupId)}/invite-code/rotate`,
+      { method: 'POST' },
     )
   },
 }

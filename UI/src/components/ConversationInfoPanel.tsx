@@ -18,7 +18,7 @@ type ConversationInfoPanelProps = {
   onLeft: (conversationId: string, deleted: boolean) => void
 }
 
-type GroupAction = 'leave' | 'delete'
+type GroupAction = 'leave' | 'delete' | 'rotate'
 
 const roleLabel: Record<GroupMember['role'], string> = {
   owner: 'Owner',
@@ -171,6 +171,20 @@ export function ConversationInfoPanel({
     setActionError('')
 
     try {
+      if (pendingAction === 'rotate') {
+        const { new_invite_code } = await api.rotateInviteCode(conversationId)
+        setInfo((current) =>
+          current?.group
+            ? {
+                ...current,
+                group: { ...current.group, invite_code: new_invite_code },
+              }
+            : current,
+        )
+        setPendingAction(null)
+        return
+      }
+
       if (pendingAction === 'delete') {
         await api.deleteGroup(conversationId)
       } else {
@@ -303,7 +317,17 @@ export function ConversationInfoPanel({
                 <InfoRow label="About" value={bio} />
               </dl>
 
-              {inviteCode ? <InviteCode code={inviteCode} /> : null}
+              {inviteCode ? (
+                <InviteCode
+                  code={inviteCode}
+                  canRotate={myRole === 'owner'}
+                  rotating={actionBusy && pendingAction === 'rotate'}
+                  onRotate={() => {
+                    setActionError('')
+                    setPendingAction('rotate')
+                  }}
+                />
+              ) : null}
 
               <section className="info-members">
                 <p className="list-label">
@@ -414,12 +438,18 @@ export function ConversationInfoPanel({
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal">
             <h3>
-              {pendingAction === 'delete' ? 'Delete group?' : 'Leave group?'}
+              {pendingAction === 'delete'
+                ? 'Delete group?'
+                : pendingAction === 'rotate'
+                  ? 'Rotate invite code?'
+                  : 'Leave group?'}
             </h3>
             <p>
               {pendingAction === 'delete'
                 ? 'This group and all of its messages will be deleted for everyone.'
-                : 'You will no longer be a member of this group.'}
+                : pendingAction === 'rotate'
+                  ? 'The current code and link will stop working immediately. A new code will be generated.'
+                  : 'You will no longer be a member of this group.'}
             </p>
             {actionError ? (
               <p className="info-note error">{actionError}</p>
@@ -438,7 +468,9 @@ export function ConversationInfoPanel({
               </button>
               <button
                 type="button"
-                className="danger-btn"
+                className={
+                  pendingAction === 'rotate' ? 'primary compact' : 'danger-btn'
+                }
                 onClick={() => void confirmAction()}
                 disabled={actionBusy}
               >
@@ -446,7 +478,9 @@ export function ConversationInfoPanel({
                   ? 'Working…'
                   : pendingAction === 'delete'
                     ? 'Delete'
-                    : 'Leave'}
+                    : pendingAction === 'rotate'
+                      ? 'Rotate'
+                      : 'Leave'}
               </button>
             </div>
           </div>

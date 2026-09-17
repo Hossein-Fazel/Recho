@@ -27,8 +27,7 @@ func (h *GroupHandler) RegisterRoutes(g *echo.Group) {
 	g.POST("/join", h.JoinGroup)
 	g.POST("/:id/leave", h.LeaveGroup)
 	g.DELETE("/:id", h.DeleteGroup)
-	// POST /groups/{group_id}/invite-code/rotate
-	// g.POST("/:id/invite-code/rotate",)
+	g.POST("/:id/invite-code/rotate", h.RotateInviteCode)
 }
 
 // CreateGroup godoc

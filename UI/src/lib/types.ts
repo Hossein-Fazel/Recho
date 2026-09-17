@@ -135,6 +135,10 @@ export type CreateGroupResponse = {
   updated_at: string
 }
 
+export type RotateInviteCodeResponse = {
+  new_invite_code: string
+}
+
 export type GroupPreview = {
   conversation_id: string
   name: string
