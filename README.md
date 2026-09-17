@@ -17,61 +17,31 @@
 
 ## Features
 
+Recho is a full-featured realtime chat application. Below is an overview of what it offers.
+
 ### Authentication & Security
 
-| Feature            | Description                                                      |
-| ------------------ | ---------------------------------------------------------------- |
-| **Authentication** | User registration and login with JWT-based authentication        |
-| **Access Tokens**  | Short-lived JWT access tokens for authenticated API requests     |
-| **Refresh Tokens** | Rotating refresh tokens securely delivered via HTTP-only cookies |
+Users can register and log in with JWT-based authentication. Sessions are backed by short-lived access tokens that authorize API requests, paired with rotating refresh tokens delivered through secure, HTTP-only cookies so they stay out of reach of client-side scripts.
 
 ### Messaging
 
-| Feature                  | Description                                                      |
-| ------------------------ | ---------------------------------------------------------------- |
-| **Direct Conversations** | Start or resume one-on-one conversations between users           |
-| **Realtime Messaging**   | WebSocket-based message delivery using a hub/client architecture |
-| **Message Editing**      | Edit your own messages and synchronize changes in realtime       |
-| **Message Deletion**     | Delete your own messages with realtime synchronization           |
-| **Message History**      | Cursor-based pagination for efficient message history retrieval  |
-| **Optimistic Messaging** | Messages appear instantly with delivery status updates           |
+Recho supports one-on-one direct conversations that can be started or resumed at any time. Messages are delivered in realtime over WebSockets using a hub/client architecture, so every participant sees updates immediately. You can edit and delete your own messages, with the changes synchronized to everyone in realtime. Message history is loaded efficiently with cursor-based pagination, and optimistic messaging makes your own messages appear instantly while showing their delivery status.
 
 ### Groups
 
-| Feature            | Description                                                           |
-| ------------------ | --------------------------------------------------------------------- |
-| **Group Chats**    | Create and participate in realtime group conversations                |
-| **Group Members**  | Browse group members directly from the conversation info panel        |
-| **Member Roles**   | Owner, admin, and member roles with visual role badges                |
-| **Invite Codes**   | Each group has a unique invite code and shareable `/join/<code>` link |
-| **Join by Invite** | Preview group information before joining with a single action         |
-| **Sender Labels**  | Telegram-style sender grouping with avatars and display names         |
+Group chats let you create and participate in realtime conversations with multiple people. Group members can be browsed directly from the conversation info panel, and each member holds a role — owner, admin, or member — shown with a visual badge. Every group has a unique invite code and a shareable `/join/<code>` link, and anyone can preview the group information before joining with a single action. Group conversations use Telegram-style sender grouping with avatars and display names.
 
 ### Users & Profiles
 
-| Feature                      | Description                                                    |
-| ---------------------------- | -------------------------------------------------------------- |
-| **User Search**              | Search for users and quickly start a conversation              |
-| **Profile Information**      | View user profiles, bios, and handles from the conversation    |
-| **Conversation Information** | View detailed information about direct and group conversations |
+You can search for users and quickly start a conversation with them. User profiles, including bios and handles, can be viewed straight from the conversation, and detailed information is available for both direct and group conversations.
 
 ### User Experience
 
-| Feature                 | Description                                                     |
-| ----------------------- | --------------------------------------------------------------- |
-| **Modern UI**           | Clean and responsive messaging interface                        |
-| **Dark / Light Themes** | Built-in theme support                                          |
-| **Emoji Picker**        | Easily add emojis to messages                                   |
-| **Delivery Status**     | Visual feedback for optimistic messages and successful delivery |
+The frontend is a clean, responsive messaging interface with built-in dark and light themes, an emoji picker for adding emojis to messages, and visual delivery status feedback for optimistic messages.
 
 ### Backend & Infrastructure
 
-| Feature                      | Description                                                           |
-| ---------------------------- | --------------------------------------------------------------------- |
-| **Single-Binary Deployment** | Go server serves the compiled frontend as static assets in production |
-| **API Documentation**        | Swagger/OpenAPI documentation generated from code annotations         |
-| **Database Migrations**      | Version-controlled PostgreSQL schema managed with `golang-migrate`    |
-| **WebSocket Architecture**   | Hub/client architecture for managing realtime connections             |
+In production, the Go server serves the compiled frontend as static assets from a single binary. The API is documented with Swagger/OpenAPI generated from code annotations, the PostgreSQL schema is version-controlled through `golang-migrate` migrations, and realtime connections are managed by a hub/client WebSocket architecture.
 
 
 ## Architecture
@@ -132,6 +102,32 @@ cp .env.example .env
 | `TOKEN_ISSUER`         | JWT issuer claim                                                                                               | `Recho`       |
 | `TOKEN_RT_TTL`         | Refresh token time-to-live                                                                                     | `720h`        |
 | `TOKEN_AT_TTL`         | Access token time-to-live                                                                                      | `1h`          |
+| `STORAGE_DRIVER`       | Storage backend to use: `local` or `s3`                                                                        | `local`       |
+
+#### Storage
+
+Recho stores uploaded media (avatars and message attachments) through a pluggable storage layer selected by `STORAGE_DRIVER`. With `local` (the default), files are written to disk and served by the Go server. With `s3`, files are uploaded to AWS S3 or any S3-compatible provider such as MinIO, Cloudflare R2, or DigitalOcean Spaces.
+
+Local storage (`STORAGE_DRIVER=local`):
+
+| Variable                     | Description                                                       | Default                              |
+| ---------------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| `STORAGE_LOCAL_ROOT_PATH`    | Directory where uploaded files are written on disk                | `./uploads`                          |
+| `STORAGE_LOCAL_BASE_URL`     | Public base URL used to build file URLs                           | `http://localhost:8000/uploads`      |
+
+S3 / S3-compatible storage (`STORAGE_DRIVER=s3`):
+
+| Variable                       | Description                                                                                              | Default                     |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `STORAGE_S3_ENDPOINT`          | Custom S3 endpoint. Leave empty for AWS S3; set it for MinIO/R2/Spaces (e.g. `http://localhost:9000`)    | _(empty)_                   |
+| `STORAGE_S3_REGION`            | Bucket region                                                                                            | `us-east-1`                 |
+| `STORAGE_S3_BUCKET`            | Bucket name (required when using `s3`)                                                                   | `recho`                     |
+| `STORAGE_S3_ACCESS_KEY_ID`     | Access key ID. Optional — falls back to the default AWS credential chain when unset                      | `minioadmin`                |
+| `STORAGE_S3_SECRET_ACCESS_KEY` | Secret access key. Optional — falls back to the default AWS credential chain when unset                  | `minioadmin`                |
+| `STORAGE_S3_USE_PATH_STYLE`    | Use path-style bucket addressing. Required by most S3-compatible providers                               | `true`                      |
+| `STORAGE_S3_DISABLE_ACL`       | Skip setting public-read ACLs. Set `true` for buckets with ACLs disabled (new AWS S3 buckets)            | `false`                     |
+| `STORAGE_S3_PUBLIC_BASE_URL`   | Optional CDN or custom domain used when building public file URLs                                        | _(empty)_                   |
+| `STORAGE_S3_PRESIGN_EXPIRY`    | Time-to-live for generated presigned URLs                                                                | `15m`                       |
 
 > **Note:** Change `TOKEN_SECRET` and the database credentials before deploying anywhere beyond your local machine.
 
@@ -165,6 +161,14 @@ docker compose down -v
 ```
 
 > Note: this option serves the **built** frontend (static files), not the Vite dev server, so there's no frontend hot-reload here. Use Option B for that.
+
+If you want to try the S3 storage backend without an external provider, Docker Compose ships a bundled MinIO instance behind the `s3` profile. Set `STORAGE_DRIVER=s3` in your `.env` and start it alongside the app:
+
+```bash
+docker compose --profile s3 up --build
+```
+
+This starts MinIO (with a console at `http://localhost:9001`) and a one-shot `minio-init` container that creates the bucket and makes it publicly readable. When running with Compose, point `STORAGE_S3_ENDPOINT` at the Compose service (`http://minio:9000`) so the app container can reach MinIO, and set `STORAGE_S3_PUBLIC_BASE_URL` to a browser-reachable address such as `http://localhost:9000/$STORAGE_S3_BUCKET` for generated file URLs. With the default `local` driver, uploads are instead written to the `uploads_data` volume mounted at `/app/uploads`.
 
 ### Option B: PostgreSQL in Docker, everything else via CLI
 
