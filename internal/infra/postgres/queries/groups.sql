@@ -79,3 +79,33 @@ UPDATE groups AS g
 SET invite_code = sqlc.arg(invite_code)
 WHERE g.conversation_id = sqlc.arg(group_id)
 RETURNING g.invite_code;
+
+-- name: GetGroupByID :one
+SELECT
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at
+FROM groups g
+WHERE g.conversation_id = sqlc.arg(group_id);
+
+-- name: UpdateGroup :one
+UPDATE groups AS g
+SET name = sqlc.arg(name),
+    bio = sqlc.arg(bio),
+    avatar_key = sqlc.arg(avatar_key),
+    updated_at = NOW()
+WHERE g.conversation_id = sqlc.arg(group_id)
+RETURNING
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at;

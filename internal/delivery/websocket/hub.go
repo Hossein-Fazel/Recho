@@ -108,10 +108,34 @@ func createResponse(v application.SendItem) []byte {
 				ConversationID: id,
 			}
 		}
+
+	case model.GroupUpdateEvent:
+		if group, ok := toGroup(v.Content); ok {
+			response.Data = dto.GroupUpdateResponse{
+				GroupID:   group.ID,
+				Name:      group.Name,
+				AvatarURL: group.AvatarKey,
+				Bio:       group.Bio,
+			}
+		}
 	}
 
 	res, _ := json.Marshal(response)
 	return res
+}
+
+func toGroup(content any) (model.Group, bool) {
+	switch group := content.(type) {
+	case model.Group:
+		return group, true
+	case *model.Group:
+		if group == nil {
+			return model.Group{}, false
+		}
+		return *group, true
+	default:
+		return model.Group{}, false
+	}
 }
 
 func toMessage(content any) (model.Message, bool) {

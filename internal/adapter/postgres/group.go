@@ -94,6 +94,19 @@ func (r *Group) Create(ctx context.Context, params application.CreateGroupParams
 	return toModelGroup(group), nil
 }
 
+func (r *Group) GetByID(ctx context.Context, groupID uuid.UUID) (*model.Group, error) {
+	group, err := r.sql.GetGroupByID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(groupModuleName, "invalid group id", err)
+		}
+
+		return nil, apperr.Internal(groupModuleName, err)
+	}
+
+	return toModelGroup(group), nil
+}
+
 func (r *Group) GetByInviteCode(ctx context.Context, code string) (*model.GroupPreview, error) {
 	row, err := r.sql.GetGroupByInviteCode(ctx, pgtype.Text{
 		String: code,
@@ -183,4 +196,22 @@ func (r *Group) UpdateInviteCode(ctx context.Context, groupID uuid.UUID, newInvi
 	}
 
 	return nil
+}
+
+func (r *Group) Update(ctx context.Context, params application.UpdateGroupParams) (*model.Group, error) {
+	group, err := r.sql.UpdateGroup(ctx, sqlc.UpdateGroupParams{
+		Name:      params.Name,
+		Bio:       pgtype.Text{String: params.Bio, Valid: params.Bio != ""},
+		AvatarKey: pgtype.Text{String: params.AvatarKey, Valid: params.AvatarKey != ""},
+		GroupID:   params.GroupID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(groupModuleName, "invalid group id", err)
+		}
+
+		return nil, apperr.Internal(groupModuleName, err)
+	}
+
+	return toModelGroup(group), nil
 }

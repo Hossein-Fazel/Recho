@@ -36,6 +36,36 @@ func (q *Queries) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
 	return err
 }
 
+const getGroupByID = `-- name: GetGroupByID :one
+SELECT
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at
+FROM groups g
+WHERE g.conversation_id = $1
+`
+
+func (q *Queries) GetGroupByID(ctx context.Context, groupID uuid.UUID) (Group, error) {
+	row := q.db.QueryRow(ctx, getGroupByID, groupID)
+	var i Group
+	err := row.Scan(
+		&i.ConversationID,
+		&i.Name,
+		&i.AvatarKey,
+		&i.InviteCode,
+		&i.Bio,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getGroupByInviteCode = `-- name: GetGroupByInviteCode :one
 SELECT
     g.conversation_id,
@@ -198,6 +228,52 @@ type RemoveGroupMemberParams struct {
 func (q *Queries) RemoveGroupMember(ctx context.Context, arg RemoveGroupMemberParams) error {
 	_, err := q.db.Exec(ctx, removeGroupMember, arg.GroupID, arg.UserID)
 	return err
+}
+
+const updateGroup = `-- name: UpdateGroup :one
+UPDATE groups AS g
+SET name = $1,
+    bio = $2,
+    avatar_key = $3,
+    updated_at = NOW()
+WHERE g.conversation_id = $4
+RETURNING
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at
+`
+
+type UpdateGroupParams struct {
+	Name      string
+	Bio       pgtype.Text
+	AvatarKey pgtype.Text
+	GroupID   uuid.UUID
+}
+
+func (q *Queries) UpdateGroup(ctx context.Context, arg UpdateGroupParams) (Group, error) {
+	row := q.db.QueryRow(ctx, updateGroup,
+		arg.Name,
+		arg.Bio,
+		arg.AvatarKey,
+		arg.GroupID,
+	)
+	var i Group
+	err := row.Scan(
+		&i.ConversationID,
+		&i.Name,
+		&i.AvatarKey,
+		&i.InviteCode,
+		&i.Bio,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateInviteCode = `-- name: UpdateInviteCode :one

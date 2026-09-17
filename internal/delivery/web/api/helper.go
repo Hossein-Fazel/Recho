@@ -38,6 +38,16 @@ func convList2convListRes(convs []*model.UserConversation, next string) dto.User
 	return res
 }
 
+func group2res(group *model.Group) dto.UpdateGroupResponse {
+	return dto.UpdateGroupResponse{
+		ID:        group.ID,
+		Name:      group.Name,
+		AvatarURL: group.AvatarKey,
+		Bio:       group.Bio,
+		UpdatedAt: group.UpdatedAt,
+	}
+}
+
 func groupPreview2res(preview *model.GroupPreview) dto.GroupPreviewResponse {
 	return dto.GroupPreviewResponse{
 		ConversationID: preview.GroupID,

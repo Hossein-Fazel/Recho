@@ -123,6 +123,14 @@ type CreateGroupResponse struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+type UpdateGroupResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type GroupPreviewResponse struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
 	Name           string    `json:"name"`

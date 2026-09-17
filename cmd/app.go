@@ -65,7 +65,7 @@ func Run() {
 	authService := application.NewAuthService(userRepo, accessToken, refreshToken, authRepo)
 	convService := application.NewConversationService(convRepo, storageService)
 	userService := application.NewUserService(userRepo, storageService)
-	groupService := application.NewGroupService(groupRepo, convRepo, hub)
+	groupService := application.NewGroupService(groupRepo, convRepo, storageService, hub)
 	msgService := application.NewMessageService(msgRepo, convRepo)
 	msgDelivery := application.NewMessageDelivery(msgService, convService, hub)
 	ws := websocket.NewWSHandler(hub, msgDelivery)
