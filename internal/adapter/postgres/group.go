@@ -19,7 +19,6 @@ import (
 
 const (
 	uniqueViolation = "23505"
-	undefinedColumn = "42703"
 
 	groupModuleName = "group repo"
 )
@@ -176,13 +175,8 @@ func (r *Group) UpdateInviteCode(ctx context.Context, groupID uuid.UUID, newInvi
 		}
 
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			switch pgErr.Code {
-			case undefinedColumn:
-				return apperr.InvalidInput(groupModuleName, "invalid group id", err)
-			case uniqueViolation:
-				return apperr.Conflict(groupModuleName, "invite code already exists", err)
-			}
+		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
+			return apperr.Conflict(groupModuleName, "invite code already exists", err)
 		}
 
 		return apperr.Internal(groupModuleName, err)
