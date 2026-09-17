@@ -18,6 +18,7 @@ import type {
   CreateGroupResponse,
   GroupMember,
   Message,
+  UpdateGroupResponse,
   UserSearch,
 } from '../lib/types'
 
@@ -45,6 +46,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const [joinOpen, setJoinOpen] = useState(Boolean(inviteCode))
   const [joinCode, setJoinCode] = useState(inviteCode)
   const [groupSenders, setGroupSenders] = useState<Map<string, GroupMember>>(new Map())
+  const [groupInfoVersion, setGroupInfoVersion] = useState(0)
 
   const loadedFor = useRef<string | null>(null)
   const pendingConvFetches = useRef<Set<string>>(new Set())
@@ -399,6 +401,24 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         setMobileChat(false)
       }
     },
+
+    onGroupUpdated: (updated) => {
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.conversation_id === updated.group_id
+            ? {
+                ...conversation,
+                group_name: updated.name,
+                group_avatar_url: updated.avatar_url,
+              }
+            : conversation,
+        ),
+      )
+
+      if (updated.group_id === activeId) {
+        setGroupInfoVersion((version) => version + 1)
+      }
+    },
   })
 
   function selectConversation(conversation: Conversation) {
@@ -520,6 +540,20 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     setInfoOpen(false)
     setMobileChat(false)
     setNotice(deleted ? 'Group deleted' : 'You left the group')
+  }
+
+  function onGroupInfoUpdated(group: UpdateGroupResponse) {
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.conversation_id === group.id
+          ? {
+              ...conversation,
+              group_name: group.name,
+              group_avatar_url: group.avatar_url,
+            }
+          : conversation,
+      ),
+    )
   }
 
   function send(content: string) {
@@ -724,6 +758,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         open={infoOpen}
         onClose={() => setInfoOpen(false)}
         onLeft={onConversationLeft}
+        onGroupUpdated={onGroupInfoUpdated}
+        refreshKey={groupInfoVersion}
       />
 
       <NewGroupModal

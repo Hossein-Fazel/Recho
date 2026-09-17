@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type {
   ConversationDeleted,
+  GroupUpdated,
   MessageCreated,
   MessageDeleted,
   MessageEdited,
@@ -12,6 +13,7 @@ type Handlers = {
   onMessageEdited: (message: MessageEdited) => void
   onMessageDeleted: (deleted: MessageDeleted) => void
   onConversationDeleted: (deleted: ConversationDeleted) => void
+  onGroupUpdated: (group: GroupUpdated) => void
   enabled: boolean
 }
 
@@ -25,12 +27,14 @@ export function useWebSocket({
   onMessageEdited,
   onMessageDeleted,
   onConversationDeleted,
+  onGroupUpdated,
   enabled,
 }: Handlers) {
   const onMessageRef = useRef(onMessage)
   const onMessageEditedRef = useRef(onMessageEdited)
   const onMessageDeletedRef = useRef(onMessageDeleted)
   const onConversationDeletedRef = useRef(onConversationDeleted)
+  const onGroupUpdatedRef = useRef(onGroupUpdated)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(false)
@@ -43,6 +47,7 @@ export function useWebSocket({
   onMessageEditedRef.current = onMessageEdited
   onMessageDeletedRef.current = onMessageDeleted
   onConversationDeletedRef.current = onConversationDeleted
+  onGroupUpdatedRef.current = onGroupUpdated
 
   useEffect(() => {
     if (!enabled) {
@@ -127,6 +132,16 @@ export function useWebSocket({
             if (deleted.conversation_id) {
               onConversationDeletedRef.current({
                 conversation_id: deleted.conversation_id,
+              })
+            }
+          } else if (type === 'group.update' && data) {
+            const updated = data as GroupUpdated
+            if (updated.group_id) {
+              onGroupUpdatedRef.current({
+                group_id: updated.group_id,
+                name: updated.name,
+                avatar_url: updated.avatar_url,
+                bio: updated.bio,
               })
             }
           }
