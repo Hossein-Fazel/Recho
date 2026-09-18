@@ -18,9 +18,7 @@ function Gate() {
     return (
       <div className="splash">
         <span className="brand-mark lg" aria-hidden>
-          <span />
-          <span />
-          <span />
+          <img src="/logo.png" alt="Recho" />
         </span>
         <p>Recho</p>
       </div>

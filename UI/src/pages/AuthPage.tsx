@@ -34,9 +34,7 @@ export function AuthPage() {
       <div className="auth-topbar">
         <div className="brand compact">
           <span className="brand-mark" aria-hidden>
-            <span />
-            <span />
-            <span />
+            <img src="/logo.png" alt="" />
           </span>
           <h1>Recho</h1>
         </div>

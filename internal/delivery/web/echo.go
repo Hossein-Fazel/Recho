@@ -107,8 +107,7 @@ func Init(svcs Services, conf Config, storageConf storageAdapter.Config) *echo.E
 	if !webServer.Debug {
 		pkg.Logger.Info().Msg("Serving frontend")
 		webServer.Static("/assets", "UI/dist/assets")
-		webServer.File("/favicon.svg", "UI/dist/favicon.svg")
-		webServer.File("/icons.svg", "UI/dist/icons.svg")
+		webServer.File("/logo.png", "UI/dist/logo.png")
 
 		webServer.GET("*", func(c echo.Context) error {
 			return c.File("UI/dist/index.html")

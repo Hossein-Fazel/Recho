@@ -404,7 +404,7 @@ export function Thread({
   }
 
   if (!conversation) {
-    return (<section className="thread empty-thread"> <div className="empty-card"> <span className="brand-mark lg" aria-hidden> <span /> <span /> <span /> </span>
+    return (<section className="thread empty-thread"> <div className="empty-card"> <span className="brand-mark lg" aria-hidden> <img src="/logo.png" alt="" /> </span>
 
 
       <h2>Pick a conversation</h2>

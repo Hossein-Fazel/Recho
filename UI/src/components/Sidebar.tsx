@@ -84,9 +84,7 @@ export function Sidebar({
       <header className="sidebar-head">
         <div className="brand compact">
           <span className="brand-mark" aria-hidden>
-            <span />
-            <span />
-            <span />
+            <img src="/logo.png" alt="" />
           </span>
           <div>
             <h1>Recho</h1>
@@ -198,19 +196,21 @@ export function Sidebar({
       </ul>
 
       <footer className="sidebar-foot">
-        <button
-          type="button"
-          className="profile-button"
-          onClick={onOpenProfile}
-          aria-label="Edit profile"
-          title="Edit profile"
-        >
-          <Avatar id={user.id} name={myName} url={user.avatar_url} />
+        <div className="profile-button">
+          <button
+            type="button"
+            className="profile-avatar-button"
+            onClick={onOpenProfile}
+            aria-label="Edit profile"
+            title="Edit profile"
+          >
+            <Avatar id={user.id} name={myName} url={user.avatar_url} />
+          </button>
           <span className="conv-meta">
             <span className="conv-name">{myName}</span>
             {myHandle ? <span className="conv-preview">{myHandle}</span> : null}
           </span>
-        </button>
+        </div>
         <button type="button" className="logout-button" onClick={() => void onLogout()} aria-label="Log out" title="Log out">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10" />
