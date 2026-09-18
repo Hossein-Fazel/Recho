@@ -4,23 +4,36 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+func nullText(value string) pgtype.Text {
+	return pgtype.Text{String: value, Valid: value != ""}
+}
 
 func pgUserSearch2modeUserSearch(user sqlc.SearchUsersRow) *model.UserSearch {
 	return &model.UserSearch{
 		ID:          user.ID,
 		Username:    user.Username,
 		DisplayName: user.DisplayName.String,
-		AvatarURL:   user.AvatarUrl.String,
+		AvatarKey:   user.AvatarKey.String,
 	}
 }
 
-func toModelMessage(msg sqlc.Message) *model.Message {
+func toModelMessage(msg sqlc.GetConversationMessagesRow) *model.Message {
+	var text *model.TextMessage
+	if msg.Type == sqlc.MessageTypeText {
+		text = &model.TextMessage{
+			Content: msg.Content.String,
+		}
+	}
+
 	return &model.Message{
 		ID:             msg.MessageID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
-		Content:        msg.Content,
+		Type:           model.MessageType(msg.Type),
+		Text:           text,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
@@ -31,7 +44,7 @@ func toModelGroupMember(member sqlc.GetGroupMembersRow) *model.GroupMember {
 		UserID:      member.ID,
 		Username:    member.Username,
 		DisplayName: member.DisplayName.String,
-		AvatarURL:   member.AvatarUrl.String,
+		AvatarKey:   member.AvatarKey.String,
 		Role:        model.GroupMemberRole(member.MemberRole),
 	}
 }
@@ -47,7 +60,7 @@ func toConversationInfo(row sqlc.GetConversationInfoRow) *model.ConversationInfo
 			UserID:      uuid.UUID(row.UserID.Bytes),
 			Username:    row.Username.String,
 			DisplayName: row.DisplayName.String,
-			AvatarUrl:   row.AvatarUrl.String,
+			AvatarKey:   row.AvatarKey.String,
 			Bio:         row.Bio.String,
 		}
 	}
@@ -56,7 +69,7 @@ func toConversationInfo(row sqlc.GetConversationInfoRow) *model.ConversationInfo
 		group := &model.GroupInfo{
 			GroupID:        uuid.UUID(row.GroupID.Bytes),
 			GroupName:      row.GroupName.String,
-			GroupAvatarUrl: row.GroupAvatarUrl.String,
+			GroupAvatarKey: row.GroupAvatarKey.String,
 			GroupBio:       row.GroupBio.String,
 			InviteCode:     row.InviteCode.String,
 			MemberCount:    row.MemberCount,
@@ -76,7 +89,7 @@ func toModelGroup(group sqlc.Group) *model.Group {
 	return &model.Group{
 		ID:         group.ConversationID,
 		Name:       group.Name,
-		AvatarURL:  group.AvatarUrl.String,
+		AvatarKey:  group.AvatarKey.String,
 		Bio:        group.Bio.String,
 		InviteCode: group.InviteCode.String,
 		CreatedBy:  group.CreatedBy,
@@ -89,7 +102,7 @@ func toModelGroupPreview(row sqlc.GetGroupByInviteCodeRow) *model.GroupPreview {
 	return &model.GroupPreview{
 		GroupID:     row.ConversationID,
 		Name:        row.Name,
-		AvatarURL:   row.AvatarUrl.String,
+		AvatarKey:   row.AvatarKey.String,
 		Bio:         row.Bio.String,
 		MemberCount: row.MemberCount,
 	}

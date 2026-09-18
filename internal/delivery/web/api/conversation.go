@@ -9,6 +9,7 @@ import (
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web/dto"
+	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -222,13 +223,21 @@ func (h *ConversationHandler) GetConversationMessages(c echo.Context) error {
 	}
 
 	for _, message := range messages {
+		var text *dto.TextMessage
+		if message.Type == model.MessageTypeText && message.Text != nil {
+			text = &dto.TextMessage{
+				Content: message.Text.Content,
+			}
+		}
+
 		response.Messages = append(
 			response.Messages,
 			&dto.Message{
 				ID:             message.ID,
 				ConversationID: message.ConversationID,
 				SenderID:       message.SenderID,
-				Content:        message.Content,
+				Type:           message.Type,
+				Text:           text,
 				CreatedAt:      message.CreatedAt,
 				UpdatedAt:      message.UpdatedAt,
 			},
@@ -283,7 +292,7 @@ func (h *ConversationHandler) GetConversationInfo(c echo.Context) error {
 			ID:          info.User.UserID,
 			Username:    info.User.Username,
 			DisplayName: info.User.DisplayName,
-			AvatarURL:   info.User.AvatarUrl,
+			AvatarURL:   info.User.AvatarKey,
 			Bio:         info.User.Bio,
 		}
 	}
@@ -291,7 +300,7 @@ func (h *ConversationHandler) GetConversationInfo(c echo.Context) error {
 		group := &dto.GroupInfo{
 			ID:          info.Group.GroupID,
 			Name:        info.Group.GroupName,
-			AvatarURL:   info.Group.GroupAvatarUrl,
+			AvatarURL:   info.Group.GroupAvatarKey,
 			Bio:         info.Group.GroupBio,
 			Role:        info.Group.ViewerRole,
 			MemberCount: info.Group.MemberCount,
@@ -374,7 +383,7 @@ func (h *ConversationHandler) GetGroupMembers(c echo.Context) error {
 				UserID:      member.UserID,
 				Username:    member.Username,
 				DisplayName: member.DisplayName,
-				AvatarURL:   member.AvatarURL,
+				AvatarURL:   member.AvatarKey,
 				Role:        member.Role,
 			},
 		)

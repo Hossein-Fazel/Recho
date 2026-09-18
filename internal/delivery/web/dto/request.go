@@ -16,6 +16,12 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+type UpdateProfileRequest struct {
+	Username    *string `json:"username"`
+	DisplayName *string `json:"display_name"`
+	Bio         *string `json:"bio"`
+}
+
 type GetOrCreateDirectConversationRequest struct {
 	UserID uuid.UUID `json:"user_id"`
 }
@@ -23,6 +29,11 @@ type GetOrCreateDirectConversationRequest struct {
 type CreateGroupRequest struct {
 	Name string `json:"name"`
 	Bio  string `json:"bio"`
+}
+
+type UpdateGroupRequest struct {
+	Name *string `json:"name"`
+	Bio  *string `json:"bio"`
 }
 
 type JoinGroupRequest struct {

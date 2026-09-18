@@ -71,7 +71,6 @@ func (q *Queries) GetConvUsers(ctx context.Context, conversationID uuid.UUID) ([
 }
 
 const getConversationByID = `-- name: GetConversationByID :one
-
 SELECT
     c.id AS conversation_id,
 
@@ -84,15 +83,16 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
 
     -- group
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
 
     -- last message
     c.last_message_id,
-    c.last_message_content,
+    c.last_message_type,
+    c.last_message_text,
     c.last_message_created_at,
 
     c.updated_at
@@ -135,11 +135,12 @@ type GetConversationByIDRow struct {
 	UserID               pgtype.UUID
 	Username             pgtype.Text
 	DisplayName          pgtype.Text
-	AvatarUrl            pgtype.Text
+	AvatarKey            pgtype.Text
 	GroupName            pgtype.Text
-	GroupAvatarUrl       pgtype.Text
+	GroupAvatarKey       pgtype.Text
 	LastMessageID        pgtype.Int8
-	LastMessageContent   pgtype.Text
+	LastMessageType      NullMessageType
+	LastMessageText      pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
 	UpdatedAt            time.Time
 }
@@ -153,11 +154,12 @@ func (q *Queries) GetConversationByID(ctx context.Context, arg GetConversationBy
 		&i.UserID,
 		&i.Username,
 		&i.DisplayName,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.GroupName,
-		&i.GroupAvatarUrl,
+		&i.GroupAvatarKey,
 		&i.LastMessageID,
-		&i.LastMessageContent,
+		&i.LastMessageType,
+		&i.LastMessageText,
 		&i.LastMessageCreatedAt,
 		&i.UpdatedAt,
 	)
@@ -175,12 +177,12 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
     u.bio,
 
     g.conversation_id AS group_id,
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
     g.bio AS group_bio,
     g.invite_code,
     gm.role AS viewer_role,
@@ -213,11 +215,11 @@ type GetConversationInfoRow struct {
 	UserID           pgtype.UUID
 	Username         pgtype.Text
 	DisplayName      pgtype.Text
-	AvatarUrl        pgtype.Text
+	AvatarKey        pgtype.Text
 	Bio              pgtype.Text
 	GroupID          pgtype.UUID
 	GroupName        pgtype.Text
-	GroupAvatarUrl   pgtype.Text
+	GroupAvatarKey   pgtype.Text
 	GroupBio         pgtype.Text
 	InviteCode       pgtype.Text
 	ViewerRole       NullGroupMemberRole
@@ -233,11 +235,11 @@ func (q *Queries) GetConversationInfo(ctx context.Context, arg GetConversationIn
 		&i.UserID,
 		&i.Username,
 		&i.DisplayName,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.Bio,
 		&i.GroupID,
 		&i.GroupName,
-		&i.GroupAvatarUrl,
+		&i.GroupAvatarKey,
 		&i.GroupBio,
 		&i.InviteCode,
 		&i.ViewerRole,
@@ -248,22 +250,26 @@ func (q *Queries) GetConversationInfo(ctx context.Context, arg GetConversationIn
 
 const getConversationMessages = `-- name: GetConversationMessages :many
 SELECT
-    message_id,
-    conversation_id,
-    sender_id,
-    content,
-    created_at,
-    updated_at
-FROM messages
-WHERE conversation_id = $1
+    m.message_id,
+    m.conversation_id,
+    m.sender_id,
+    m.type,
+    tm.content,
+    m.created_at,
+    m.updated_at
+FROM messages m
+LEFT JOIN text_messages tm
+    ON tm.conversation_id = m.conversation_id
+    AND tm.message_id = m.message_id
+WHERE m.conversation_id = $1
   AND (
       $2::timestamptz IS NULL
-      OR (created_at, message_id) < (
+      OR (m.created_at, m.message_id) < (
           $2::timestamptz,
           $3::BIGINT
       )
   )
-ORDER BY created_at DESC
+ORDER BY m.created_at DESC
 LIMIT $4
 `
 
@@ -274,7 +280,17 @@ type GetConversationMessagesParams struct {
 	QueryLimit      int32
 }
 
-func (q *Queries) GetConversationMessages(ctx context.Context, arg GetConversationMessagesParams) ([]Message, error) {
+type GetConversationMessagesRow struct {
+	MessageID      int64
+	ConversationID uuid.UUID
+	SenderID       uuid.UUID
+	Type           MessageType
+	Content        pgtype.Text
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func (q *Queries) GetConversationMessages(ctx context.Context, arg GetConversationMessagesParams) ([]GetConversationMessagesRow, error) {
 	rows, err := q.db.Query(ctx, getConversationMessages,
 		arg.ConversationID,
 		arg.CursorCreatedAt,
@@ -285,13 +301,14 @@ func (q *Queries) GetConversationMessages(ctx context.Context, arg GetConversati
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Message
+	var items []GetConversationMessagesRow
 	for rows.Next() {
-		var i Message
+		var i GetConversationMessagesRow
 		if err := rows.Scan(
 			&i.MessageID,
 			&i.ConversationID,
 			&i.SenderID,
+			&i.Type,
 			&i.Content,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -330,7 +347,7 @@ SELECT
     u.id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
     gm.role AS member_role
 FROM group_members gm
 JOIN users u ON u.id = gm.user_id
@@ -351,7 +368,7 @@ type GetGroupMembersRow struct {
 	ID          uuid.UUID
 	Username    string
 	DisplayName pgtype.Text
-	AvatarUrl   pgtype.Text
+	AvatarKey   pgtype.Text
 	MemberRole  GroupMemberRole
 }
 
@@ -368,7 +385,7 @@ func (q *Queries) GetGroupMembers(ctx context.Context, arg GetGroupMembersParams
 			&i.ID,
 			&i.Username,
 			&i.DisplayName,
-			&i.AvatarUrl,
+			&i.AvatarKey,
 			&i.MemberRole,
 		); err != nil {
 			return nil, err
@@ -382,7 +399,6 @@ func (q *Queries) GetGroupMembers(ctx context.Context, arg GetGroupMembersParams
 }
 
 const getUserConversations = `-- name: GetUserConversations :many
-
 SELECT
     c.id AS conversation_id,
 
@@ -395,15 +411,16 @@ SELECT
     u.id AS user_id,
     u.username,
     u.display_name,
-    u.avatar_url,
+    u.avatar_key,
 
     -- group
     g.name AS group_name,
-    g.avatar_url AS group_avatar_url,
+    g.avatar_key AS group_avatar_key,
 
     -- last message
     c.last_message_id,
-    c.last_message_content,
+    c.last_message_type,
+    c.last_message_text,
     c.last_message_created_at,
 
     c.updated_at
@@ -461,11 +478,12 @@ type GetUserConversationsRow struct {
 	UserID               pgtype.UUID
 	Username             pgtype.Text
 	DisplayName          pgtype.Text
-	AvatarUrl            pgtype.Text
+	AvatarKey            pgtype.Text
 	GroupName            pgtype.Text
-	GroupAvatarUrl       pgtype.Text
+	GroupAvatarKey       pgtype.Text
 	LastMessageID        pgtype.Int8
-	LastMessageContent   pgtype.Text
+	LastMessageType      NullMessageType
+	LastMessageText      pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
 	UpdatedAt            time.Time
 }
@@ -490,11 +508,12 @@ func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversat
 			&i.UserID,
 			&i.Username,
 			&i.DisplayName,
-			&i.AvatarUrl,
+			&i.AvatarKey,
 			&i.GroupName,
-			&i.GroupAvatarUrl,
+			&i.GroupAvatarKey,
 			&i.LastMessageID,
-			&i.LastMessageContent,
+			&i.LastMessageType,
+			&i.LastMessageText,
 			&i.LastMessageCreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -509,13 +528,13 @@ func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversat
 }
 
 const insertConversation = `-- name: InsertConversation :one
-INSERT INTO conversations(message_id_counter)
-VALUES (0)
+INSERT INTO conversations(type,message_id_counter)
+VALUES ($1,0)
 RETURNING id
 `
 
-func (q *Queries) InsertConversation(ctx context.Context) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, insertConversation)
+func (q *Queries) InsertConversation(ctx context.Context, conversationType ConversationType) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertConversation, conversationType)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
@@ -572,4 +591,33 @@ func (q *Queries) IsConversationMember(ctx context.Context, arg IsConversationMe
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const updateConversationLastMessage = `-- name: UpdateConversationLastMessage :exec
+UPDATE conversations 
+SET updated_at = $1,
+    last_message_id = $2,
+    last_message_type = $3,
+    last_message_text = $4,
+    last_message_created_at = $1
+WHERE id = $5
+`
+
+type UpdateConversationLastMessageParams struct {
+	CreatedAt      time.Time
+	MessageID      pgtype.Int8
+	MessageType    NullMessageType
+	MessageText    pgtype.Text
+	ConversationID uuid.UUID
+}
+
+func (q *Queries) UpdateConversationLastMessage(ctx context.Context, arg UpdateConversationLastMessageParams) error {
+	_, err := q.db.Exec(ctx, updateConversationLastMessage,
+		arg.CreatedAt,
+		arg.MessageID,
+		arg.MessageType,
+		arg.MessageText,
+		arg.ConversationID,
+	)
+	return err
 }

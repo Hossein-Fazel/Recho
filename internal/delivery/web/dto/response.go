@@ -33,18 +33,19 @@ type User struct {
 }
 
 type Conversation struct {
-	ConversationID       uuid.UUID `json:"conversation_id"`
-	ConversationType     string    `json:"conversation_type"`
-	UserID               uuid.UUID `json:"user_id"`
-	Username             string    `json:"username"`
-	DisplayName          string    `json:"display_name"`
-	AvatarUrl            string    `json:"avatar_url"`
-	GroupName            string    `json:"group_name"`
-	GroupAvatarUrl       string    `json:"group_avatar_url"`
-	LastMessageID        int64     `json:"last_message_id"`
-	LastMessageContent   string    `json:"last_message_content"`
-	LastMessageCreatedAt time.Time `json:"last_message_created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
+	ConversationID       uuid.UUID         `json:"conversation_id"`
+	ConversationType     string            `json:"conversation_type"`
+	UserID               uuid.UUID         `json:"user_id"`
+	Username             string            `json:"username"`
+	DisplayName          string            `json:"display_name"`
+	AvatarUrl            string            `json:"avatar_url"`
+	GroupName            string            `json:"group_name"`
+	GroupAvatarUrl       string            `json:"group_avatar_url"`
+	LastMessageID        int64             `json:"last_message_id"`
+	LastMessageType      model.MessageType `json:"last_message_type,omitempty"`
+	LastMessageText      string            `json:"last_message_text"`
+	LastMessageCreatedAt time.Time         `json:"last_message_created_at"`
+	UpdatedAt            time.Time         `json:"updated_at"`
 }
 
 type UserConversationsResponse struct {
@@ -73,12 +74,17 @@ type GetConversationMessagesResponse struct {
 }
 
 type Message struct {
-	ID             int64     `json:"id"`
-	ConversationID uuid.UUID `json:"conversation_id"`
-	SenderID       uuid.UUID `json:"sender_id"`
-	Content        string    `json:"content"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             int64             `json:"id"`
+	ConversationID uuid.UUID         `json:"conversation_id"`
+	SenderID       uuid.UUID         `json:"sender_id"`
+	Type           model.MessageType `json:"type"`
+	Text           *TextMessage      `json:"text,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
+}
+
+type TextMessage struct {
+	Content string `json:"content,omitempty"`
 }
 
 type ConversationInfo struct {
@@ -117,6 +123,14 @@ type CreateGroupResponse struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+type UpdateGroupResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type GroupPreviewResponse struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
 	Name           string    `json:"name"`
@@ -137,4 +151,8 @@ type GroupMember struct {
 	DisplayName string                `json:"display_name"`
 	AvatarURL   string                `json:"avatar_url"`
 	Role        model.GroupMemberRole `json:"role"`
+}
+
+type RotateInviteCodeResponse struct {
+	NewInviteCode string `json:"new_invite_code"`
 }

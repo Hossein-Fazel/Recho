@@ -3,7 +3,6 @@ package postgres_repo
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -11,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -19,6 +19,8 @@ import (
 type User struct {
 	sql *sqlc.Queries
 }
+
+var _ application.UserRepo = (*User)(nil)
 
 func NewUserRepo(sql *sqlc.Queries) *User {
 	pkg.Logger.Info().Msg("Initializing User Repository")
@@ -32,10 +34,6 @@ func (u *User) Create(ctx context.Context, username, passHash string) (*model.Us
 	pkg.Logger.Info().
 		Str("username", username).
 		Msg("Creating user")
-
-	if username == "" || passHash == "" {
-		return nil, apperr.InvalidInput("user repo", "invalid username or password", nil)
-	}
 
 	user, err := u.sql.CreateUser(ctx, sqlc.CreateUserParams{
 		Username:     username,
@@ -64,7 +62,7 @@ func (u *User) Create(ctx context.Context, username, passHash string) (*model.Us
 		ID:          user.ID,
 		Username:    user.Username,
 		DisplayName: user.DisplayName.String,
-		AvatarURL:   user.AvatarUrl.String,
+		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
@@ -96,7 +94,7 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 		Username:    user.Username,
 		PassHash:    user.PasswordHash,
 		DisplayName: user.DisplayName.String,
-		AvatarURL:   user.AvatarUrl.String,
+		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
@@ -127,7 +125,53 @@ func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 		Username:    user.Username,
 		PassHash:    user.PasswordHash,
 		DisplayName: user.DisplayName.String,
-		AvatarURL:   user.AvatarUrl.String,
+		AvatarKey:   user.AvatarKey.String,
+		Bio:         user.Bio.String,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+	}, nil
+}
+
+func (u *User) Update(ctx context.Context, params application.UpdateUserParams) (*model.User, error) {
+	pkg.Logger.Info().
+		Str("id", params.ID.String()).
+		Msg("Updating user")
+
+	user, err := u.sql.UpdateUser(ctx, sqlc.UpdateUserParams{
+		ID:          params.ID,
+		Username:    params.Username,
+		DisplayName: nullText(params.DisplayName),
+		AvatarKey:   nullText(params.AvatarKey),
+		Bio:         nullText(params.Bio),
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(
+				"user repo",
+				"user not found",
+				err,
+			)
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, apperr.Conflict(
+				"user repo",
+				"username already exists",
+				err,
+			)
+		}
+
+		return nil, apperr.Internal("user repo", err)
+	}
+
+	return &model.User{
+		ID:          user.ID,
+		Username:    user.Username,
+		PassHash:    user.PasswordHash,
+		DisplayName: user.DisplayName.String,
+		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
@@ -148,10 +192,6 @@ func (u *User) Exists(ctx context.Context, username string) (bool, error) {
 }
 
 func (u *User) Search(ctx context.Context, username string) ([]*model.UserSearch, error) {
-	if strings.TrimSpace(username) == "" {
-		return []*model.UserSearch{}, apperr.InvalidInput("user repo", "username is required", nil)
-	}
-
 	list, err := u.sql.SearchUsers(ctx, pgtype.Text{
 		String: username,
 		Valid:  true,

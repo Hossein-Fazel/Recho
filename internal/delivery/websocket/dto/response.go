@@ -12,47 +12,57 @@ type WSResponse struct {
 	RequestID uuid.UUID `json:"request_id"`
 	Data      any       `json:"data"`
 }
-
-type ErrorResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
 type MessageCreateResponse struct {
-	ID             int64     `json:"id"`
-	ConversationID uuid.UUID `json:"conversation_id"`
-	SenderID       uuid.UUID `json:"sender_id"`
-	Content        string    `json:"content"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             int64             `json:"id"`
+	ConversationID uuid.UUID         `json:"conversation_id"`
+	SenderID       uuid.UUID         `json:"sender_id"`
+	Type           model.MessageType `json:"type"`
+	Text           *TextMessage      `json:"text,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
 }
 
 func ToMessageCreateResponse(msg model.Message) MessageCreateResponse {
+	var text *TextMessage
+	if msg.Type == model.MessageTypeText && msg.Text != nil {
+		text = &TextMessage{
+			Content: msg.Text.Content,
+		}
+	}
 	return MessageCreateResponse{
 		ID:             msg.ID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
-		Content:        msg.Content,
+		Type:           msg.Type,
+		Text:           text,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
 }
 
 type MessageEditResponse struct {
-	ID             int64     `json:"id"`
-	ConversationID uuid.UUID `json:"conversation_id"`
-	SenderID       uuid.UUID `json:"sender_id"`
-	Content        string    `json:"content"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             int64             `json:"id"`
+	ConversationID uuid.UUID         `json:"conversation_id"`
+	SenderID       uuid.UUID         `json:"sender_id"`
+	Type           model.MessageType `json:"type"`
+	Text           *TextMessage      `json:"text,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
 }
 
 func ToMessageEditResponse(msg model.Message) MessageEditResponse {
+	var text *TextMessage
+	if msg.Type == model.MessageTypeText && msg.Text != nil {
+		text = &TextMessage{
+			Content: msg.Text.Content,
+		}
+	}
 	return MessageEditResponse{
 		ID:             msg.ID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
-		Content:        msg.Content,
+		Type:           msg.Type,
+		Text:           text,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
@@ -61,4 +71,19 @@ func ToMessageEditResponse(msg model.Message) MessageEditResponse {
 type MessageDeleteResponse struct {
 	ID             int64     `json:"id"`
 	ConversationID uuid.UUID `json:"conversation_id"`
+}
+
+type ConversationDeleteResponse struct {
+	ConversationID uuid.UUID `json:"conversation_id"`
+}
+
+type GroupUpdateResponse struct {
+	GroupID   uuid.UUID `json:"group_id"`
+	Name      string    `json:"name"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+}
+
+type TextMessage struct {
+	Content string `json:"content,omitempty"`
 }

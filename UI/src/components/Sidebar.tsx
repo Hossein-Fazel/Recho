@@ -18,6 +18,7 @@ type SidebarProps = {
   onCreated: (conversationId: string, peer: UserSearch) => void
   onNewGroup: () => void
   onJoinGroup: () => void
+  onOpenProfile: () => void
   onLogout: () => void
 }
 
@@ -29,6 +30,7 @@ export function Sidebar({
   onCreated,
   onNewGroup,
   onJoinGroup,
+  onOpenProfile,
   onLogout,
 }: SidebarProps) {
   const [query, setQuery] = useState('')
@@ -82,9 +84,7 @@ export function Sidebar({
       <header className="sidebar-head">
         <div className="brand compact">
           <span className="brand-mark" aria-hidden>
-            <span />
-            <span />
-            <span />
+            <img src="/logo.png" alt="" />
           </span>
           <div>
             <h1>Recho</h1>
@@ -186,7 +186,7 @@ export function Sidebar({
                       <span className="conv-name">{name}</span>
                       <time>{formatTime(conv.last_message_created_at || conv.updated_at)}</time>
                     </span>
-                    <span className="conv-preview">{conv.last_message_content || 'No messages yet'}</span>
+                    <span className="conv-preview">{conv.last_message_text || 'No messages yet'}</span>
                   </span>
                 </button>
               </li>
@@ -196,10 +196,20 @@ export function Sidebar({
       </ul>
 
       <footer className="sidebar-foot">
-        <Avatar id={user.id} name={myName} url={user.avatar_url} />
-        <div className="conv-meta">
-          <span className="conv-name">{myName}</span>
-          {myHandle ? <span className="conv-preview">{myHandle}</span> : null}
+        <div className="profile-button">
+          <button
+            type="button"
+            className="profile-avatar-button"
+            onClick={onOpenProfile}
+            aria-label="Edit profile"
+            title="Edit profile"
+          >
+            <Avatar id={user.id} name={myName} url={user.avatar_url} />
+          </button>
+          <span className="conv-meta">
+            <span className="conv-name">{myName}</span>
+            {myHandle ? <span className="conv-preview">{myHandle}</span> : null}
+          </span>
         </div>
         <button type="button" className="logout-button" onClick={() => void onLogout()} aria-label="Log out" title="Log out">
           <svg viewBox="0 0 24 24" aria-hidden="true">

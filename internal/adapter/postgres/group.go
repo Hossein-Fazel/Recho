@@ -2,6 +2,7 @@ package postgres_repo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
@@ -16,12 +17,18 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const uniqueViolation = "23505"
+const (
+	uniqueViolation = "23505"
+
+	groupModuleName = "group repo"
+)
 
 type Group struct {
 	sql *sqlc.Queries
 	db  *pgxpool.Pool
 }
+
+var _ application.GroupRepo = (*Group)(nil)
 
 func NewGroupRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Group {
 	pkg.Logger.Info().Msg("Initializing Group Repository")
@@ -33,13 +40,9 @@ func NewGroupRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Group {
 }
 
 func (r *Group) Create(ctx context.Context, params application.CreateGroupParams) (*model.Group, error) {
-	if params.CreatedBy == uuid.Nil {
-		return nil, apperr.InvalidInput("group repo", "creator id is required", nil)
-	}
-
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return nil, apperr.Internal("group repo", err)
+		return nil, apperr.Internal(groupModuleName, err)
 	}
 	defer func() {
 		_ = tx.Rollback(ctx)
@@ -47,9 +50,9 @@ func (r *Group) Create(ctx context.Context, params application.CreateGroupParams
 
 	q := r.sql.WithTx(tx)
 
-	conversationID, err := q.InsertConversation(ctx)
+	conversationID, err := q.InsertConversation(ctx, sqlc.ConversationTypeGroup)
 	if err != nil {
-		return nil, apperr.Internal("group repo", err)
+		return nil, apperr.Internal(groupModuleName, err)
 	}
 
 	group, err := q.InsertGroup(ctx, sqlc.InsertGroupParams{
@@ -66,13 +69,13 @@ func (r *Group) Create(ctx context.Context, params application.CreateGroupParams
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
 			return nil, apperr.Conflict(
-				"group repo",
+				groupModuleName,
 				"invite code already exists",
 				err,
 			)
 		}
 
-		return nil, apperr.Internal("group repo", err)
+		return nil, apperr.Internal(groupModuleName, err)
 	}
 
 	err = q.InsertGroupMember(ctx, sqlc.InsertGroupMemberParams{
@@ -81,58 +84,80 @@ func (r *Group) Create(ctx context.Context, params application.CreateGroupParams
 		Role:    sqlc.GroupMemberRoleOwner,
 	})
 	if err != nil {
-		return nil, apperr.Internal("group repo", err)
+		return nil, apperr.Internal(groupModuleName, err)
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		return nil, apperr.Internal("group repo", err)
+		return nil, apperr.Internal(groupModuleName, err)
+	}
+
+	return toModelGroup(group), nil
+}
+
+func (r *Group) GetByID(ctx context.Context, groupID uuid.UUID) (*model.Group, error) {
+	group, err := r.sql.GetGroupByID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(groupModuleName, "invalid group id", err)
+		}
+
+		return nil, apperr.Internal(groupModuleName, err)
 	}
 
 	return toModelGroup(group), nil
 }
 
 func (r *Group) GetByInviteCode(ctx context.Context, code string) (*model.GroupPreview, error) {
-	if code == "" {
-		return nil, apperr.InvalidInput("group repo", "invite code is required", nil)
-	}
-
 	row, err := r.sql.GetGroupByInviteCode(ctx, pgtype.Text{
 		String: code,
 		Valid:  true,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apperr.NotFound("group repo", "invite is not valid", err)
+			return nil, apperr.NotFound(groupModuleName, "invite is not valid", err)
 		}
 
-		return nil, apperr.Internal("group repo", err)
+		return nil, apperr.Internal(groupModuleName, err)
 	}
 
 	return toModelGroupPreview(row), nil
 }
 
 func (r *Group) AddMember(ctx context.Context, groupID, userID uuid.UUID) error {
-	if groupID == uuid.Nil || userID == uuid.Nil {
-		return apperr.InvalidInput("group repo", "group and user id are required", nil)
-	}
-
 	err := r.sql.InsertGroupMember(ctx, sqlc.InsertGroupMemberParams{
 		GroupID: groupID,
 		UserID:  userID,
 		Role:    sqlc.GroupMemberRoleMember,
 	})
 	if err != nil {
-		return apperr.Internal("group repo", err)
+		return apperr.Internal(groupModuleName, err)
+	}
+
+	return nil
+}
+
+func (r *Group) RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error {
+	err := r.sql.RemoveGroupMember(ctx, sqlc.RemoveGroupMemberParams{
+		GroupID: groupID,
+		UserID:  userID,
+	})
+	if err != nil {
+		return apperr.Internal(groupModuleName, err)
+	}
+
+	return nil
+}
+
+func (r *Group) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
+	err := r.sql.DeleteGroup(ctx, groupID)
+	if err != nil {
+		return apperr.Internal(groupModuleName, err)
 	}
 
 	return nil
 }
 
 func (r *Group) GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (model.GroupMemberRole, error) {
-	if groupID == uuid.Nil || userID == uuid.Nil {
-		return "", apperr.InvalidInput("group repo", "group and user id are required", nil)
-	}
-
 	role, err := r.sql.GetGroupMemberRole(ctx, sqlc.GetGroupMemberRoleParams{
 		GroupID: groupID,
 		UserID:  userID,
@@ -142,8 +167,51 @@ func (r *Group) GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (m
 			return "", nil
 		}
 
-		return "", apperr.Internal("group repo", err)
+		return "", apperr.Internal(groupModuleName, err)
 	}
 
 	return model.GroupMemberRole(role), nil
+}
+
+func (r *Group) UpdateInviteCode(ctx context.Context, groupID uuid.UUID, newInviteCode string) error {
+	_, err := r.sql.UpdateInviteCode(ctx, sqlc.UpdateInviteCodeParams{
+		InviteCode: pgtype.Text{
+			String: newInviteCode,
+			Valid:  true,
+		},
+		GroupID: groupID,
+	})
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return apperr.NotFound(groupModuleName, "invalid group id", err)
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
+			return apperr.Conflict(groupModuleName, "invite code already exists", err)
+		}
+
+		return apperr.Internal(groupModuleName, err)
+	}
+
+	return nil
+}
+
+func (r *Group) Update(ctx context.Context, params application.UpdateGroupParams) (*model.Group, error) {
+	group, err := r.sql.UpdateGroup(ctx, sqlc.UpdateGroupParams{
+		Name:      params.Name,
+		Bio:       pgtype.Text{String: params.Bio, Valid: params.Bio != ""},
+		AvatarKey: pgtype.Text{String: params.AvatarKey, Valid: params.AvatarKey != ""},
+		GroupID:   params.GroupID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound(groupModuleName, "invalid group id", err)
+		}
+
+		return nil, apperr.Internal(groupModuleName, err)
+	}
+
+	return toModelGroup(group), nil
 }

@@ -3,12 +3,14 @@ import { Composer } from '../components/Composer'
 import { ConversationInfoPanel } from '../components/ConversationInfoPanel'
 import { JoinGroupModal } from '../components/JoinGroupModal'
 import { NewGroupModal } from '../components/NewGroupModal'
+import { ProfileModal } from '../components/ProfileModal'
 import { Sidebar } from '../components/Sidebar'
 import { Thread } from '../components/Thread'
 import { useAuth } from '../context/AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { api } from '../lib/api'
 import { firstGroupMemberCursor } from '../lib/cursor'
+import { messageText } from '../lib/format'
 import { newRequestId } from '../lib/id'
 import { clearInvitePath } from '../lib/invite'
 import type {
@@ -16,6 +18,7 @@ import type {
   CreateGroupResponse,
   GroupMember,
   Message,
+  UpdateGroupResponse,
   UserSearch,
 } from '../lib/types'
 
@@ -39,9 +42,11 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
   const [newGroupOpen, setNewGroupOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(Boolean(inviteCode))
   const [joinCode, setJoinCode] = useState(inviteCode)
   const [groupSenders, setGroupSenders] = useState<Map<string, GroupMember>>(new Map())
+  const [groupInfoVersion, setGroupInfoVersion] = useState(0)
 
   const loadedFor = useRef<string | null>(null)
   const pendingConvFetches = useRef<Set<string>>(new Set())
@@ -184,7 +189,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           ? {
             ...conversation,
             last_message_id: incoming.id,
-            last_message_content: incoming.content,
+            last_message_type: incoming.type,
+            last_message_text: messageText(incoming),
             last_message_created_at:
               incoming.created_at,
             updated_at:
@@ -296,7 +302,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           ...withoutPending.filter(
             (message) =>
               message.id > 0 ||
-              message.content !== incoming.content,
+              messageText(message) !== messageText(incoming),
           ),
           incoming,
         ]
@@ -317,7 +323,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
             message.id === edited.id
               ? {
                   ...message,
-                  content: edited.content,
+                  type: edited.type,
+                  text: edited.text,
                   updated_at: edited.updated_at,
                   edited: true,
                 }
@@ -331,7 +338,11 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         current.map((conversation) =>
           conversation.conversation_id === edited.conversation_id &&
           conversation.last_message_id === edited.id
-            ? { ...conversation, last_message_content: edited.content }
+            ? {
+                ...conversation,
+                last_message_type: edited.type,
+                last_message_text: messageText(edited),
+              }
             : conversation,
         ),
       )
@@ -352,7 +363,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
                   ? {
                       ...conversation,
                       last_message_id: last.id,
-                      last_message_content: last.content,
+                      last_message_type: last.type,
+                      last_message_text: messageText(last),
                       last_message_created_at: last.created_at,
                       updated_at: last.updated_at,
                     }
@@ -370,8 +382,42 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       }
     },
 
-    onError: (message) => {
-      setNotice(message)
+    onConversationDeleted: (deleted) => {
+      setConversations((current) =>
+        current.filter(
+          (conversation) =>
+            conversation.conversation_id !== deleted.conversation_id,
+        ),
+      )
+
+      if (deleted.conversation_id === loadedFor.current) {
+        setActiveId((current) =>
+          current === deleted.conversation_id ? null : current,
+        )
+        setMessages([])
+        setMessageStatuses(new Map())
+        setNextMessageCursor('')
+        setInfoOpen(false)
+        setMobileChat(false)
+      }
+    },
+
+    onGroupUpdated: (updated) => {
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.conversation_id === updated.group_id
+            ? {
+                ...conversation,
+                group_name: updated.name,
+                group_avatar_url: updated.avatar_url,
+              }
+            : conversation,
+        ),
+      )
+
+      if (updated.group_id === activeId) {
+        setGroupInfoVersion((version) => version + 1)
+      }
     },
   })
 
@@ -407,7 +453,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         group_name: '',
         group_avatar_url: '',
         last_message_id: 0,
-        last_message_content: '',
+        last_message_text: '',
         last_message_created_at: '',
         updated_at: new Date().toISOString(),
       }
@@ -443,7 +489,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         group_name: group.name,
         group_avatar_url: group.avatar_url,
         last_message_id: 0,
-        last_message_content: '',
+        last_message_text: '',
         last_message_created_at: '',
         updated_at: group.updated_at || new Date().toISOString(),
       }
@@ -480,6 +526,36 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     setInfoOpen(false)
   }
 
+  function onConversationLeft(conversationId: string, deleted: boolean) {
+    setConversations((current) =>
+      current.filter(
+        (conversation) => conversation.conversation_id !== conversationId,
+      ),
+    )
+
+    setActiveId((current) => (current === conversationId ? null : current))
+    setMessages([])
+    setMessageStatuses(new Map())
+    setNextMessageCursor('')
+    setInfoOpen(false)
+    setMobileChat(false)
+    setNotice(deleted ? 'Group deleted' : 'You left the group')
+  }
+
+  function onGroupInfoUpdated(group: UpdateGroupResponse) {
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.conversation_id === group.id
+          ? {
+              ...conversation,
+              group_name: group.name,
+              group_avatar_url: group.avatar_url,
+            }
+          : conversation,
+      ),
+    )
+  }
+
   function send(content: string) {
     if (!activeId || !user) {
       return
@@ -509,7 +585,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           message.id === editing.id
             ? {
                 ...message,
-                content,
+                type: 'text',
+                text: { content },
                 updated_at: new Date().toISOString(),
                 edited: true,
               }
@@ -523,7 +600,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           conversation.last_message_id === editing.id
             ? {
                 ...conversation,
-                last_message_content: content,
+                last_message_type: 'text',
+                last_message_text: content,
               }
             : conversation,
         ),
@@ -546,7 +624,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       id: -Date.now(),
       conversation_id: activeId,
       sender_id: user.id,
-      content,
+      type: 'text',
+      text: { content },
       created_at: now,
       updated_at: now,
       request_id: requestId,
@@ -568,7 +647,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         conversation.conversation_id === activeId
           ? {
             ...conversation,
-            last_message_content: content,
+            last_message_type: 'text',
+            last_message_text: content,
             updated_at: now,
           }
           : conversation,
@@ -581,7 +661,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
 
   function startEdit(message: Message) {
     if (message.id < 0 || message.sender_id !== user?.id) return
-    setEditing({ id: message.id, content: message.content })
+    setEditing({ id: message.id, content: messageText(message) })
   }
 
   function cancelEdit() {
@@ -634,6 +714,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           setJoinCode('')
           setJoinOpen(true)
         }}
+        onOpenProfile={() => setProfileOpen(true)}
         onLogout={() => void logout()}
       />
 
@@ -676,6 +757,9 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         currentUserId={user.id}
         open={infoOpen}
         onClose={() => setInfoOpen(false)}
+        onLeft={onConversationLeft}
+        onGroupUpdated={onGroupInfoUpdated}
+        refreshKey={groupInfoVersion}
       />
 
       <NewGroupModal
@@ -683,6 +767,10 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         onClose={() => setNewGroupOpen(false)}
         onCreated={onGroupCreated}
       />
+
+      {profileOpen ? (
+        <ProfileModal onClose={() => setProfileOpen(false)} />
+      ) : null}
 
       <JoinGroupModal
         open={joinOpen}

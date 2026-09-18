@@ -16,7 +16,7 @@ VALUES (
 RETURNING
     conversation_id,
     name,
-    avatar_url,
+    avatar_key,
     invite_code,
     bio,
     created_by,
@@ -40,7 +40,7 @@ ON CONFLICT (group_id, user_id) DO NOTHING;
 SELECT
     g.conversation_id,
     g.name,
-    g.avatar_url,
+    g.avatar_key,
     g.invite_code,
     g.bio,
     g.created_by,
@@ -64,3 +64,48 @@ WHERE group_id = sqlc.arg(group_id)
 SELECT COUNT(*) AS member_count
 FROM group_members
 WHERE group_id = sqlc.arg(group_id);
+
+-- name: RemoveGroupMember :exec
+DELETE FROM group_members
+WHERE group_id = sqlc.arg(group_id)
+  AND user_id = sqlc.arg(user_id);
+
+-- name: DeleteGroup :exec
+DELETE FROM conversations
+WHERE id = sqlc.arg(group_id) AND type = 'group';
+
+-- name: UpdateInviteCode :one
+UPDATE groups AS g
+SET invite_code = sqlc.arg(invite_code)
+WHERE g.conversation_id = sqlc.arg(group_id)
+RETURNING g.invite_code;
+
+-- name: GetGroupByID :one
+SELECT
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at
+FROM groups g
+WHERE g.conversation_id = sqlc.arg(group_id);
+
+-- name: UpdateGroup :one
+UPDATE groups AS g
+SET name = sqlc.arg(name),
+    bio = sqlc.arg(bio),
+    avatar_key = sqlc.arg(avatar_key),
+    updated_at = NOW()
+WHERE g.conversation_id = sqlc.arg(group_id)
+RETURNING
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at;

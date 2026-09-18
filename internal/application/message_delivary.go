@@ -11,76 +11,73 @@ import (
 type MessageDelivery struct {
 	msgService  *MessageService
 	convService *ConversationService
-	Sender      Sender
+	sender      Sender
 }
 
 func NewMessageDelivery(msgService *MessageService, convService *ConversationService, sender Sender) *MessageDelivery {
 	return &MessageDelivery{
 		msgService:  msgService,
 		convService: convService,
-		Sender:      sender,
+		sender:      sender,
 	}
 }
 
-func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message) error {
+func (d *MessageDelivery) HandleCreateMessage(reqID uuid.UUID, msg model.Message) {
 	ctx := context.Background()
 	message, err := d.msgService.Create(ctx, msg)
 	if err != nil {
-		return err
+		return
 	}
 
 	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
-		return err
+		return
 	}
 
-	d.Sender.Send(SendItems{
+	d.sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageCreateEvent,
 		Content:   message,
 		Recievers: userIDs,
 	})
-	return nil
 }
 
-func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) error {
+func (d *MessageDelivery) HandleEditMessage(reqID uuid.UUID, msg model.Message) {
 	ctx := context.Background()
 	message, err := d.msgService.Update(ctx, msg)
 	if err != nil {
-		return err
+		return
 	}
 
 	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
-		return err
+		return
 	}
 
-	d.Sender.Send(SendItems{
+	d.sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageEditEvent,
 		Content:   message,
 		Recievers: userIDs,
 	})
-	return nil
 }
 
-func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message) error {
+func (d *MessageDelivery) HandleDeleteMessage(reqID uuid.UUID, msg model.Message) {
 	ctx := context.Background()
 	err := d.msgService.Delete(ctx, msg)
 	if err != nil {
-		return err
+		return
 	}
 
 	userIDs, err := d.convService.GetConversationUserIDs(ctx, msg.SenderID, msg.ConversationID)
 	if err != nil {
-		return err
+		return
 	}
 
-	d.Sender.Send(SendItems{
+	d.sender.Broadcast(SendItem{
 		RequestID: reqID,
 		Event:     model.MessageDeleteEvent,
 		Content:   msg,
 		Recievers: userIDs,
 	})
-	return nil
 }

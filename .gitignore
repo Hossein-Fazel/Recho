@@ -31,6 +31,9 @@ go.work.sum
 UI/node_modules/
 UI/dist/
 
+# Local storage uploads
+uploads/
+
 # Editor/IDE
 # .idea/
 # .vscode/

@@ -27,7 +27,7 @@ RETURNING
     username,
     password_hash,
     display_name,
-    avatar_url,
+    avatar_key,
     bio,
     created_at,
     updated_at
@@ -43,7 +43,7 @@ type CreateUserRow struct {
 	Username     string
 	PasswordHash string
 	DisplayName  pgtype.Text
-	AvatarUrl    pgtype.Text
+	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -57,7 +57,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.Username,
 		&i.PasswordHash,
 		&i.DisplayName,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.Bio,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -71,7 +71,7 @@ SELECT
     username,
     password_hash,
     display_name,
-    avatar_url,
+    avatar_key,
     bio,
     created_at,
     updated_at
@@ -85,7 +85,7 @@ type GetUserByIDRow struct {
 	Username     string
 	PasswordHash string
 	DisplayName  pgtype.Text
-	AvatarUrl    pgtype.Text
+	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -99,7 +99,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow
 		&i.Username,
 		&i.PasswordHash,
 		&i.DisplayName,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.Bio,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -113,7 +113,7 @@ SELECT
     username,
     password_hash,
     display_name,
-    avatar_url,
+    avatar_key,
     bio,
     created_at,
     updated_at
@@ -127,7 +127,7 @@ type GetUserByUsernameRow struct {
 	Username     string
 	PasswordHash string
 	DisplayName  pgtype.Text
-	AvatarUrl    pgtype.Text
+	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -141,7 +141,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 		&i.Username,
 		&i.PasswordHash,
 		&i.DisplayName,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.Bio,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -154,9 +154,9 @@ SELECT
     id,
     username,
     display_name,
-    avatar_url
+    avatar_key
 FROM users
-WHERE username LIKE $1 || '%'
+WHERE username LIKE '%' || $1 || '%'
 ORDER BY username
 LIMIT 20
 `
@@ -165,7 +165,7 @@ type SearchUsersRow struct {
 	ID          uuid.UUID
 	Username    string
 	DisplayName pgtype.Text
-	AvatarUrl   pgtype.Text
+	AvatarKey   pgtype.Text
 }
 
 func (q *Queries) SearchUsers(ctx context.Context, query pgtype.Text) ([]SearchUsersRow, error) {
@@ -181,7 +181,7 @@ func (q *Queries) SearchUsers(ctx context.Context, query pgtype.Text) ([]SearchU
 			&i.ID,
 			&i.Username,
 			&i.DisplayName,
-			&i.AvatarUrl,
+			&i.AvatarKey,
 		); err != nil {
 			return nil, err
 		}
@@ -191,6 +191,67 @@ func (q *Queries) SearchUsers(ctx context.Context, query pgtype.Text) ([]SearchU
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET
+    username     = $2,
+    display_name = $3,
+    avatar_key   = $4,
+    bio          = $5,
+    updated_at   = NOW()
+WHERE id = $1
+RETURNING
+    id,
+    username,
+    password_hash,
+    display_name,
+    avatar_key,
+    bio,
+    created_at,
+    updated_at
+`
+
+type UpdateUserParams struct {
+	ID          uuid.UUID
+	Username    string
+	DisplayName pgtype.Text
+	AvatarKey   pgtype.Text
+	Bio         pgtype.Text
+}
+
+type UpdateUserRow struct {
+	ID           uuid.UUID
+	Username     string
+	PasswordHash string
+	DisplayName  pgtype.Text
+	AvatarKey    pgtype.Text
+	Bio          pgtype.Text
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
+	row := q.db.QueryRow(ctx, updateUser,
+		arg.ID,
+		arg.Username,
+		arg.DisplayName,
+		arg.AvatarKey,
+		arg.Bio,
+	)
+	var i UpdateUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.AvatarKey,
+		&i.Bio,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const usernameExists = `-- name: UsernameExists :one

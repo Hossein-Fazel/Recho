@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type {
+  ConversationDeleted,
+  GroupUpdated,
   MessageCreated,
   MessageDeleted,
   MessageEdited,
@@ -10,7 +12,8 @@ type Handlers = {
   onMessage: (message: MessageCreated) => void
   onMessageEdited: (message: MessageEdited) => void
   onMessageDeleted: (deleted: MessageDeleted) => void
-  onError: (message: string) => void
+  onConversationDeleted: (deleted: ConversationDeleted) => void
+  onGroupUpdated: (group: GroupUpdated) => void
   enabled: boolean
 }
 
@@ -23,13 +26,15 @@ export function useWebSocket({
   onMessage,
   onMessageEdited,
   onMessageDeleted,
-  onError,
+  onConversationDeleted,
+  onGroupUpdated,
   enabled,
 }: Handlers) {
   const onMessageRef = useRef(onMessage)
   const onMessageEditedRef = useRef(onMessageEdited)
   const onMessageDeletedRef = useRef(onMessageDeleted)
-  const onErrorRef = useRef(onError)
+  const onConversationDeletedRef = useRef(onConversationDeleted)
+  const onGroupUpdatedRef = useRef(onGroupUpdated)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(false)
@@ -41,7 +46,8 @@ export function useWebSocket({
   onMessageRef.current = onMessage
   onMessageEditedRef.current = onMessageEdited
   onMessageDeletedRef.current = onMessageDeleted
-  onErrorRef.current = onError
+  onConversationDeletedRef.current = onConversationDeleted
+  onGroupUpdatedRef.current = onGroupUpdated
 
   useEffect(() => {
     if (!enabled) {
@@ -98,7 +104,7 @@ export function useWebSocket({
 
           if (type === 'message.create' && data) {
             const message = data as MessageCreated
-            if (message.conversation_id && message.content) {
+            if (message.conversation_id && message.text?.content) {
               onMessageRef.current({
                 ...message,
                 request_id: payload.request_id,
@@ -106,7 +112,7 @@ export function useWebSocket({
             }
           } else if (type === 'message.edit' && data) {
             const message = data as MessageEdited
-            if (message.conversation_id && message.content) {
+            if (message.conversation_id && message.text?.content) {
               onMessageEditedRef.current({
                 ...message,
                 request_id: payload.request_id,
@@ -121,10 +127,22 @@ export function useWebSocket({
                 request_id: payload.request_id,
               })
             }
-          } else if (type === 'error' && data) {
-            const err = data as { message?: string }
-            if (err.message) {
-              onErrorRef.current(err.message)
+          } else if (type === 'conversation.delete' && data) {
+            const deleted = data as ConversationDeleted
+            if (deleted.conversation_id) {
+              onConversationDeletedRef.current({
+                conversation_id: deleted.conversation_id,
+              })
+            }
+          } else if (type === 'group.update' && data) {
+            const updated = data as GroupUpdated
+            if (updated.group_id) {
+              onGroupUpdatedRef.current({
+                group_id: updated.group_id,
+                name: updated.name,
+                avatar_url: updated.avatar_url,
+                bio: updated.bio,
+              })
             }
           }
         } catch {
@@ -184,7 +202,8 @@ export function useWebSocket({
         type: 'message.create',
         request_id: requestId,
         payload: {
-          content,
+          type: 'text',
+          text: { content },
           conversation_id: conversationId,
         },
       },
@@ -204,7 +223,8 @@ export function useWebSocket({
         payload: {
           message_id: messageId,
           conversation_id: conversationId,
-          content,
+          type: 'text',
+          text: { content },
         },
       },
     )

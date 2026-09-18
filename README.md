@@ -1,78 +1,41 @@
 <div align="center">
 
-  # Recho
+# Recho
 
-**Recho** is a realtime chat application built with a Go backend and a React (TypeScript) frontend. It provides user authentication, direct and group conversations, and realtime message delivery over WebSockets.
+### A real-time chat application built with Go, React, PostgreSQL, and WebSockets.
 
+Recho is a full-stack real-time messaging application designed around a Go backend and a React + TypeScript frontend. It supports authentication, direct and group conversations, realtime messaging, message editing and deletion, media storage, group invitations, and cursor-based message history.
 
-[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge\&logo=go\&logoColor=white)](https://go.dev)
+<br />
+
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge\&logo=go\&logoColor=white)](https://go.dev/)
 [![Echo](https://img.shields.io/badge/Echo-v4-3E863D?style=for-the-badge\&logo=go\&logoColor=white)](https://echo.labstack.com/)
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge\&logo=react\&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=for-the-badge\&logo=typescript\&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8.2-646CFF?style=for-the-badge\&logo=vite\&logoColor=white)](https://vite.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge\&logo=postgresql\&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge\&logo=docker\&logoColor=white)](https://www.docker.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge\&logo=docker\&logoColor=white)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+<br />
 
 </div>
 
+---
+
 ## Features
 
-### Authentication & Security
+* 🔐 **Authentication** — Registration and login with JWT-based authentication.
+* 💬 **Direct Messaging** — Real-time one-to-one conversations with message editing, deletion, and cursor-based history.
+* 👥 **Group Chats** — Real-time group conversations
+* 🔗 **Group Invitations** — Shareable invite links with group preview before joining.
+* 👤 **User Profiles** — Search users and edit personal profile information, including display name, bio, username, and avatar.
+* 🏷️ **Group Profiles** — Edit group information such as name, bio, and avatar.
+* ⚡ **Real-time Updates** — WebSocket based real-time messaging and conversation updates.
+* 📎 **File Storage** — Support for local storage and S3-compatible object storage.
+* 🌓 **Modern UI** — Responsive interface with light/dark themes and emoji support.
 
-| Feature            | Description                                                      |
-| ------------------ | ---------------------------------------------------------------- |
-| **Authentication** | User registration and login with JWT-based authentication        |
-| **Access Tokens**  | Short-lived JWT access tokens for authenticated API requests     |
-| **Refresh Tokens** | Rotating refresh tokens securely delivered via HTTP-only cookies |
-
-### Messaging
-
-| Feature                  | Description                                                      |
-| ------------------------ | ---------------------------------------------------------------- |
-| **Direct Conversations** | Start or resume one-on-one conversations between users           |
-| **Realtime Messaging**   | WebSocket-based message delivery using a hub/client architecture |
-| **Message Editing**      | Edit your own messages and synchronize changes in realtime       |
-| **Message Deletion**     | Delete your own messages with realtime synchronization           |
-| **Message History**      | Cursor-based pagination for efficient message history retrieval  |
-| **Optimistic Messaging** | Messages appear instantly with delivery status updates           |
-
-### Groups
-
-| Feature            | Description                                                           |
-| ------------------ | --------------------------------------------------------------------- |
-| **Group Chats**    | Create and participate in realtime group conversations                |
-| **Group Members**  | Browse group members directly from the conversation info panel        |
-| **Member Roles**   | Owner, admin, and member roles with visual role badges                |
-| **Invite Codes**   | Each group has a unique invite code and shareable `/join/<code>` link |
-| **Join by Invite** | Preview group information before joining with a single action         |
-| **Sender Labels**  | Telegram-style sender grouping with avatars and display names         |
-
-### Users & Profiles
-
-| Feature                      | Description                                                    |
-| ---------------------------- | -------------------------------------------------------------- |
-| **User Search**              | Search for users and quickly start a conversation              |
-| **Profile Information**      | View user profiles, bios, and handles from the conversation    |
-| **Conversation Information** | View detailed information about direct and group conversations |
-
-### User Experience
-
-| Feature                 | Description                                                     |
-| ----------------------- | --------------------------------------------------------------- |
-| **Modern UI**           | Clean and responsive messaging interface                        |
-| **Dark / Light Themes** | Built-in theme support                                          |
-| **Emoji Picker**        | Easily add emojis to messages                                   |
-| **Delivery Status**     | Visual feedback for optimistic messages and successful delivery |
-
-### Backend & Infrastructure
-
-| Feature                      | Description                                                           |
-| ---------------------------- | --------------------------------------------------------------------- |
-| **Single-Binary Deployment** | Go server serves the compiled frontend as static assets in production |
-| **API Documentation**        | Swagger/OpenAPI documentation generated from code annotations         |
-| **Database Migrations**      | Version-controlled PostgreSQL schema managed with `golang-migrate`    |
-| **WebSocket Architecture**   | Hub/client architecture for managing realtime connections             |
-
+---
 
 ## Architecture
 
@@ -93,98 +56,150 @@ internal/
 
 The compiled frontend (`UI/dist`) is served as static assets directly by the Echo server, so the API and UI can be deployed as a single binary.
 
-## Getting Started
+---
 
-### Prerequisites
+# Getting Started
 
-- [Go](https://go.dev/dl/) 1.26+
-- [Node.js](https://nodejs.org/) 20+ and npm
-- [Docker](https://www.docker.com/) and Docker Compose (for PostgreSQL)
-- [swag CLI](https://github.com/swaggo/swag) (optional, only needed to regenerate Swagger docs)
+## Prerequisites
 
-### 1. Clone the repository
+Make sure the following are installed:
+
+* Go 1.26+
+* Node.js 20+
+* npm
+* Docker
+* Docker Compose
+* `swag` CLI *(optional — only required when regenerating Swagger documentation)*
+
+---
+
+## 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Hossein-Fazel/Recho.git
 cd Recho
 ```
 
-### 2. Configure environment variables
+---
 
-Copy the example environment file and adjust the values as needed:
+## 2. Configure Environment
+
+Create your local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-| Variable                 | Description                                                                                                    | Default         |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------- |
-| `POSTGRES_HOST`        | PostgreSQL host                                                                                                | `localhost`   |
-| `POSTGRES_PORT`        | PostgreSQL port                                                                                                | `5432`        |
-| `POSTGRES_USER`        | PostgreSQL username                                                                                            | `user`        |
-| `POSTGRES_PASSWORD`    | PostgreSQL password                                                                                            | `pass`        |
-| `POSTGRES_NAME`        | PostgreSQL database name                                                                                       | `DB_Name`     |
-| `POSTGRES_SSLMODE`     | PostgreSQL SSL mode                                                                                            | `disable`     |
-| `SERVER_PORT`          | Port the HTTP server listens on                                                                                | `8000`        |
-| `SERVER_SWAGGER_ROUTE` | Route prefix for Swagger UI (dev mode only)                                                                    | `swagger`     |
-| `SERVER_MODE`          | `development` (Swagger UI on, frontend not served) or `production` (Swagger UI off, built frontend served) | `development` |
-| `TOKEN_SECRET`         | Secret used to sign JWTs                                                                                       | `mysecret`    |
-| `TOKEN_ISSUER`         | JWT issuer claim                                                                                               | `Recho`       |
-| `TOKEN_RT_TTL`         | Refresh token time-to-live                                                                                     | `720h`        |
-| `TOKEN_AT_TTL`         | Access token time-to-live                                                                                      | `1h`          |
+Review the configuration before starting the application.
 
-> **Note:** Change `TOKEN_SECRET` and the database credentials before deploying anywhere beyond your local machine.
+---
 
-You now have two ways to run Recho. **Option A** runs everything (Postgres + the Go server + the built frontend) with a single Docker Compose command — the fastest way to get a production-like build running. **Option B** runs Postgres in Docker but runs the backend and frontend directly on your machine with the Go and Node CLIs — better for active development, since it gives you live reload on the frontend and fast `go run` iteration on the backend.
+# Running Recho
 
-### Option A: Everything with Docker Compose
+There are two recommended development workflows.
+
+### Option A
+
+Run PostgreSQL, the Go backend, and the built React application through Docker Compose.
+
+### Option B
+
+Run PostgreSQL through Docker while running the Go backend and React frontend directly on your machine.
+
+For active development, Option B provides frontend hot reload and faster backend iteration.
+
+---
+
+## Option A: Run Everything with Docker Compose
+
+Set:
+
+```env
+SERVER_MODE=production
+```
+
+Then run:
 
 ```bash
 docker compose up --build
 ```
 
-This single command:
+Docker Compose will:
 
-- Builds the app image from the [`Dockerfile`](Dockerfile) (compiling the Go binary and building the React frontend in a multi-stage build)
-- Starts a PostgreSQL 17 container using the credentials from your `.env` file
-- Starts the `app` container once Postgres reports healthy, running database migrations automatically on boot
-- Serves the API and the built frontend together at `http://localhost:$SERVER_PORT` (default `http://localhost:8000`)
+1. Build the application image.
+2. Build the React frontend.
+3. Compile the Go backend.
+4. Start PostgreSQL 17.
+5. Wait for PostgreSQL to become healthy.
+6. Run database migrations.
+7. Start the application.
+8. Serve the API and compiled frontend together.
 
-> **Important:** the server only serves the built frontend (and disables Swagger UI) when `SERVER_MODE=production`. The default `.env.example` ships with `SERVER_MODE=development`, which is meant for Option B below. Set `SERVER_MODE=production` in your `.env` before running Option A, or the app container will serve the API only, with no frontend.
+Open:
 
-Add `-d` to run in the background. To stop everything:
+```text
+http://localhost:8000
+```
+
+The exact port is controlled by `SERVER_PORT`.
+
+### Run in background
+
+```bash
+docker compose up --build -d
+```
+
+### Stop containers
 
 ```bash
 docker compose down
 ```
 
-To stop and also delete the Postgres data volume:
+### Stop containers and remove database volume
 
 ```bash
 docker compose down -v
 ```
 
-> Note: this option serves the **built** frontend (static files), not the Vite dev server, so there's no frontend hot-reload here. Use Option B for that.
+> Docker mode serves the compiled frontend. It does not run the Vite development server, so frontend hot reload is not available.
 
-### Option B: PostgreSQL in Docker, everything else via CLI
+---
 
-Start only the database container:
+## Option B: PostgreSQL in Docker, Backend & Frontend Locally
+
+This workflow is recommended for active development.
+
+### Start PostgreSQL
 
 ```bash
 docker compose up postgres -d
 ```
 
-This starts a PostgreSQL 17 container on the port from `POSTGRES_PORT` in your `.env` (default `5432`), with the `.env` values already set up to point at it via `POSTGRES_HOST=localhost`.
-
-Run the backend:
+### Start the backend
 
 ```bash
 make run
 ```
 
-The API server starts on `http://localhost:$SERVER_PORT` (default `8000`) and applies database migrations automatically on startup. In development mode, Swagger UI is available at `/{SERVER_SWAGGER_ROUTE}/index.html`.
+The API will be available at:
 
-Run the frontend, in a separate terminal:
+```text
+http://localhost:8000
+```
+
+Database migrations are applied automatically when the server starts.
+
+In development mode, Swagger UI is available at:
+
+```text
+http://localhost:8000/{SERVER_SWAGGER_ROUTE}/index.html
+```
+
+---
+
+### Start the frontend
+
+In another terminal:
 
 ```bash
 cd UI
@@ -192,25 +207,177 @@ npm install
 npm run dev
 ```
 
-The Vite dev server runs on `http://localhost:5173` with hot reload. It proxies `/api` and `/ws` requests to the backend at `http://localhost:8000` (see `UI/vite.config.ts`), so the browser sees everything as same-origin and no CORS configuration is needed in development.
+The Vite development server runs at:
 
-#### Building for production (CLI)
+```text
+http://localhost:5173
+```
 
-If you want a production-style build without Docker, build the frontend and let the Go server serve it as static files:
+The Vite development configuration proxies:
+
+```text
+/api → backend
+/ws  → backend
+```
+
+This keeps API and WebSocket requests effectively same-origin from the browser's perspective during development.
+
+---
+
+# Configuration
+
+## Server & Database
+
+| Variable               | Description                   | Default       |
+| ---------------------- | ----------------------------- | ------------- |
+| `POSTGRES_HOST`        | PostgreSQL host               | `localhost`   |
+| `POSTGRES_PORT`        | PostgreSQL port               | `5432`        |
+| `POSTGRES_USER`        | PostgreSQL username           | `user`        |
+| `POSTGRES_PASSWORD`    | PostgreSQL password           | `pass`        |
+| `POSTGRES_NAME`        | Database name                 | `DB_Name`     |
+| `POSTGRES_SSLMODE`     | PostgreSQL SSL mode           | `disable`     |
+| `SERVER_PORT`          | HTTP server port              | `8000`        |
+| `SERVER_SWAGGER_ROUTE` | Swagger route prefix          | `swagger`     |
+| `SERVER_MODE`          | `development` or `production` | `development` |
+| `TOKEN_SECRET`         | JWT signing secret            | `mysecret`    |
+| `TOKEN_ISSUER`         | JWT issuer                    | `Recho`       |
+| `TOKEN_RT_TTL`         | Refresh-token TTL             | `720h`        |
+| `TOKEN_AT_TTL`         | Access-token TTL              | `1h`          |
+| `STORAGE_DRIVER`       | `local` or `s3`               | `local`       |
+
+### Local Storage
+
+| Variable                  | Description                 | Default                         |
+| ------------------------- | --------------------------- | ------------------------------- |
+| `STORAGE_LOCAL_ROOT_PATH` | Upload directory            | `./uploads`                     |
+| `STORAGE_LOCAL_BASE_URL`  | Base URL for uploaded files | `http://localhost:8000/uploads` |
+
+### S3 / S3-Compatible Storage
+
+| Variable                       | Description                      | Default      |
+| ------------------------------ | -------------------------------- | ------------ |
+| `STORAGE_S3_ENDPOINT`          | Custom S3 endpoint               | Empty        |
+| `STORAGE_S3_REGION`            | Bucket region                    | `us-east-1`  |
+| `STORAGE_S3_BUCKET`            | Bucket name                      | `recho`      |
+| `STORAGE_S3_ACCESS_KEY_ID`     | Access key                       | `minioadmin` |
+| `STORAGE_S3_SECRET_ACCESS_KEY` | Secret key                       | `minioadmin` |
+| `STORAGE_S3_USE_PATH_STYLE`    | Use path-style addressing        | `true`       |
+| `STORAGE_S3_DISABLE_ACL`       | Disable public-read ACL handling | `false`      |
+| `STORAGE_S3_PUBLIC_BASE_URL`   | Public/CDN base URL              | Empty        |
+| `STORAGE_S3_PRESIGN_EXPIRY`    | Presigned URL lifetime           | `15m`        |
+
+> **Security:** The values shown above are development defaults. Replace secrets and credentials before using Recho in a non-local environment.
+
+---
+
+# Running with MinIO
+
+Recho includes a Docker Compose S3 profile for local development with MinIO.
+
+Set:
+
+```env
+STORAGE_DRIVER=s3
+```
+
+Then run:
+
+```bash
+docker compose --profile s3 up --build
+```
+
+This starts:
+
+* Recho
+* PostgreSQL
+* MinIO
+* MinIO initialization
+
+MinIO's web console is available at:
+
+```text
+http://localhost:9001
+```
+
+Inside the Docker network, the application should use:
+
+```env
+STORAGE_S3_ENDPOINT=http://minio:9000
+```
+
+For browser-accessible generated URLs, configure the public base URL using the host-accessible MinIO endpoint.
+
+---
+
+# Production Build
+
+The application can also be built without Docker.
+
+First build the frontend:
 
 ```bash
 cd UI
+npm install
 npm run build
 cd ..
+```
+
+Then build/run the Go application:
+
+```bash
 make build
 ```
 
-`make build` compiles the Go binary and runs it, serving both the API (`/api/*`) and the built frontend (`UI/dist`) from a single process.
+The resulting application serves:
 
-## Contributing
+```text
+/api/*
+```
 
-Contributions are welcome. Please open an issue to discuss significant changes before submitting a pull request.
+and the compiled:
 
-## License
+```text
+UI/dist
+```
 
-This project is licensed under the [MIT License](LICENSE).
+from the same Go process.
+
+This allows Recho's backend and frontend to be deployed together rather than requiring separate application servers.
+
+---
+
+# API Documentation
+
+Recho exposes its HTTP API through Swagger/OpenAPI documentation in development mode.
+
+With the default configuration:
+
+```text
+http://localhost:8000/swagger/index.html
+```
+
+Swagger documentation is generated from Go annotations.
+
+If you modify API annotations and need to regenerate the documentation, install the `swag` CLI and regenerate the Swagger files according to the project's development workflow.
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+For significant changes, please open an issue first to discuss the proposed change before submitting a pull request.
+
+When contributing:
+
+1. Create a focused branch for your change.
+2. Keep changes scoped to the relevant feature or fix.
+3. Follow the existing project structure and conventions.
+4. Test your changes locally.
+5. Update documentation when behavior or configuration changes.
+
+---
+
+# License
+
+Recho is licensed under the [MIT License](LICENSE).

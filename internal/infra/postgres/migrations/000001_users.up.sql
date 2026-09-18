@@ -6,7 +6,7 @@ CREATE TABLE users (
     username      CITEXT       NOT NULL UNIQUE,
     
     display_name  VARCHAR(100),
-    avatar_url    TEXT,
+    avatar_key    TEXT,
     bio           VARCHAR(250),
 
     password_hash TEXT          NOT NULL,

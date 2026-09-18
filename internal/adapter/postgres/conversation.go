@@ -20,6 +20,8 @@ type Conversation struct {
 	db  *pgxpool.Pool
 }
 
+var _ application.ConversationRepo = (*Conversation)(nil)
+
 func NewConversationRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Conversation {
 	pkg.Logger.Info().Msg("Initializing Conversation Repository")
 
@@ -35,11 +37,6 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 		Str("cursor_update_at", args.CursorUpdatedAt.String()).
 		Str("cursorID", args.CursorID.String()).
 		Msg("Getting Conversation list")
-
-	if args.UserID == uuid.Nil {
-		return nil, apperr.InvalidInput("conversation repo", "invalid id", nil)
-	}
-
 	list, err := c.sql.GetUserConversations(
 		ctx,
 		sqlc.GetUserConversationsParams{
@@ -82,11 +79,12 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 			UserID:               uID,
 			Username:             conv.Username.String,
 			DisplayName:          conv.DisplayName.String,
-			AvatarUrl:            conv.AvatarUrl.String,
+			AvatarKey:            conv.AvatarKey.String,
 			GroupName:            conv.GroupName.String,
-			GroupAvatarUrl:       conv.GroupAvatarUrl.String,
+			GroupAvatarKey:       conv.GroupAvatarKey.String,
 			LastMessageID:        lmID,
-			LastMessageContent:   conv.LastMessageContent.String,
+			LastMessageType:      model.MessageType(conv.LastMessageType.MessageType),
+			LastMessageText:      conv.LastMessageText.String,
 			LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
 			UpdatedAt:            conv.UpdatedAt,
 		})
@@ -96,10 +94,6 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 }
 
 func (r *Conversation) GetConversationByID(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID) (*model.UserConversation, error) {
-	if userID == uuid.Nil || conversationID == uuid.Nil {
-		return nil, apperr.InvalidInput("conversation repo", "invalid id", nil)
-	}
-
 	conv, err := r.sql.GetConversationByID(
 		ctx,
 		sqlc.GetConversationByIDParams{
@@ -128,11 +122,12 @@ func (r *Conversation) GetConversationByID(ctx context.Context, userID uuid.UUID
 		UserID:               uID,
 		Username:             conv.Username.String,
 		DisplayName:          conv.DisplayName.String,
-		AvatarUrl:            conv.AvatarUrl.String,
+		AvatarKey:            conv.AvatarKey.String,
 		GroupName:            conv.GroupName.String,
-		GroupAvatarUrl:       conv.GroupAvatarUrl.String,
+		GroupAvatarKey:       conv.GroupAvatarKey.String,
 		LastMessageID:        conv.LastMessageID.Int64,
-		LastMessageContent:   conv.LastMessageContent.String,
+		LastMessageType:      model.MessageType(conv.LastMessageType.MessageType),
+		LastMessageText:      conv.LastMessageText.String,
 		LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
 		UpdatedAt:            conv.UpdatedAt,
 	}, nil
@@ -160,10 +155,6 @@ func (r *Conversation) GetDirectConversation(ctx context.Context, userOneID uuid
 }
 
 func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID uuid.UUID, userTwoID uuid.UUID) (uuid.UUID, error) {
-	if userOneID == userTwoID {
-		return uuid.Nil, apperr.InvalidInput("Conversation repo", "cannot create conversation with yourself", nil)
-	}
-
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return uuid.Nil, apperr.Internal("Conversation repo", err)
@@ -176,7 +167,7 @@ func (r *Conversation) CreateDirectConversation(ctx context.Context, userOneID u
 
 	q := r.sql.WithTx(tx)
 
-	conversationID, err := q.InsertConversation(ctx)
+	conversationID, err := q.InsertConversation(ctx, sqlc.ConversationTypeDirect)
 
 	if err != nil {
 		return uuid.Nil, apperr.Internal("Conversation repo", err)
@@ -216,10 +207,6 @@ func (r *Conversation) IsConversationMember(ctx context.Context, userID uuid.UUI
 }
 
 func (r *Conversation) GetConversationMessages(ctx context.Context, params application.GetConversationMessagesParams) ([]*model.Message, error) {
-	if params.ConversationID == uuid.Nil {
-		return nil, apperr.InvalidInput("conversation repo", "invalid Conversation id", nil)
-	}
-
 	list, err := r.sql.GetConversationMessages(
 		ctx,
 		sqlc.GetConversationMessagesParams{
@@ -261,10 +248,6 @@ func (r *Conversation) GetConversationMessages(ctx context.Context, params appli
 }
 
 func (r *Conversation) GetConversationUsers(ctx context.Context, convID uuid.UUID) ([]uuid.UUID, error) {
-	if convID == uuid.Nil {
-		return []uuid.UUID{}, apperr.InvalidInput("Conversation repo", "cconversation id is required", nil)
-	}
-
 	uIDs, err := r.sql.GetConvUsers(ctx, convID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -282,10 +265,6 @@ func (r *Conversation) GetConversationUsers(ctx context.Context, convID uuid.UUI
 }
 
 func (r *Conversation) GetGroupMembers(ctx context.Context, GID uuid.UUID, cursorUID uuid.UUID, limit int32) ([]*model.GroupMember, error) {
-	if GID == uuid.Nil {
-		return []*model.GroupMember{}, apperr.InvalidInput("Conversation repo", "cconversation id is required", nil)
-	}
-
 	members, err := r.sql.GetGroupMembers(ctx, sqlc.GetGroupMembersParams{
 		ConversationID: GID,
 		CursorUserID:   cursorUID,
@@ -312,10 +291,6 @@ func (r *Conversation) GetGroupMembers(ctx context.Context, GID uuid.UUID, curso
 }
 
 func (r *Conversation) GetInfo(ctx context.Context, userID uuid.UUID, CID uuid.UUID) (*model.ConversationInfo, error) {
-	if CID == uuid.Nil || userID == uuid.Nil {
-		return nil, apperr.InvalidInput("Conversation repo", "conversation and user id are required", nil)
-	}
-
 	info, err := r.sql.GetConversationInfo(ctx, sqlc.GetConversationInfoParams{
 		ConversationID: CID,
 		UserID:         userID,

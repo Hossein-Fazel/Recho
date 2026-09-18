@@ -2,17 +2,28 @@ package application
 
 import (
 	"context"
+	"io"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/Hossein-Fazel/Recho/internal/model"
+	"github.com/google/uuid"
 )
+
+// Repository
+
+type UpdateUserParams struct {
+	ID          uuid.UUID
+	Username    string
+	DisplayName string
+	AvatarKey   string
+	Bio         string
+}
 
 type UserRepo interface {
 	Create(ctx context.Context, username, passHash string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	Update(ctx context.Context, params UpdateUserParams) (*model.User, error)
 	Exists(ctx context.Context, username string) (bool, error)
 	Search(ctx context.Context, username string) ([]*model.UserSearch, error)
 }
@@ -37,15 +48,69 @@ type ConversationRepo interface {
 	GetGroupMembers(ctx context.Context, GID uuid.UUID, cursorUID uuid.UUID, limit int32) ([]*model.GroupMember, error)
 }
 
+type UpdateGroupParams struct {
+	GroupID   uuid.UUID
+	Name      string
+	Bio       string
+	AvatarKey string
+}
+
 type GroupRepo interface {
 	Create(ctx context.Context, params CreateGroupParams) (*model.Group, error)
+	GetByID(ctx context.Context, groupID uuid.UUID) (*model.Group, error)
 	GetByInviteCode(ctx context.Context, code string) (*model.GroupPreview, error)
 	AddMember(ctx context.Context, groupID, userID uuid.UUID) error
+	RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error
+	DeleteGroup(ctx context.Context, groupID uuid.UUID) error
 	GetMemberRole(ctx context.Context, groupID, userID uuid.UUID) (model.GroupMemberRole, error)
+	UpdateInviteCode(ctx context.Context, groupID uuid.UUID, newInviteCode string) error
+	Update(ctx context.Context, params UpdateGroupParams) (*model.Group, error)
 }
 
 type MessaageRepo interface {
 	Create(ctx context.Context, msg model.Message) (*model.Message, error)
 	Update(ctx context.Context, msg model.Message) (*model.Message, error)
 	Delete(ctx context.Context, msg model.Message) error
+}
+
+// Sender
+
+type SendItem struct {
+	RequestID uuid.UUID
+	Event     model.Event
+	Content   any
+	Recievers uuid.UUIDs
+}
+
+type Sender interface {
+	Broadcast(item SendItem)
+}
+
+// Token Manager
+
+type AccessToken interface {
+	Generate(userID uuid.UUID) (*model.UserAcccessToken, error)
+	Validate(token string) (uuid.UUID, error)
+}
+
+type RefreshToken interface {
+	Generate() (*model.RefreshToken, *model.UserRefreshToken, error)
+	Hash(plainText string) string
+}
+
+// Storage
+
+type Storage interface {
+	Upload(
+		ctx context.Context,
+		file io.Reader,
+		size int64,
+		key string,
+		contentType string,
+		public bool,
+	) (string, error)
+	Delete(ctx context.Context, key string) error
+	GetURL(ctx context.Context, key string) (string, error)
+	GetPresignedURL(ctx context.Context, key string) (string, error)
+	Exists(ctx context.Context, key string) (bool, error)
 }

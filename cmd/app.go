@@ -4,6 +4,7 @@ import (
 	"context"
 
 	postgres_repo "github.com/Hossein-Fazel/Recho/internal/adapter/postgres"
+	"github.com/Hossein-Fazel/Recho/internal/adapter/storage"
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/config"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/web"
@@ -41,21 +42,31 @@ func Run() {
 	userRepo := postgres_repo.NewUserRepo(queries)
 	convRepo := postgres_repo.NewConversationRepo(queries, database)
 	groupRepo := postgres_repo.NewGroupRepo(queries, database)
-	msgRepo := postgres_repo.NewMessageRepo(queries)
+	msgRepo := postgres_repo.NewMessageRepo(queries, database)
+
+	pkg.Logger.Info().Msg("initialize websocket")
+	hub := websocket.NewHub()
+	go hub.Run()
 
 	pkg.Logger.Info().Msg("Initializing services")
 	accessToken := token.NewJWTService(conf.Token)
 	refreshToken := token.NewRefreshTokenService(conf.Token)
 
-	authService := application.NewAuthService(userRepo, accessToken, refreshToken, authRepo)
-	convService := application.NewConversationService(convRepo)
-	userService := application.NewUserService(userRepo)
-	groupService := application.NewGroupService(groupRepo, convRepo)
-	msgService := application.NewMessageService(msgRepo, convRepo)
+	pkg.Logger.Info().Msg("Initializing storage")
+	storage, err := storage.New(ctx, conf.Storage)
+	if err != nil {
+		pkg.Logger.Fatal().
+			AnErr("error", err).
+			Msg("error in creating storage")
+	}
 
-	pkg.Logger.Info().Msg("initialize websocket")
-	hub := websocket.NewHub()
-	go hub.Run()
+	storageService := application.NewStorageService(storage)
+
+	authService := application.NewAuthService(userRepo, accessToken, refreshToken, authRepo)
+	convService := application.NewConversationService(convRepo, storageService)
+	userService := application.NewUserService(userRepo, storageService)
+	groupService := application.NewGroupService(groupRepo, convRepo, storageService, hub)
+	msgService := application.NewMessageService(msgRepo, convRepo)
 	msgDelivery := application.NewMessageDelivery(msgService, convService, hub)
 	ws := websocket.NewWSHandler(hub, msgDelivery)
 
@@ -67,7 +78,7 @@ func Run() {
 		Conversation: convService,
 		User:         userService,
 		Group:        groupService,
-	}, conf.Server)
+	}, conf.Server, conf.Storage)
 
 	wsGroup := web.Group("/ws", middleware.AccessMiddleware(accessToken))
 	ws.RegsiterRoutes(wsGroup)

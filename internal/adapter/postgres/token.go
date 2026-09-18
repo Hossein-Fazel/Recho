@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/infra/postgres/sqlc"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/Hossein-Fazel/Recho/pkg"
@@ -20,6 +21,8 @@ type Token struct {
 	sql *sqlc.Queries
 }
 
+var _ application.RefreshTokenRepo = (*Token)(nil)
+
 func NewRefreshTokenRepo(sql *sqlc.Queries, db *pgxpool.Pool) *Token {
 	pkg.Logger.Info().Msg("Initializing Token Repository")
 	return &Token{
@@ -33,10 +36,6 @@ func (a *Token) Create(ctx context.Context, userID uuid.UUID, tokenHash string, 
 		Str("user id", userID.String()).
 		Str("tokenHash", tokenHash).
 		Msg("Creating refresh token")
-
-	if userID == uuid.Nil {
-		return nil, apperr.InvalidInput("token repo", "invalid id", nil)
-	}
 
 	rt, err := a.sql.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
 		UserID:    userID,

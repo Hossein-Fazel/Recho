@@ -12,11 +12,12 @@ type UserConversation struct {
 	UserID               uuid.UUID
 	Username             string
 	DisplayName          string
-	AvatarUrl            string
+	AvatarKey            string
 	GroupName            string
-	GroupAvatarUrl       string
+	GroupAvatarKey       string
 	LastMessageID        int64
-	LastMessageContent   string
+	LastMessageType      MessageType
+	LastMessageText      string
 	LastMessageCreatedAt time.Time
 	UpdatedAt            time.Time
 }
@@ -33,7 +34,7 @@ type GroupMember struct {
 	UserID      uuid.UUID
 	Username    string
 	DisplayName string
-	AvatarURL   string
+	AvatarKey   string
 	Role        GroupMemberRole
 }
 
@@ -48,14 +49,14 @@ type UserInfo struct {
 	UserID      uuid.UUID
 	Username    string
 	DisplayName string
-	AvatarUrl   string
+	AvatarKey   string
 	Bio         string
 }
 
 type GroupInfo struct {
 	GroupID        uuid.UUID
 	GroupName      string
-	GroupAvatarUrl string
+	GroupAvatarKey string
 	GroupBio       string
 	InviteCode     string
 	ViewerRole     GroupMemberRole
@@ -70,7 +71,7 @@ func (g *GroupInfo) CanShareInvite() bool {
 type Group struct {
 	ID         uuid.UUID
 	Name       string
-	AvatarURL  string
+	AvatarKey  string
 	Bio        string
 	InviteCode string
 	CreatedBy  uuid.UUID
@@ -81,7 +82,7 @@ type Group struct {
 type GroupPreview struct {
 	GroupID     uuid.UUID
 	Name        string
-	AvatarURL   string
+	AvatarKey   string
 	Bio         string
 	MemberCount int64
 	IsMember    bool

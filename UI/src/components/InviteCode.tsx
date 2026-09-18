@@ -4,14 +4,22 @@ import { inviteLink } from '../lib/invite'
 
 type InviteCodeProps = {
   code: string
+  canRotate?: boolean
+  rotating?: boolean
+  onRotate?: () => void
 }
 
 /**
  * Shows an invite code with buttons to copy the code and its link. Copying
  * falls back to selecting the text when the clipboard API is unavailable
- * (non-HTTPS origins, older browsers).
+ * (non-HTTPS origins, older browsers). Owners can also rotate the code.
  */
-export function InviteCode({ code }: InviteCodeProps) {
+export function InviteCode({
+  code,
+  canRotate = false,
+  rotating = false,
+  onRotate,
+}: InviteCodeProps) {
   const [copied, setCopied] = useState('')
 
   useEffect(() => {
@@ -61,6 +69,17 @@ export function InviteCode({ code }: InviteCodeProps) {
       <p className="invite-hint">
         Anyone with this code can join the group.
       </p>
+
+      {canRotate && onRotate ? (
+        <button
+          type="button"
+          className="ghost-btn invite-rotate"
+          onClick={onRotate}
+          disabled={rotating}
+        >
+          {rotating ? 'Rotating…' : 'Rotate code'}
+        </button>
+      ) : null}
     </div>
   )
 }

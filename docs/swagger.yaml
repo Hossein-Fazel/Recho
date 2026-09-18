@@ -21,12 +21,14 @@ definitions:
         type: string
       group_name:
         type: string
-      last_message_content:
-        type: string
       last_message_created_at:
         type: string
       last_message_id:
         type: integer
+      last_message_text:
+        type: string
+      last_message_type:
+        $ref: '#/definitions/model.MessageType'
       updated_at:
         type: string
       user_id:
@@ -116,6 +118,40 @@ definitions:
       username:
         type: string
     type: object
+  dto.RotateInviteCodeResponse:
+    properties:
+      new_invite_code:
+        type: string
+    type: object
+  dto.UpdateGroupRequest:
+    properties:
+      bio:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UpdateGroupResponse:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.UpdateProfileRequest:
+    properties:
+      bio:
+        type: string
+      display_name:
+        type: string
+      username:
+        type: string
+    type: object
   dto.User:
     properties:
       avatar_url:
@@ -160,6 +196,12 @@ definitions:
           $ref: '#/definitions/dto.UserSearch'
         type: array
     type: object
+  model.MessageType:
+    enum:
+    - text
+    type: string
+    x-enum-varnames:
+    - MessageTypeText
 info:
   contact: {}
   description: Realtime chat application
@@ -557,6 +599,212 @@ paths:
       summary: Create a group
       tags:
       - group
+  /api/group/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete the group.
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a group
+      tags:
+      - group
+    patch:
+      consumes:
+      - application/json
+      description: Updates the group name and/or bio. Omitted fields stay unchanged.
+        Only the group owner can do this.
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: group
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UpdateGroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a group
+      tags:
+      - group
+  /api/group/{id}/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Replaces the group's avatar with the uploaded image. Only the group
+        owner can do this.
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: avatar image
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UpdateGroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a group avatar
+      tags:
+      - group
+  /api/group/{id}/invite-code/rotate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RotateInviteCodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: rotate the invite code
+      tags:
+      - group
+  /api/group/{id}/leave:
+    post:
+      consumes:
+      - application/json
+      description: Removes the current user from the group.
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Leave a group
+      tags:
+      - group
   /api/group/invite/{code}:
     get:
       consumes:
@@ -638,6 +886,111 @@ paths:
       summary: Join a group using an invite code
       tags:
       - group
+  /api/user/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - user
+    patch:
+      consumes:
+      - application/json
+      description: Updates the username, display name and/or bio. Omitted fields stay
+        unchanged.
+      parameters:
+      - description: profile
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - user
+  /api/user/me/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Replaces the current user's avatar with the uploaded image.
+      parameters:
+      - description: avatar image
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user avatar
+      tags:
+      - user
   /api/user/search:
     get:
       consumes:

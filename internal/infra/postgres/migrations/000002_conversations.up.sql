@@ -1,11 +1,26 @@
+CREATE TYPE message_type AS ENUM (
+    'text'
+    -- 'voice',
+    -- 'video',
+    -- 'picture'
+    -- etc
+);
+
+CREATE TYPE conversation_type AS ENUM (
+    'group',
+    'direct'
+);
+
 CREATE TABLE conversations (
-    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    id                      UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+    type                    conversation_type NOT NULL,
     last_message_id         BIGINT,
-    last_message_content    TEXT,
+    last_message_type       message_type,
+    last_message_text       TEXT,
     last_message_created_at TIMESTAMPTZ,
-    message_id_counter      BIGINT      NOT NULL DEFAULT 0,
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    message_id_counter      BIGINT            NOT NULL DEFAULT 0,
+    created_at              TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ       NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_conversations_updated_at ON conversations(updated_at DESC);
@@ -32,7 +47,7 @@ CREATE INDEX idx_direct_conversations_user_two ON direct_conversations(user_two_
 CREATE TABLE groups (
     conversation_id UUID PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE,
     name            VARCHAR(100) NOT NULL,
-    avatar_url      TEXT,
+    avatar_key      TEXT,
     invite_code     VARCHAR(100) UNIQUE,
     bio             VARCHAR(250),
     created_by      UUID         NOT NULL REFERENCES users(id),

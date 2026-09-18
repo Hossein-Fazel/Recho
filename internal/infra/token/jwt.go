@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -27,6 +28,8 @@ type JWTService struct {
 	issuer string
 	ttl    time.Duration
 }
+
+var _ application.AccessToken = (*JWTService)(nil)
 
 func NewJWTService(conf Config) *JWTService {
 	return &JWTService{

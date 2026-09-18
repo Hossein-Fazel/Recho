@@ -26,11 +26,51 @@ func (q *Queries) CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int
 	return member_count, err
 }
 
+const deleteGroup = `-- name: DeleteGroup :exec
+DELETE FROM conversations
+WHERE id = $1 AND type = 'group'
+`
+
+func (q *Queries) DeleteGroup(ctx context.Context, groupID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteGroup, groupID)
+	return err
+}
+
+const getGroupByID = `-- name: GetGroupByID :one
+SELECT
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at
+FROM groups g
+WHERE g.conversation_id = $1
+`
+
+func (q *Queries) GetGroupByID(ctx context.Context, groupID uuid.UUID) (Group, error) {
+	row := q.db.QueryRow(ctx, getGroupByID, groupID)
+	var i Group
+	err := row.Scan(
+		&i.ConversationID,
+		&i.Name,
+		&i.AvatarKey,
+		&i.InviteCode,
+		&i.Bio,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getGroupByInviteCode = `-- name: GetGroupByInviteCode :one
 SELECT
     g.conversation_id,
     g.name,
-    g.avatar_url,
+    g.avatar_key,
     g.invite_code,
     g.bio,
     g.created_by,
@@ -48,7 +88,7 @@ WHERE g.invite_code = $1
 type GetGroupByInviteCodeRow struct {
 	ConversationID uuid.UUID
 	Name           string
-	AvatarUrl      pgtype.Text
+	AvatarKey      pgtype.Text
 	InviteCode     pgtype.Text
 	Bio            pgtype.Text
 	CreatedBy      uuid.UUID
@@ -63,7 +103,7 @@ func (q *Queries) GetGroupByInviteCode(ctx context.Context, inviteCode pgtype.Te
 	err := row.Scan(
 		&i.ConversationID,
 		&i.Name,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.InviteCode,
 		&i.Bio,
 		&i.CreatedBy,
@@ -111,7 +151,7 @@ VALUES (
 RETURNING
     conversation_id,
     name,
-    avatar_url,
+    avatar_key,
     invite_code,
     bio,
     created_by,
@@ -139,7 +179,7 @@ func (q *Queries) InsertGroup(ctx context.Context, arg InsertGroupParams) (Group
 	err := row.Scan(
 		&i.ConversationID,
 		&i.Name,
-		&i.AvatarUrl,
+		&i.AvatarKey,
 		&i.InviteCode,
 		&i.Bio,
 		&i.CreatedBy,
@@ -172,4 +212,85 @@ type InsertGroupMemberParams struct {
 func (q *Queries) InsertGroupMember(ctx context.Context, arg InsertGroupMemberParams) error {
 	_, err := q.db.Exec(ctx, insertGroupMember, arg.GroupID, arg.UserID, arg.Role)
 	return err
+}
+
+const removeGroupMember = `-- name: RemoveGroupMember :exec
+DELETE FROM group_members
+WHERE group_id = $1
+  AND user_id = $2
+`
+
+type RemoveGroupMemberParams struct {
+	GroupID uuid.UUID
+	UserID  uuid.UUID
+}
+
+func (q *Queries) RemoveGroupMember(ctx context.Context, arg RemoveGroupMemberParams) error {
+	_, err := q.db.Exec(ctx, removeGroupMember, arg.GroupID, arg.UserID)
+	return err
+}
+
+const updateGroup = `-- name: UpdateGroup :one
+UPDATE groups AS g
+SET name = $1,
+    bio = $2,
+    avatar_key = $3,
+    updated_at = NOW()
+WHERE g.conversation_id = $4
+RETURNING
+    g.conversation_id,
+    g.name,
+    g.avatar_key,
+    g.invite_code,
+    g.bio,
+    g.created_by,
+    g.created_at,
+    g.updated_at
+`
+
+type UpdateGroupParams struct {
+	Name      string
+	Bio       pgtype.Text
+	AvatarKey pgtype.Text
+	GroupID   uuid.UUID
+}
+
+func (q *Queries) UpdateGroup(ctx context.Context, arg UpdateGroupParams) (Group, error) {
+	row := q.db.QueryRow(ctx, updateGroup,
+		arg.Name,
+		arg.Bio,
+		arg.AvatarKey,
+		arg.GroupID,
+	)
+	var i Group
+	err := row.Scan(
+		&i.ConversationID,
+		&i.Name,
+		&i.AvatarKey,
+		&i.InviteCode,
+		&i.Bio,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateInviteCode = `-- name: UpdateInviteCode :one
+UPDATE groups AS g
+SET invite_code = $1
+WHERE g.conversation_id = $2
+RETURNING g.invite_code
+`
+
+type UpdateInviteCodeParams struct {
+	InviteCode pgtype.Text
+	GroupID    uuid.UUID
+}
+
+func (q *Queries) UpdateInviteCode(ctx context.Context, arg UpdateInviteCodeParams) (pgtype.Text, error) {
+	row := q.db.QueryRow(ctx, updateInviteCode, arg.InviteCode, arg.GroupID)
+	var invite_code pgtype.Text
+	err := row.Scan(&invite_code)
+	return invite_code, err
 }

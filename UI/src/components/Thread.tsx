@@ -13,6 +13,7 @@ import {
   conversationTitle,
   formatMessageTime,
   hueFromId,
+  messageText,
 } from '../lib/format'
 import type {
   Conversation,
@@ -282,7 +283,7 @@ export function Thread({
     // Close first: copying can fail (insecure origin, denied permission) and
     // the menu must not be left stuck open when it does.
     setMenu(null)
-    void copyText(message.content)
+    void copyText(messageText(message))
   }
 
   type MessageRun = {
@@ -346,7 +347,7 @@ export function Thread({
       >
         <p>
           <LinkedText
-            text={message.content}
+            text={messageText(message)}
             onInvite={onOpenInvite}
           />
           {message.edited ? (
@@ -403,14 +404,13 @@ export function Thread({
   }
 
   if (!conversation) {
-    return (<section className="thread empty-thread"> <div className="empty-card"> <span className="brand-mark lg" aria-hidden> <span /> <span /> <span /> </span>
+    return (<section className="thread empty-thread"> <div className="empty-card"> <span className="brand-mark lg" aria-hidden> <img src="/logo.png" alt="" /> </span>
 
 
       <h2>Pick a conversation</h2>
 
       <p>
-        Search a username and start a live thread. New messages
-        appear instantly.
+        Search a username and start a conversation
       </p>
     </div>
     </section>

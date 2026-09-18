@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Hossein-Fazel/Recho/internal/apperr"
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/Hossein-Fazel/Recho/internal/delivery/websocket/dto"
 	"github.com/Hossein-Fazel/Recho/internal/model"
@@ -76,61 +75,35 @@ func (c *Client) ReadPump() {
 		switch income.Type {
 		case string(model.MessageCreateEvent):
 			var msg dto.MessageCreateRequest
-			if err := json.Unmarshal(income.Payload, &msg); err != nil {
-				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", err))
-				continue
-			}
+			_ = json.Unmarshal(income.Payload, &msg)
 
-			if err := c.MessageDelivery.HandleCreateMessage(income.RequestID, model.Message{
+			c.MessageDelivery.HandleCreateMessage(income.RequestID, model.Message{
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
-				Content:        msg.Content,
-			}); err != nil {
-				if appErr, ok := err.(*apperr.AppError); ok {
-					c.Send <- makeError(*appErr)
-				} else {
-					c.Send <- makeError(*apperr.Internal("websocket", err))
-				}
-			}
+				Type:           msg.Type,
+				Text:           (*model.TextMessage)(msg.Text),
+			})
 
 		case string(model.MessageEditEvent):
 			var msg dto.MessageUpdateRequest
-			if err := json.Unmarshal(income.Payload, &msg); err != nil {
-				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", err))
-				continue
-			}
+			_ = json.Unmarshal(income.Payload, &msg)
 
-			if err := c.MessageDelivery.HandleEditMessage(income.RequestID, model.Message{
+			c.MessageDelivery.HandleEditMessage(income.RequestID, model.Message{
 				ID:             msg.MessageID,
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
-				Content:        msg.Content,
-			}); err != nil {
-				if appErr, ok := err.(*apperr.AppError); ok {
-					c.Send <- makeError(*appErr)
-				} else {
-					c.Send <- makeError(*apperr.Internal("websocket", err))
-				}
-			}
+				Type:           msg.Type,
+				Text:           (*model.TextMessage)(msg.Text),
+			})
 
 		case string(model.MessageDeleteEvent):
 			var msg dto.MessageDeleteRequest
-			if err := json.Unmarshal(income.Payload, &msg); err != nil {
-				c.Send <- makeError(*apperr.InvalidInput("websocket", "invalid message", err))
-				continue
-			}
-
-			if err := c.MessageDelivery.HandleDeleteMessage(income.RequestID, model.Message{
+			_ = json.Unmarshal(income.Payload, &msg)
+			c.MessageDelivery.HandleDeleteMessage(income.RequestID, model.Message{
 				ID:             msg.MessageID,
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
-			}); err != nil {
-				if appErr, ok := err.(*apperr.AppError); ok {
-					c.Send <- makeError(*appErr)
-				} else {
-					c.Send <- makeError(*apperr.Internal("websocket", err))
-				}
-			}
+			})
 
 		default:
 			continue
@@ -195,16 +168,4 @@ func (c *Client) WritePump() {
 			}
 		}
 	}
-}
-
-func makeError(err apperr.AppError) []byte {
-	var response dto.WSResponse
-	response.Type = "error"
-
-	response.Data = dto.ErrorResponse{
-		Code:    err.Status,
-		Message: err.Message,
-	}
-	data, _ := json.Marshal(response)
-	return data
 }
