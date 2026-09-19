@@ -222,9 +222,15 @@ The Vite development configuration proxies:
 
 This keeps API and WebSocket requests effectively same-origin from the browser's perspective during development.
 
----
-
 # Configuration
+
+Recho uses environment variables loaded from `.env`.
+
+The complete example configuration is available in:
+
+```text
+.env.example
+```
 
 ## Server & Database
 
@@ -239,73 +245,54 @@ This keeps API and WebSocket requests effectively same-origin from the browser's
 | `SERVER_PORT`          | HTTP server port              | `8000`        |
 | `SERVER_SWAGGER_ROUTE` | Swagger route prefix          | `swagger`     |
 | `SERVER_MODE`          | `development` or `production` | `development` |
-| `TOKEN_SECRET`         | JWT signing secret            | `mysecret`    |
-| `TOKEN_ISSUER`         | JWT issuer                    | `Recho`       |
-| `TOKEN_RT_TTL`         | Refresh-token TTL             | `720h`        |
-| `TOKEN_AT_TTL`         | Access-token TTL              | `1h`          |
-| `STORAGE_DRIVER`       | `local` or `s3`               | `local`       |
 
-### Local Storage
+## Authentication
 
-| Variable                  | Description                 | Default                         |
-| ------------------------- | --------------------------- | ------------------------------- |
-| `STORAGE_LOCAL_ROOT_PATH` | Upload directory            | `./uploads`                     |
-| `STORAGE_LOCAL_BASE_URL`  | Base URL for uploaded files | `http://localhost:8000/uploads` |
+| Variable       | Description        | Default    |
+| -------------- | ------------------ | ---------- |
+| `TOKEN_SECRET` | JWT signing secret | `mysecret` |
+| `TOKEN_ISSUER` | JWT issuer         | `Recho`    |
+| `TOKEN_RT_TTL` | Refresh-token TTL  | `720h`     |
+| `TOKEN_AT_TTL` | Access-token TTL   | `1h`       |
 
-### S3 / S3-Compatible Storage
+## Storage
 
-| Variable                       | Description                      | Default      |
-| ------------------------------ | -------------------------------- | ------------ |
-| `STORAGE_S3_ENDPOINT`          | Custom S3 endpoint               | Empty        |
-| `STORAGE_S3_REGION`            | Bucket region                    | `us-east-1`  |
-| `STORAGE_S3_BUCKET`            | Bucket name                      | `recho`      |
-| `STORAGE_S3_ACCESS_KEY_ID`     | Access key                       | `minioadmin` |
-| `STORAGE_S3_SECRET_ACCESS_KEY` | Secret key                       | `minioadmin` |
-| `STORAGE_S3_USE_PATH_STYLE`    | Use path-style addressing        | `true`       |
-| `STORAGE_S3_DISABLE_ACL`       | Disable public-read ACL handling | `false`      |
-| `STORAGE_S3_PUBLIC_BASE_URL`   | Public/CDN base URL              | Empty        |
-| `STORAGE_S3_PRESIGN_EXPIRY`    | Presigned URL lifetime           | `15m`        |
+Recho supports:
 
-> **Security:** The values shown above are development defaults. Replace secrets and credentials before using Recho in a non-local environment.
+```text
+local
+s3
+```
 
----
+Set the backend using:
 
-# Running with MinIO
+```env
+STORAGE_DRIVER=local
+```
 
-Recho includes a Docker Compose S3 profile for local development with MinIO.
-
-Set:
+or:
 
 ```env
 STORAGE_DRIVER=s3
 ```
 
-Then run:
+Storage has its own detailed documentation covering:
 
-```bash
-docker compose --profile s3 up --build
-```
-
-This starts:
-
-* Recho
-* PostgreSQL
+* Local filesystem configuration
+* Amazon S3
 * MinIO
-* MinIO initialization
+* S3-compatible providers
+* Object keys
+* File-size limits
+* Content-type validation
+* Public/private media
+* Presigned URLs
+* Storage architecture
+* Security considerations
 
-MinIO's web console is available at:
+See:
 
-```text
-http://localhost:9001
-```
-
-Inside the Docker network, the application should use:
-
-```env
-STORAGE_S3_ENDPOINT=http://minio:9000
-```
-
-For browser-accessible generated URLs, configure the public base URL using the host-accessible MinIO endpoint.
+**[Storage Documentation](internal/adapter/storage/README.md)**
 
 ---
 
