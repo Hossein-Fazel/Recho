@@ -3,6 +3,16 @@ import { ApiError } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
 
+function isStrongPassword(password: string): boolean {
+  return (
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^a-zA-Z\d]/.test(password)
+  )
+}
+
 export function AuthPage() {
   const { login, register } = useAuth()
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -14,8 +24,17 @@ export function AuthPage() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    setBusy(true)
     setError('')
+
+    if (mode === 'register' && !isStrongPassword(password)) {
+      setError(
+        'Password must be at least 8 characters long and include at least one uppercase letter, lowercase letter, number, and special character',
+      )
+      return
+    }
+
+    setBusy(true)
+
     try {
       if (mode === 'login') {
         await login(username.trim(), password)
@@ -44,17 +63,42 @@ export function AuthPage() {
       <div className="auth-card">
         <div className="auth-heading">
           <p className="eyebrow">Realtime messaging</p>
-          <h2>{mode === 'login' ? 'Welcome back.' : 'Join the conversation.'}</h2>
+          <h2>
+            {mode === 'login'
+              ? 'Welcome back.'
+              : 'Join the conversation.'}
+          </h2>
           <p className="auth-copy">
-            {mode === 'login' ? 'Sign in to continue your conversations.' : 'Create your account and start chatting.'}
+            {mode === 'login'
+              ? 'Sign in to continue your conversations.'
+              : 'Create your account and start chatting.'}
           </p>
         </div>
 
-        <div className="segmented" role="tablist" aria-label="Authentication mode">
-          <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setError('') }}>
+        <div
+          className="segmented"
+          role="tablist"
+          aria-label="Authentication mode"
+        >
+          <button
+            type="button"
+            className={mode === 'login' ? 'active' : ''}
+            onClick={() => {
+              setMode('login')
+              setError('')
+            }}
+          >
             Sign in
           </button>
-          <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => { setMode('register'); setError('') }}>
+
+          <button
+            type="button"
+            className={mode === 'register' ? 'active' : ''}
+            onClick={() => {
+              setMode('register')
+              setError('')
+            }}
+          >
             Create account
           </button>
         </div>
@@ -75,12 +119,15 @@ export function AuthPage() {
               required
             />
           </label>
+
           <label>
             Password
             <span className="password-wrap">
               <input
                 type={showPassword ? 'text' : 'password'}
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                autoComplete={
+                  mode === 'login' ? 'current-password' : 'new-password'
+                }
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value)
@@ -89,6 +136,7 @@ export function AuthPage() {
                 placeholder="••••••••"
                 required
               />
+
               <button
                 type="button"
                 className="password-eye"
@@ -115,7 +163,12 @@ export function AuthPage() {
           </label>
           {error ? <p className="form-error">{error}</p> : null}
           <button className="primary" type="submit" disabled={busy}>
-            {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
+            {busy
+              ? 'Please wait…'
+              : mode === 'login'
+                ? 'Sign in'
+                : 'Create account'}
+
             {!busy ? <span aria-hidden>→</span> : null}
           </button>
         </form>

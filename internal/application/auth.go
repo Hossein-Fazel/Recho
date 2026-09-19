@@ -55,6 +55,15 @@ func (s *AuthService) Register(ctx context.Context, username string, password st
 		return nil, apperr.Conflict("auth service", "username already exists", err)
 	}
 
+	isValid := pkg.ValidatePassword(password)
+	if !isValid {
+		return nil, apperr.InvalidInput(
+			"auth service",
+			"password must be at least 8 characters long and include at least one uppercase letter, lowercase letter, number, and special character",
+			nil,
+		)
+	}
+
 	hash, err := pkg.HashPassword(password)
 
 	if err != nil {
