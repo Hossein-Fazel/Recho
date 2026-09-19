@@ -9,6 +9,9 @@ Recho
 recho
 *.test
 
+# user uploads
+uploads/
+
 # Frontend
 UI/node_modules
 UI/dist
