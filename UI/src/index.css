@@ -1825,15 +1825,68 @@ textarea:focus {
 
 .info-member {
   display: flex;
+  width: 100%;
   min-width: 0;
   align-items: center;
   gap: 12px;
   padding: 7px 2px;
+  border: 0;
   border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
 
 .info-member:hover {
   background: var(--surface-2);
+}
+
+button.info-member {
+  cursor: pointer;
+}
+
+.info-profile-head {
+  padding: 10px 14px 0;
+}
+
+.info-profile-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-profile-back svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.info-profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 14px;
+}
+
+.info-profile-hero h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.info-profile-hero p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.info-profile-rows {
+  border-top: 1px solid var(--border);
 }
 
 .info-member-meta {

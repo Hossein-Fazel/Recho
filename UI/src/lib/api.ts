@@ -118,6 +118,10 @@ export const api = {
     return request<User>('/api/user/me')
   },
 
+  getUser(userId: string) {
+    return request<User>(`/api/user/${encodeURIComponent(userId)}`)
+  },
+
   updateProfile(patch: UpdateProfileInput) {
     return request<User>('/api/user/me', {
       method: 'PATCH',

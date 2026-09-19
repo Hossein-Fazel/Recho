@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Composer } from '../components/Composer'
 import { ConversationInfoPanel } from '../components/ConversationInfoPanel'
+import { UserInfoPanel } from '../components/UserInfoPanel'
 import { JoinGroupModal } from '../components/JoinGroupModal'
 import { NewGroupModal } from '../components/NewGroupModal'
 import { ProfileModal } from '../components/ProfileModal'
@@ -41,6 +42,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const [editing, setEditing] = useState<{ id: number; content: string } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
+  const [memberProfileId, setMemberProfileId] = useState<string | null>(null)
   const [newGroupOpen, setNewGroupOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(Boolean(inviteCode))
@@ -294,8 +296,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
 
         const withoutPending = incoming.request_id
           ? current.filter(
-              (message) => message.request_id !== incoming.request_id,
-            )
+            (message) => message.request_id !== incoming.request_id,
+          )
           : current
 
         return [
@@ -322,12 +324,12 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           current.map((message) =>
             message.id === edited.id
               ? {
-                  ...message,
-                  type: edited.type,
-                  text: edited.text,
-                  updated_at: edited.updated_at,
-                  edited: true,
-                }
+                ...message,
+                type: edited.type,
+                text: edited.text,
+                updated_at: edited.updated_at,
+                edited: true,
+              }
               : message,
           ),
         )
@@ -337,12 +339,12 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       setConversations((current) =>
         current.map((conversation) =>
           conversation.conversation_id === edited.conversation_id &&
-          conversation.last_message_id === edited.id
+            conversation.last_message_id === edited.id
             ? {
-                ...conversation,
-                last_message_type: edited.type,
-                last_message_text: messageText(edited),
-              }
+              ...conversation,
+              last_message_type: edited.type,
+              last_message_text: messageText(edited),
+            }
             : conversation,
         ),
       )
@@ -361,13 +363,13 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
               convs.map((conversation) =>
                 conversation.conversation_id === deleted.conversation_id
                   ? {
-                      ...conversation,
-                      last_message_id: last.id,
-                      last_message_type: last.type,
-                      last_message_text: messageText(last),
-                      last_message_created_at: last.created_at,
-                      updated_at: last.updated_at,
-                    }
+                    ...conversation,
+                    last_message_id: last.id,
+                    last_message_type: last.type,
+                    last_message_text: messageText(last),
+                    last_message_created_at: last.created_at,
+                    updated_at: last.updated_at,
+                  }
                   : conversation,
               ),
             )
@@ -407,10 +409,10 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         current.map((conversation) =>
           conversation.conversation_id === updated.group_id
             ? {
-                ...conversation,
-                group_name: updated.name,
-                group_avatar_url: updated.avatar_url,
-              }
+              ...conversation,
+              group_name: updated.name,
+              group_avatar_url: updated.avatar_url,
+            }
             : conversation,
         ),
       )
@@ -547,10 +549,10 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       current.map((conversation) =>
         conversation.conversation_id === group.id
           ? {
-              ...conversation,
-              group_name: group.name,
-              group_avatar_url: group.avatar_url,
-            }
+            ...conversation,
+            group_name: group.name,
+            group_avatar_url: group.avatar_url,
+          }
           : conversation,
       ),
     )
@@ -584,12 +586,12 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         current.map((message) =>
           message.id === editing.id
             ? {
-                ...message,
-                type: 'text',
-                text: { content },
-                updated_at: new Date().toISOString(),
-                edited: true,
-              }
+              ...message,
+              type: 'text',
+              text: { content },
+              updated_at: new Date().toISOString(),
+              edited: true,
+            }
             : message,
         ),
       )
@@ -597,12 +599,12 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       setConversations((current) =>
         current.map((conversation) =>
           conversation.conversation_id === activeId &&
-          conversation.last_message_id === editing.id
+            conversation.last_message_id === editing.id
             ? {
-                ...conversation,
-                last_message_type: 'text',
-                last_message_text: content,
-              }
+              ...conversation,
+              last_message_type: 'text',
+              last_message_text: content,
+            }
             : conversation,
         ),
       )
@@ -755,11 +757,24 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       <ConversationInfoPanel
         conversation={active}
         currentUserId={user.id}
-        open={infoOpen}
+        open={infoOpen && !memberProfileId}
         onClose={() => setInfoOpen(false)}
+        onMemberSelect={(userId) => {
+          setInfoOpen(false)
+          setMemberProfileId(userId)
+        }}
         onLeft={onConversationLeft}
         onGroupUpdated={onGroupInfoUpdated}
         refreshKey={groupInfoVersion}
+      />
+
+      <UserInfoPanel
+        userId={memberProfileId}
+        open={Boolean(memberProfileId)}
+        onClose={() => {
+          setMemberProfileId(null)
+          setInfoOpen(true)
+        }}
       />
 
       <NewGroupModal

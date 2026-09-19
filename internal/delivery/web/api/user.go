@@ -26,6 +26,7 @@ func (h *UserHandler) RegisterRoutes(g *echo.Group) {
 	g.PATCH("/me", h.UpdateProfile)
 	g.POST("/me/avatar", h.UploadAvatar)
 	g.GET("/search", h.Search)
+	g.GET("/:id", h.GetUserInfo)
 }
 
 // GetMe godoc
@@ -179,4 +180,36 @@ func (h *UserHandler) Search(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, res)
+}
+
+// GetUserInfo godoc
+// @Summary get a user info by
+// @Tags group
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID"
+// @Success 200 {object} dto.User
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/user/{id} [get]
+func (h *UserHandler) GetUserInfo(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	userID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid group id", err)
+	}
+
+	user, err := h.userService.GetProfile(c.Request().Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, user2dtoUser(user))
 }

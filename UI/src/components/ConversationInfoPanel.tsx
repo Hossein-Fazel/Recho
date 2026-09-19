@@ -21,6 +21,7 @@ type ConversationInfoPanelProps = {
   onGroupUpdated?: (group: UpdateGroupResponse) => void
   /** Bump to refetch the info, e.g. after a live group.update event. */
   refreshKey?: number
+  onMemberSelect?: (userId: string) => void
 }
 
 type GroupAction = 'leave' | 'delete' | 'rotate'
@@ -59,6 +60,7 @@ export function ConversationInfoPanel({
   onLeft,
   onGroupUpdated,
   refreshKey = 0,
+  onMemberSelect,
 }: ConversationInfoPanelProps) {
   const [info, setInfo] = useState<ConversationInfo | null>(null)
   const [loading, setLoading] = useState(false)
@@ -172,6 +174,7 @@ export function ConversationInfoPanel({
       setMembersLoading(false)
     }
   }
+
 
   async function confirmAction() {
     if (!conversationId || !pendingAction || actionBusy) return
@@ -375,31 +378,66 @@ export function ConversationInfoPanel({
                       const memberName = personName(member)
 
                       return (
-                        <li key={member.user_id} className="info-member">
-                          <Avatar
-                            id={member.user_id}
-                            name={memberName}
-                            url={member.avatar_url}
-                            size="md"
-                          />
-                          <div className="info-member-meta">
-                            <span className="info-member-name">
-                              {memberName}
-                              {isYou ? <span className="info-you">you</span> : null}
-                              {role ? (
-                                <span
-                                  className={`role-badge role-${member.role}`}
-                                >
-                                  {role}
+                        <li key={member.user_id}>
+                          {isYou ? (
+                            <div className="info-member">
+                              <Avatar
+                                id={member.user_id}
+                                name={memberName}
+                                url={member.avatar_url}
+                                size="md"
+                              />
+                              <div className="info-member-meta">
+                                <span className="info-member-name">
+                                  {memberName}
+                                  <span className="info-you">you</span>
+                                  {role ? (
+                                    <span
+                                      className={`role-badge role-${member.role}`}
+                                    >
+                                      {role}
+                                    </span>
+                                  ) : null}
                                 </span>
-                              ) : null}
-                            </span>
-                            <span className="info-member-handle">
-                              {member.username.trim()
-                                ? `@${member.username.trim()}`
-                                : EMPTY_PLACEHOLDER}
-                            </span>
-                          </div>
+                                <span className="info-member-handle">
+                                  {member.username.trim()
+                                    ? `@${member.username.trim()}`
+                                    : EMPTY_PLACEHOLDER}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="info-member"
+                              onClick={() => onMemberSelect?.(member.user_id)}
+                              aria-label={`View ${memberName}'s profile`}
+                            >
+                              <Avatar
+                                id={member.user_id}
+                                name={memberName}
+                                url={member.avatar_url}
+                                size="md"
+                              />
+                              <div className="info-member-meta">
+                                <span className="info-member-name">
+                                  {memberName}
+                                  {role ? (
+                                    <span
+                                      className={`role-badge role-${member.role}`}
+                                    >
+                                      {role}
+                                    </span>
+                                  ) : null}
+                                </span>
+                                <span className="info-member-handle">
+                                  {member.username.trim()
+                                    ? `@${member.username.trim()}`
+                                    : EMPTY_PLACEHOLDER}
+                                </span>
+                              </div>
+                            </button>
+                          )}
                         </li>
                       )
                     })}
@@ -417,6 +455,8 @@ export function ConversationInfoPanel({
                   </button>
                 ) : null}
               </section>
+
+
 
               {myRole ? (
                 <section className="info-actions">
