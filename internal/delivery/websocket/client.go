@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
@@ -25,6 +26,8 @@ type Client struct {
 	Hub    *Hub
 
 	MessageDelivery *application.MessageDelivery
+
+	closeOnce sync.Once
 }
 
 func NewClient(userID uuid.UUID, conn *websocket.Conn, hub *Hub, msgDelivery *application.MessageDelivery) *Client {
@@ -38,14 +41,25 @@ func NewClient(userID uuid.UUID, conn *websocket.Conn, hub *Hub, msgDelivery *ap
 	}
 }
 
+func (c *Client) Close() {
+	c.closeOnce.Do(func() {
+		close(c.Send)
+	})
+	_ = c.Conn.Close()
+}
+
 func (c *Client) ReadPump() {
 	defer func() {
 		pkg.Logger.Debug().
 			Str("user_id", c.UserID.String()).
 			Msg("websocket read pump stopped")
 
-		c.Hub.Unregister <- c
-		c.Conn.Close()
+		select {
+		case c.Hub.Unregister <- c:
+		case <-c.Hub.stop:
+		}
+
+		_ = c.Conn.Close()
 	}()
 
 	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -126,8 +140,6 @@ func (c *Client) WritePump() {
 	for {
 		select {
 		case message, ok := <-c.Send:
-			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			if !ok {
 				pkg.Logger.Debug().
 					Str("user_id", c.UserID.String()).
@@ -139,6 +151,8 @@ func (c *Client) WritePump() {
 				)
 				return
 			}
+
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			if err := c.Conn.WriteMessage(
 				websocket.TextMessage,
