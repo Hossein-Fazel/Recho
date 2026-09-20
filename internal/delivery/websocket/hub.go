@@ -1,11 +1,9 @@
 package websocket
 
 import (
-	"encoding/json"
+	"sync"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
-	"github.com/Hossein-Fazel/Recho/internal/delivery/websocket/dto"
-	"github.com/Hossein-Fazel/Recho/internal/model"
 	"github.com/google/uuid"
 )
 
@@ -14,6 +12,8 @@ type Hub struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Deliver    chan application.SendItem
+	stop       chan struct{}
+	stopOnce   sync.Once
 }
 
 var _ application.Sender = (*Hub)(nil)
@@ -24,6 +24,7 @@ func NewHub() *Hub {
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Deliver:    make(chan application.SendItem),
+		stop:       make(chan struct{}),
 	}
 }
 
@@ -38,12 +39,37 @@ func (h *Hub) Run() {
 
 		case deliver := <-h.Deliver:
 			response := createResponse(deliver)
-			for _, reciever := range deliver.Recievers {
-				for _, client := range h.Clients[reciever] {
-					client.Send <- response
+
+			for _, receiver := range deliver.Recievers {
+				for _, client := range h.Clients[receiver] {
+					select {
+					case client.Send <- response:
+					case <-h.stop:
+						return
+					}
 				}
 			}
+
+		case <-h.stop:
+			h.closeAllClients()
+			return
 		}
+	}
+}
+
+func (h *Hub) Stop() {
+	h.stopOnce.Do(func() {
+		close(h.stop)
+	})
+}
+
+func (h *Hub) closeAllClients() {
+	for userID, clients := range h.Clients {
+		for _, client := range clients {
+			client.Close()
+		}
+
+		delete(h.Clients, userID)
 	}
 }
 
@@ -71,83 +97,12 @@ func (h *Hub) unregisterClient(client *Client) {
 		delete(h.Clients, client.UserID)
 	}
 
-	close(client.Send)
+	client.Close()
 }
 
 func (h *Hub) Broadcast(param application.SendItem) {
-	h.Deliver <- param
-}
-
-func createResponse(v application.SendItem) []byte {
-	var response dto.WSResponse
-	response.RequestID = v.RequestID
-	response.Type = string(v.Event)
-
-	switch v.Event {
-	case model.MessageCreateEvent:
-		if msg, ok := toMessage(v.Content); ok {
-			response.Data = dto.ToMessageCreateResponse(msg)
-		}
-
-	case model.MessageEditEvent:
-		if msg, ok := toMessage(v.Content); ok {
-			response.Data = dto.ToMessageEditResponse(msg)
-		}
-
-	case model.MessageDeleteEvent:
-		if msg, ok := toMessage(v.Content); ok {
-			response.Data = dto.MessageDeleteResponse{
-				ID:             msg.ID,
-				ConversationID: msg.ConversationID,
-			}
-		}
-
-	case model.ConversationDeleteEvent:
-		if id, ok := v.Content.(uuid.UUID); ok {
-			response.Data = dto.ConversationDeleteResponse{
-				ConversationID: id,
-			}
-		}
-
-	case model.GroupUpdateEvent:
-		if group, ok := toGroup(v.Content); ok {
-			response.Data = dto.GroupUpdateResponse{
-				GroupID:   group.ID,
-				Name:      group.Name,
-				AvatarURL: group.AvatarKey,
-				Bio:       group.Bio,
-			}
-		}
-	}
-
-	res, _ := json.Marshal(response)
-	return res
-}
-
-func toGroup(content any) (model.Group, bool) {
-	switch group := content.(type) {
-	case model.Group:
-		return group, true
-	case *model.Group:
-		if group == nil {
-			return model.Group{}, false
-		}
-		return *group, true
-	default:
-		return model.Group{}, false
-	}
-}
-
-func toMessage(content any) (model.Message, bool) {
-	switch msg := content.(type) {
-	case model.Message:
-		return msg, true
-	case *model.Message:
-		if msg == nil {
-			return model.Message{}, false
-		}
-		return *msg, true
-	default:
-		return model.Message{}, false
+	select {
+	case h.Deliver <- param:
+	case <-h.stop:
 	}
 }
