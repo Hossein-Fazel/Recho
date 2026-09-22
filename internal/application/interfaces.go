@@ -114,3 +114,16 @@ type Storage interface {
 	GetPresignedURL(ctx context.Context, key string) (string, error)
 	Exists(ctx context.Context, key string) (bool, error)
 }
+
+// Presence Repo
+
+type PresenceRepository interface {
+	Subscribe(subscriberID, targetUserID uuid.UUID) bool
+	Unsubscribe(subscriberID, targetUserID uuid.UUID)
+	RemoveSubscriber(subscriberID uuid.UUID)
+
+	SetOnline(userID uuid.UUID)
+	SetOffline(userID uuid.UUID)
+
+	GetSubscribers(userID uuid.UUID) uuid.UUIDs
+}

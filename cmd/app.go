@@ -75,6 +75,19 @@ func Run() {
 
 	hub := websocket.NewHub(ctx, sender.Channel())
 	go hub.Run()
+	
+	// -------------------------------------------------------------------------
+	// Storage
+	// -------------------------------------------------------------------------
+	
+	pkg.Logger.Info().Msg("Initializing storage")
+	
+	store, err := storage.New(ctx, conf.Storage)
+	if err != nil {
+		pkg.Logger.Fatal().
+		AnErr("error", err).
+		Msg("error in creating storage")
+	}
 
 	// -------------------------------------------------------------------------
 	// Services
@@ -84,19 +97,6 @@ func Run() {
 
 	accessToken := token.NewJWTService(conf.Token)
 	refreshToken := token.NewRefreshTokenService(conf.Token)
-
-	// -------------------------------------------------------------------------
-	// Storage
-	// -------------------------------------------------------------------------
-
-	pkg.Logger.Info().Msg("Initializing storage")
-
-	store, err := storage.New(ctx, conf.Storage)
-	if err != nil {
-		pkg.Logger.Fatal().
-			AnErr("error", err).
-			Msg("error in creating storage")
-	}
 
 	storageService := application.NewStorageService(store)
 
