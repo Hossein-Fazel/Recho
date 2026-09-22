@@ -26,6 +26,7 @@ type UserRepo interface {
 	Update(ctx context.Context, params UpdateUserParams) (*model.User, error)
 	Exists(ctx context.Context, username string) (bool, error)
 	Search(ctx context.Context, username string) ([]*model.UserSearch, error)
+	UpdateLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error)
 }
 
 type RefreshTokenRepo interface {

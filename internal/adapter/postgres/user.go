@@ -3,6 +3,7 @@ package postgres_repo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -96,7 +97,7 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 		DisplayName: user.DisplayName.String,
 		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
-		LastSeen: 	 user.LastSeen.Time,
+		LastSeen:    user.LastSeen.Time,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}, nil
@@ -128,7 +129,7 @@ func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 		DisplayName: user.DisplayName.String,
 		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
-		LastSeen: 	 user.LastSeen.Time,
+		LastSeen:    user.LastSeen.Time,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}, nil
@@ -175,7 +176,7 @@ func (u *User) Update(ctx context.Context, params application.UpdateUserParams) 
 		DisplayName: user.DisplayName.String,
 		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
-		LastSeen: 	 user.LastSeen.Time,
+		LastSeen:    user.LastSeen.Time,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}, nil
@@ -218,4 +219,17 @@ func (u *User) Search(ctx context.Context, username string) ([]*model.UserSearch
 		res = append(res, pgUserSearch2modeUserSearch(user))
 	}
 	return res, nil
+}
+
+func (r *User) UpdateLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error) {
+	lastSeen, err := r.sql.UpdateLastSeen(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return time.Time{}, apperr.NotFound("user repo", "user not found", nil)
+		}
+
+		return time.Time{}, err
+	}
+
+	return lastSeen.Time, nil
 }

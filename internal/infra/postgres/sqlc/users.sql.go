@@ -204,6 +204,20 @@ func (q *Queries) SearchUsers(ctx context.Context, query pgtype.Text) ([]SearchU
 	return items, nil
 }
 
+const updateLastSeen = `-- name: UpdateLastSeen :one
+UPDATE users
+SET last_seen = NOW()
+WHERE id = $1
+RETURNING last_seen
+`
+
+func (q *Queries) UpdateLastSeen(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, updateLastSeen, id)
+	var last_seen pgtype.Timestamptz
+	err := row.Scan(&last_seen)
+	return last_seen, err
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET

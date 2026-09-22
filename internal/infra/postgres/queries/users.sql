@@ -91,3 +91,9 @@ FROM users
 WHERE username LIKE '%' || sqlc.arg(query) || '%'
 ORDER BY username
 LIMIT 20;
+
+-- name: UpdateLastSeen :one
+UPDATE users
+SET last_seen = NOW()
+WHERE id = $1
+RETURNING last_seen;
