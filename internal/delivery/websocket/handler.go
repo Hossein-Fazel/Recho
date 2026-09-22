@@ -55,7 +55,7 @@ func (h *WSHandler) Handler(c echo.Context) error {
 	)
 
 	select {
-	case h.hub.Register <- client:
+	case h.hub.ClientRegisterChannel() <- client:
 	case <-h.hub.ctx.Done():
 		_ = conn.Close()
 		return nil

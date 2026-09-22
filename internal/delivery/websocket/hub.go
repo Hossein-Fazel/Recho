@@ -8,10 +8,10 @@ import (
 )
 
 type Hub struct {
-	Clients    map[uuid.UUID][]*Client
-	Register   chan *Client
-	Unregister chan *Client
-	Deliver    <-chan application.SendItem
+	clients    map[uuid.UUID][]*Client
+	register   chan *Client
+	unregister chan *Client
+	deliver    <-chan application.SendItem
 
 	ctx  context.Context
 	done chan struct{}
@@ -19,13 +19,21 @@ type Hub struct {
 
 func NewHub(ctx context.Context, deliver <-chan application.SendItem) *Hub {
 	return &Hub{
-		Clients:    make(map[uuid.UUID][]*Client),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Deliver:    deliver,
+		clients:    make(map[uuid.UUID][]*Client),
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
+		deliver:    deliver,
 		ctx:        ctx,
 		done:       make(chan struct{}),
 	}
+}
+
+func (h *Hub) ClientRegisterChannel() chan<- *Client {
+	return h.register
+}
+
+func (h *Hub) ClientUnregisterChannel() chan<- *Client {
+	return h.unregister
 }
 
 func (h *Hub) Run() {
@@ -33,13 +41,13 @@ func (h *Hub) Run() {
 
 	for {
 		select {
-		case client := <-h.Register:
+		case client := <-h.register:
 			h.registerClient(client)
 
-		case client := <-h.Unregister:
+		case client := <-h.unregister:
 			h.unregisterClient(client)
 
-		case deliver := <-h.Deliver:
+		case deliver := <-h.deliver:
 			if stopped := h.broadcast(deliver); stopped {
 				h.closeAllClients()
 				return
@@ -65,7 +73,7 @@ func (h *Hub) broadcast(deliver application.SendItem) (stopped bool) {
 	response := createResponse(deliver)
 
 	for _, receiver := range deliver.Recievers {
-		for _, client := range h.Clients[receiver] {
+		for _, client := range h.clients[receiver] {
 			select {
 			case client.Send <- response:
 			case <-h.ctx.Done():
@@ -78,28 +86,28 @@ func (h *Hub) broadcast(deliver application.SendItem) (stopped bool) {
 }
 
 func (h *Hub) closeAllClients() {
-	for userID, clients := range h.Clients {
+	for userID, clients := range h.clients {
 		for _, client := range clients {
 			client.Close()
 		}
 
-		delete(h.Clients, userID)
+		delete(h.clients, userID)
 	}
 }
 
 func (h *Hub) registerClient(client *Client) {
-	h.Clients[client.UserID] = append(
-		h.Clients[client.UserID],
+	h.clients[client.UserID] = append(
+		h.clients[client.UserID],
 		client,
 	)
 }
 
 func (h *Hub) unregisterClient(client *Client) {
-	clients := h.Clients[client.UserID]
+	clients := h.clients[client.UserID]
 
 	for i, c := range clients {
 		if c == client {
-			h.Clients[client.UserID] = append(
+			h.clients[client.UserID] = append(
 				clients[:i],
 				clients[i+1:]...,
 			)
@@ -107,8 +115,8 @@ func (h *Hub) unregisterClient(client *Client) {
 		}
 	}
 
-	if len(h.Clients[client.UserID]) == 0 {
-		delete(h.Clients, client.UserID)
+	if len(h.clients[client.UserID]) == 0 {
+		delete(h.clients, client.UserID)
 	}
 
 	client.Close()
