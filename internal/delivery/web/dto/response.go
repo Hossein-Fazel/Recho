@@ -28,6 +28,7 @@ type User struct {
 	DisplayName string    `json:"display_name"`
 	AvatarURL   string    `json:"avatar_url"`
 	Bio         string    `json:"bio"`
+	LastSeen    time.Time `json:"last_seen"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

@@ -75,6 +75,7 @@ func user2dtoUser(user *model.User) *dto.User {
 		DisplayName: user.DisplayName,
 		AvatarURL:   user.AvatarKey,
 		Bio:         user.Bio,
+		LastSeen: 	 user.LastSeen,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}

@@ -13,6 +13,7 @@ type User struct {
 	DisplayName string
 	AvatarKey   string
 	Bio         string
+	LastSeen    time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

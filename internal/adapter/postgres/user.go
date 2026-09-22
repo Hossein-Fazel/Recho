@@ -96,6 +96,7 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 		DisplayName: user.DisplayName.String,
 		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
+		LastSeen: 	 user.LastSeen.Time,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}, nil
@@ -127,6 +128,7 @@ func (u *User) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 		DisplayName: user.DisplayName.String,
 		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
+		LastSeen: 	 user.LastSeen.Time,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}, nil
@@ -173,6 +175,7 @@ func (u *User) Update(ctx context.Context, params application.UpdateUserParams) 
 		DisplayName: user.DisplayName.String,
 		AvatarKey:   user.AvatarKey.String,
 		Bio:         user.Bio.String,
+		LastSeen: 	 user.LastSeen.Time,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}, nil

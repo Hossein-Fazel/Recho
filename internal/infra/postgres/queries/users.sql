@@ -1,11 +1,13 @@
 -- name: CreateUser :one
 INSERT INTO users (
     username,
-    password_hash
+    password_hash,
+    last_seen
 )
 VALUES (
     $1,
-    $2
+    $2,
+    NOW()
 )
 RETURNING
     id,
@@ -14,6 +16,7 @@ RETURNING
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at;
 
@@ -26,6 +29,7 @@ SELECT
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at
 FROM users
@@ -41,6 +45,7 @@ SELECT
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at
 FROM users
@@ -64,6 +69,7 @@ RETURNING
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at;
 
