@@ -20,7 +20,7 @@ type PresenceRepo struct {
 	online map[uuid.UUID]struct{}
 }
 
-var _ application.PresenceRepository = (*PresenceRepo)(nil)
+var _ application.PresenceRepo = (*PresenceRepo)(nil)
 
 func NewPresenceRepo() *PresenceRepo {
 	return &PresenceRepo{
@@ -33,10 +33,6 @@ func NewPresenceRepo() *PresenceRepo {
 func (p *PresenceRepo) Subscribe(subscriberID, targetUserID uuid.UUID) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
-	if subscriberID == targetUserID {
-		return false
-	}
 
 	if p.watchers[targetUserID] == nil {
 		p.watchers[targetUserID] = make(map[uuid.UUID]struct{})

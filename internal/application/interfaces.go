@@ -74,6 +74,17 @@ type MessaageRepo interface {
 	Delete(ctx context.Context, msg model.Message) error
 }
 
+type PresenceRepo interface {
+	Subscribe(subscriberID, targetUserID uuid.UUID) bool
+	Unsubscribe(subscriberID, targetUserID uuid.UUID)
+	RemoveSubscriber(subscriberID uuid.UUID)
+
+	SetOnline(userID uuid.UUID)
+	SetOffline(userID uuid.UUID)
+
+	GetSubscribers(userID uuid.UUID) uuid.UUIDs
+}
+
 // Sender
 
 type SendItem struct {
@@ -114,17 +125,4 @@ type Storage interface {
 	GetURL(ctx context.Context, key string) (string, error)
 	GetPresignedURL(ctx context.Context, key string) (string, error)
 	Exists(ctx context.Context, key string) (bool, error)
-}
-
-// Presence Repo
-
-type PresenceRepository interface {
-	Subscribe(subscriberID, targetUserID uuid.UUID) bool
-	Unsubscribe(subscriberID, targetUserID uuid.UUID)
-	RemoveSubscriber(subscriberID uuid.UUID)
-
-	SetOnline(userID uuid.UUID)
-	SetOffline(userID uuid.UUID)
-
-	GetSubscribers(userID uuid.UUID) uuid.UUIDs
 }

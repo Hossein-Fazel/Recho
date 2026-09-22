@@ -24,3 +24,8 @@ type UserSearch struct {
 	DisplayName string
 	AvatarKey   string
 }
+
+type UserStatus struct {
+	ID     uuid.UUID
+	Online bool
+}
