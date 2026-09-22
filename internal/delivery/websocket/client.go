@@ -56,7 +56,7 @@ func (c *Client) ReadPump() {
 
 		select {
 		case c.Hub.Unregister <- c:
-		case <-c.Hub.stop:
+		case <-c.Hub.ctx.Done():
 		}
 
 		_ = c.Conn.Close()

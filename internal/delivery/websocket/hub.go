@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	"sync"
+	"context"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
 	"github.com/google/uuid"
@@ -11,24 +11,26 @@ type Hub struct {
 	Clients    map[uuid.UUID][]*Client
 	Register   chan *Client
 	Unregister chan *Client
-	Deliver    chan application.SendItem
-	stop       chan struct{}
-	stopOnce   sync.Once
+	Deliver    <-chan application.SendItem
+
+	ctx  context.Context
+	done chan struct{}
 }
 
-var _ application.Sender = (*Hub)(nil)
-
-func NewHub() *Hub {
+func NewHub(ctx context.Context, deliver <-chan application.SendItem) *Hub {
 	return &Hub{
 		Clients:    make(map[uuid.UUID][]*Client),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
-		Deliver:    make(chan application.SendItem),
-		stop:       make(chan struct{}),
+		Deliver:    deliver,
+		ctx:        ctx,
+		done:       make(chan struct{}),
 	}
 }
 
 func (h *Hub) Run() {
+	defer close(h.done)
+
 	for {
 		select {
 		case client := <-h.Register:
@@ -38,29 +40,41 @@ func (h *Hub) Run() {
 			h.unregisterClient(client)
 
 		case deliver := <-h.Deliver:
-			response := createResponse(deliver)
-
-			for _, receiver := range deliver.Recievers {
-				for _, client := range h.Clients[receiver] {
-					select {
-					case client.Send <- response:
-					case <-h.stop:
-						return
-					}
-				}
+			if stopped := h.broadcast(deliver); stopped {
+				h.closeAllClients()
+				return
 			}
 
-		case <-h.stop:
+		case <-h.ctx.Done():
 			h.closeAllClients()
 			return
 		}
 	}
 }
 
-func (h *Hub) Stop() {
-	h.stopOnce.Do(func() {
-		close(h.stop)
-	})
+func (h *Hub) Shutdown(ctx context.Context) error {
+	select {
+	case <-h.done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (h *Hub) broadcast(deliver application.SendItem) (stopped bool) {
+	response := createResponse(deliver)
+
+	for _, receiver := range deliver.Recievers {
+		for _, client := range h.Clients[receiver] {
+			select {
+			case client.Send <- response:
+			case <-h.ctx.Done():
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (h *Hub) closeAllClients() {
@@ -98,11 +112,4 @@ func (h *Hub) unregisterClient(client *Client) {
 	}
 
 	client.Close()
-}
-
-func (h *Hub) Broadcast(param application.SendItem) {
-	select {
-	case h.Deliver <- param:
-	case <-h.stop:
-	}
 }

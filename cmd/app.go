@@ -71,7 +71,9 @@ func Run() {
 
 	pkg.Logger.Info().Msg("Initializing websocket")
 
-	hub := websocket.NewHub()
+	sender := websocket.NewSender(ctx)
+
+	hub := websocket.NewHub(ctx, sender.Channel())
 	go hub.Run()
 
 	// -------------------------------------------------------------------------
@@ -119,7 +121,7 @@ func Run() {
 		groupRepo,
 		convRepo,
 		storageService,
-		hub,
+		sender,
 	)
 
 	msgService := application.NewMessageService(
@@ -130,7 +132,7 @@ func Run() {
 	msgDelivery := application.NewMessageDelivery(
 		msgService,
 		convService,
-		hub,
+		sender,
 	)
 
 	ws := websocket.NewWSHandler(hub, msgDelivery)
@@ -195,7 +197,11 @@ func Run() {
 
 	pkg.Logger.Info().Msg("Shutting down websocket hub")
 
-	hub.Stop()
+	if err := hub.Shutdown(shutdownCtx); err != nil {
+		pkg.Logger.Error().
+			AnErr("error", err).
+			Msg("error shutting down websocket hub")
+	}
 
 	pkg.Logger.Info().Msg("Closing storage")
 

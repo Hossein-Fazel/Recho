@@ -54,7 +54,13 @@ func (h *WSHandler) Handler(c echo.Context) error {
 		h.MessageDelivery,
 	)
 
-	h.hub.Register <- client
+	select {
+	case h.hub.Register <- client:
+	case <-h.hub.ctx.Done():
+		_ = conn.Close()
+		return nil
+	}
+
 	go client.WritePump()
 	go client.ReadPump()
 
