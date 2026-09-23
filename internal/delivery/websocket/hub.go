@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
 )
 
@@ -103,7 +104,21 @@ func (h *Hub) registerClient(client *Client) {
 		h.clients[client.UserID],
 		client,
 	)
-	h.presenceServie.Online(client.UserID)
+
+	if len(h.clients[client.UserID]) == 1 {
+		item, err := h.presenceServie.Online(client.UserID)
+		if err != nil {
+			pkg.Logger.Warn().
+				Str("user_id", client.UserID.String()).
+				Err(err).
+				Msg("presence: failed to mark user online")
+			return
+		}
+
+		if item != nil {
+			h.broadcast(*item)
+		}
+	}
 }
 
 func (h *Hub) unregisterClient(client *Client) {
@@ -121,7 +136,16 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	if len(h.clients[client.UserID]) == 0 {
 		delete(h.clients, client.UserID)
-		h.presenceServie.Offline(client.UserID)
+
+		item, err := h.presenceServie.Offline(client.UserID)
+		if err != nil {
+			pkg.Logger.Warn().
+				Str("user_id", client.UserID.String()).
+				Err(err).
+				Msg("presence: failed to mark user offline")
+		} else if item != nil {
+			h.broadcast(*item)
+		}
 	}
 
 	client.Close()

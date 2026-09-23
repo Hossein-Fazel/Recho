@@ -25,12 +25,7 @@ type UserSearch struct {
 	AvatarKey   string
 }
 
-type UserStatus struct {
-	ID     uuid.UUID
-	Online bool
-}
-
-type PresenceUpdate struct {
+type UserPresence struct {
 	UserID   uuid.UUID
 	Online   bool
 	LastSeen *time.Time

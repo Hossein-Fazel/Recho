@@ -74,7 +74,7 @@ func (h *PresenceHandler) GetPresence(c echo.Context) error {
 
 	for _, status := range statuses {
 		response = append(response, dto.Presence{
-			UserID: status.ID,
+			UserID: status.UserID,
 			Online: status.Online,
 		})
 	}

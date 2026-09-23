@@ -12,12 +12,6 @@ type WSResponse struct {
 	RequestID uuid.UUID `json:"request_id"`
 	Data      any       `json:"data"`
 }
-
-type PresenceUpdateResponse struct {
-	UserID   uuid.UUID  `json:"user_id"`
-	Online   bool       `json:"online"`
-	LastSeen *time.Time `json:"last_seen,omitempty"`
-}
 type MessageCreateResponse struct {
 	ID             int64             `json:"id"`
 	ConversationID uuid.UUID         `json:"conversation_id"`
@@ -88,6 +82,20 @@ type GroupUpdateResponse struct {
 	Name      string    `json:"name"`
 	AvatarURL string    `json:"avatar_url"`
 	Bio       string    `json:"bio"`
+}
+
+type PresenceUpdateResponse struct {
+	UserID   uuid.UUID  `json:"user_id"`
+	Online   bool       `json:"online"`
+	LastSeen *time.Time `json:"last_seen,omitempty"`
+}
+
+func ToPresenceUpdateResponse(p model.UserPresence) PresenceUpdateResponse {
+	return PresenceUpdateResponse{
+		UserID:   p.UserID,
+		Online:   p.Online,
+		LastSeen: p.LastSeen,
+	}
 }
 
 type TextMessage struct {

@@ -12,67 +12,67 @@ import (
 type PresenceService struct {
 	presenceRepo PresenceRepo
 	userRepo     UserRepo
-	sender       Sender
 }
 
-func NewPresenceService(presenceRepo PresenceRepo, userRepo UserRepo, sender Sender) *PresenceService {
+func NewPresenceService(presenceRepo PresenceRepo, userRepo UserRepo) *PresenceService {
 	pkg.Logger.Info().Msg("Initializing presence service")
 
 	return &PresenceService{
 		presenceRepo: presenceRepo,
 		userRepo:     userRepo,
-		sender:       sender,
 	}
 }
 
-func (p *PresenceService) Online(userID uuid.UUID) error {
+func (p *PresenceService) Online(userID uuid.UUID) (*SendItem, error) {
 	if userID == uuid.Nil {
-		return apperr.InvalidInput("presence service", "invalid user id", nil)
+		return nil, apperr.InvalidInput("presence service", "invalid user id", nil)
 	}
 	p.presenceRepo.SetOnline(userID)
+
 	subscribers := p.presenceRepo.GetSubscribers(userID)
-	if len(subscribers) > 0 {
-		p.sender.Broadcast(SendItem{
-			RequestID: uuid.New(),
-			Event:     model.UserOnline,
-			Content: model.PresenceUpdate{
-				UserID: userID,
-				Online: true,
-			},
-			Recievers: subscribers,
-		})
+	if len(subscribers) == 0 {
+		return nil, nil
 	}
 
-	return nil
+	return &SendItem{
+		RequestID: uuid.New(),
+		Event:     model.UserOnline,
+		Content: model.UserPresence{
+			UserID: userID,
+			Online: true,
+		},
+		Recievers: subscribers,
+	}, nil
 }
 
-func (p *PresenceService) Offline(userID uuid.UUID) error {
+func (p *PresenceService) Offline(userID uuid.UUID) (*SendItem, error) {
 	if userID == uuid.Nil {
-		return apperr.InvalidInput("presence service", "invalid user id", nil)
+		return nil, apperr.InvalidInput("presence service", "invalid user id", nil)
 	}
 	p.presenceRepo.SetOffline(userID)
 
 	lastSeen, err := p.userRepo.UpdateLastSeen(context.Background(), userID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	subscribers := p.presenceRepo.GetSubscribers(userID)
-	if len(subscribers) > 0 {
-		p.sender.Broadcast(SendItem{
-			RequestID: uuid.New(),
-			Event:     model.UserOffline,
-			Content: model.PresenceUpdate{
-				UserID:   userID,
-				Online:   false,
-				LastSeen: &lastSeen,
-			},
-			Recievers: subscribers,
-		})
-	}
 	p.presenceRepo.RemoveSubscriber(userID)
 
-	return nil
+	if len(subscribers) == 0 {
+		return nil, nil
+	}
+
+	return &SendItem{
+		RequestID: uuid.New(),
+		Event:     model.UserOffline,
+		Content: model.UserPresence{
+			UserID:   userID,
+			Online:   false,
+			LastSeen: &lastSeen,
+		},
+		Recievers: subscribers,
+	}, nil
 }
 
 func (p *PresenceService) Subscribe(subscriberID uuid.UUID, targetUserIDs uuid.UUIDs) error {
@@ -106,15 +106,15 @@ func (p *PresenceService) Unsubscribe(subscriberID uuid.UUID, targetUserIDs uuid
 	return nil
 }
 
-func (p *PresenceService) GetStatuses(targetUserIDs uuid.UUIDs) ([]model.UserStatus, error) {
+func (p *PresenceService) GetStatuses(targetUserIDs uuid.UUIDs) ([]model.UserPresence, error) {
 	if len(targetUserIDs) == 0 {
-		return []model.UserStatus{}, apperr.InvalidInput("presence service", "user ids required", nil)
+		return []model.UserPresence{}, apperr.InvalidInput("presence service", "user ids required", nil)
 	}
-	statuses := make([]model.UserStatus, 0, len(targetUserIDs))
+	statuses := make([]model.UserPresence, 0, len(targetUserIDs))
 
 	for _, target := range targetUserIDs {
-		statuses = append(statuses, model.UserStatus{
-			ID:     target,
+		statuses = append(statuses, model.UserPresence{
+			UserID: target,
 			Online: p.presenceRepo.IsOnline(target),
 		})
 	}
