@@ -40,6 +40,7 @@ type Conversation struct {
 	Username             string            `json:"username"`
 	DisplayName          string            `json:"display_name"`
 	AvatarUrl            string            `json:"avatar_url"`
+	LastSeen             time.Time         `json:"last_seen"`
 	GroupName            string            `json:"group_name"`
 	GroupAvatarUrl       string            `json:"group_avatar_url"`
 	LastMessageID        int64             `json:"last_message_id"`
