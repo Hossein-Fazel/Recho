@@ -26,6 +26,7 @@ type UserRepo interface {
 	Update(ctx context.Context, params UpdateUserParams) (*model.User, error)
 	Exists(ctx context.Context, username string) (bool, error)
 	Search(ctx context.Context, username string) ([]*model.UserSearch, error)
+	UpdateLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error)
 }
 
 type RefreshTokenRepo interface {
@@ -71,6 +72,18 @@ type MessaageRepo interface {
 	Create(ctx context.Context, msg model.Message) (*model.Message, error)
 	Update(ctx context.Context, msg model.Message) (*model.Message, error)
 	Delete(ctx context.Context, msg model.Message) error
+}
+
+type PresenceRepo interface {
+	Subscribe(subscriberID, targetUserID uuid.UUID)
+	Unsubscribe(subscriberID, targetUserID uuid.UUID)
+	RemoveSubscriber(subscriberID uuid.UUID)
+
+	SetOnline(userID uuid.UUID)
+	SetOffline(userID uuid.UUID)
+	IsOnline(userID uuid.UUID) bool
+
+	GetSubscribers(userID uuid.UUID) uuid.UUIDs
 }
 
 // Sender

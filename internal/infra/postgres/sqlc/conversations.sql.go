@@ -84,6 +84,7 @@ SELECT
     u.username,
     u.display_name,
     u.avatar_key,
+    u.last_seen,
 
     -- group
     g.name AS group_name,
@@ -136,6 +137,7 @@ type GetConversationByIDRow struct {
 	Username             pgtype.Text
 	DisplayName          pgtype.Text
 	AvatarKey            pgtype.Text
+	LastSeen             pgtype.Timestamptz
 	GroupName            pgtype.Text
 	GroupAvatarKey       pgtype.Text
 	LastMessageID        pgtype.Int8
@@ -155,6 +157,7 @@ func (q *Queries) GetConversationByID(ctx context.Context, arg GetConversationBy
 		&i.Username,
 		&i.DisplayName,
 		&i.AvatarKey,
+		&i.LastSeen,
 		&i.GroupName,
 		&i.GroupAvatarKey,
 		&i.LastMessageID,

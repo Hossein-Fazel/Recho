@@ -12,6 +12,7 @@ import { copyText } from '../lib/clipboard'
 import {
   conversationTitle,
   formatMessageTime,
+  formatLastSeen,
   hueFromId,
   messageText,
 } from '../lib/format'
@@ -37,6 +38,7 @@ type ThreadProps = {
   onOpenInfo: () => void
   /** Opens the join flow for an invite link tapped inside a message. */
   onOpenInvite: (code: string) => void
+  isPeerOnline: boolean
 }
 
 type MenuState = {
@@ -68,6 +70,7 @@ export function Thread({
   onDelete,
   onOpenInfo,
   onOpenInvite,
+  isPeerOnline,
 }: ThreadProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -453,11 +456,14 @@ export function Thread({
       <div className="thread-title">
         <h2>{title}</h2>
 
-        <p className="eyebrow">
+        <p className={`thread-presence ${isPeerOnline ? 'online' : ''}`}>
           {conversation.conversation_type === 'group'
             ? 'Group'
-            : 'Direct'}{' '}
-          · live
+            : isPeerOnline
+              ? 'online'
+              : conversation.last_seen
+                ? `last seen ${formatLastSeen(conversation.last_seen)}`
+                : 'offline'}
         </p>
       </div>
     </button>

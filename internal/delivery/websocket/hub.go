@@ -1,91 +1,132 @@
 package websocket
 
 import (
-	"sync"
+	"context"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
 )
 
 type Hub struct {
-	Clients    map[uuid.UUID][]*Client
-	Register   chan *Client
-	Unregister chan *Client
-	Deliver    chan application.SendItem
-	stop       chan struct{}
-	stopOnce   sync.Once
+	clients    map[uuid.UUID][]*Client
+	register   chan *Client
+	unregister chan *Client
+	deliver    <-chan application.SendItem
+
+	presenceServie *application.PresenceService
+
+	ctx  context.Context
+	done chan struct{}
 }
 
-var _ application.Sender = (*Hub)(nil)
-
-func NewHub() *Hub {
+func NewHub(ctx context.Context, deliver <-chan application.SendItem, presenceServie *application.PresenceService) *Hub {
 	return &Hub{
-		Clients:    make(map[uuid.UUID][]*Client),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Deliver:    make(chan application.SendItem),
-		stop:       make(chan struct{}),
+		clients:        make(map[uuid.UUID][]*Client),
+		register:       make(chan *Client),
+		unregister:     make(chan *Client),
+		deliver:        deliver,
+		presenceServie: presenceServie,
+		ctx:            ctx,
+		done:           make(chan struct{}),
 	}
 }
 
+func (h *Hub) ClientRegisterChannel() chan<- *Client {
+	return h.register
+}
+
+func (h *Hub) ClientUnregisterChannel() chan<- *Client {
+	return h.unregister
+}
+
 func (h *Hub) Run() {
+	defer close(h.done)
+
 	for {
 		select {
-		case client := <-h.Register:
+		case client := <-h.register:
 			h.registerClient(client)
 
-		case client := <-h.Unregister:
+		case client := <-h.unregister:
 			h.unregisterClient(client)
 
-		case deliver := <-h.Deliver:
-			response := createResponse(deliver)
-
-			for _, receiver := range deliver.Recievers {
-				for _, client := range h.Clients[receiver] {
-					select {
-					case client.Send <- response:
-					case <-h.stop:
-						return
-					}
-				}
+		case deliver := <-h.deliver:
+			if stopped := h.broadcast(deliver); stopped {
+				h.closeAllClients()
+				return
 			}
 
-		case <-h.stop:
+		case <-h.ctx.Done():
 			h.closeAllClients()
 			return
 		}
 	}
 }
 
-func (h *Hub) Stop() {
-	h.stopOnce.Do(func() {
-		close(h.stop)
-	})
+func (h *Hub) Shutdown(ctx context.Context) error {
+	select {
+	case <-h.done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (h *Hub) broadcast(deliver application.SendItem) (stopped bool) {
+	response := createResponse(deliver)
+
+	for _, receiver := range deliver.Recievers {
+		for _, client := range h.clients[receiver] {
+			select {
+			case client.Send <- response:
+			case <-h.ctx.Done():
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (h *Hub) closeAllClients() {
-	for userID, clients := range h.Clients {
+	for userID, clients := range h.clients {
 		for _, client := range clients {
 			client.Close()
 		}
 
-		delete(h.Clients, userID)
+		delete(h.clients, userID)
 	}
 }
 
 func (h *Hub) registerClient(client *Client) {
-	h.Clients[client.UserID] = append(
-		h.Clients[client.UserID],
+	h.clients[client.UserID] = append(
+		h.clients[client.UserID],
 		client,
 	)
+
+	if len(h.clients[client.UserID]) == 1 {
+		item, err := h.presenceServie.Online(client.UserID)
+		if err != nil {
+			pkg.Logger.Warn().
+				Str("user_id", client.UserID.String()).
+				Err(err).
+				Msg("presence: failed to mark user online")
+			return
+		}
+
+		if item != nil {
+			h.broadcast(*item)
+		}
+	}
 }
 
 func (h *Hub) unregisterClient(client *Client) {
-	clients := h.Clients[client.UserID]
+	clients := h.clients[client.UserID]
 
 	for i, c := range clients {
 		if c == client {
-			h.Clients[client.UserID] = append(
+			h.clients[client.UserID] = append(
 				clients[:i],
 				clients[i+1:]...,
 			)
@@ -93,16 +134,19 @@ func (h *Hub) unregisterClient(client *Client) {
 		}
 	}
 
-	if len(h.Clients[client.UserID]) == 0 {
-		delete(h.Clients, client.UserID)
+	if len(h.clients[client.UserID]) == 0 {
+		delete(h.clients, client.UserID)
+
+		item, err := h.presenceServie.Offline(client.UserID)
+		if err != nil {
+			pkg.Logger.Warn().
+				Str("user_id", client.UserID.String()).
+				Err(err).
+				Msg("presence: failed to mark user offline")
+		} else if item != nil {
+			h.broadcast(*item)
+		}
 	}
 
 	client.Close()
-}
-
-func (h *Hub) Broadcast(param application.SendItem) {
-	select {
-	case h.Deliver <- param:
-	case <-h.stop:
-	}
 }

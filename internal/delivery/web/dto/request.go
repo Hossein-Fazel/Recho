@@ -39,3 +39,11 @@ type UpdateGroupRequest struct {
 type JoinGroupRequest struct {
 	InviteCode string `json:"invite_code"`
 }
+
+type SubscribePresenceRequest struct {
+	UserIDs []uuid.UUID `json:"user_ids"`
+}
+
+type UnsubscribePresenceRequest struct {
+	UserIDs []uuid.UUID `json:"user_ids"`
+}

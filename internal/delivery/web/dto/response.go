@@ -28,6 +28,7 @@ type User struct {
 	DisplayName string    `json:"display_name"`
 	AvatarURL   string    `json:"avatar_url"`
 	Bio         string    `json:"bio"`
+	LastSeen    time.Time `json:"last_seen"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -39,6 +40,7 @@ type Conversation struct {
 	Username             string            `json:"username"`
 	DisplayName          string            `json:"display_name"`
 	AvatarUrl            string            `json:"avatar_url"`
+	LastSeen             time.Time         `json:"last_seen"`
 	GroupName            string            `json:"group_name"`
 	GroupAvatarUrl       string            `json:"group_avatar_url"`
 	LastMessageID        int64             `json:"last_message_id"`
@@ -155,4 +157,13 @@ type GroupMember struct {
 
 type RotateInviteCodeResponse struct {
 	NewInviteCode string `json:"new_invite_code"`
+}
+
+type Presence struct {
+	UserID uuid.UUID `json:"user_id"`
+	Online bool      `json:"online"`
+}
+
+type PresenceResponse struct {
+	Statuses []Presence `json:"statuses"`
 }

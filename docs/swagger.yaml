@@ -111,6 +111,20 @@ definitions:
       message:
         type: string
     type: object
+  dto.Presence:
+    properties:
+      online:
+        type: boolean
+      user_id:
+        type: string
+    type: object
+  dto.PresenceResponse:
+    properties:
+      statuses:
+        items:
+          $ref: '#/definitions/dto.Presence'
+        type: array
+    type: object
   dto.RegisterRequest:
     properties:
       password:
@@ -122,6 +136,20 @@ definitions:
     properties:
       new_invite_code:
         type: string
+    type: object
+  dto.SubscribePresenceRequest:
+    properties:
+      user_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.UnsubscribePresenceRequest:
+    properties:
+      user_ids:
+        items:
+          type: string
+        type: array
     type: object
   dto.UpdateGroupRequest:
     properties:
@@ -163,6 +191,8 @@ definitions:
       display_name:
         type: string
       id:
+        type: string
+      last_seen:
         type: string
       updated_at:
         type: string
@@ -886,6 +916,109 @@ paths:
       summary: Join a group using an invite code
       tags:
       - group
+  /api/presence:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PresenceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Get batch users status
+      tags:
+      - presence
+  /api/presence//subscriptions:
+    delete:
+      parameters:
+      - description: Users ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UnsubscribePresenceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Unsubscribe batch of users
+      tags:
+      - presence
+    post:
+      parameters:
+      - description: Users ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SubscribePresenceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: subscribe batch of users
+      tags:
+      - presence
   /api/user/{id}:
     get:
       consumes:

@@ -3,6 +3,7 @@ import type {
   ConversationDeleted,
   GroupUpdated,
   MessageCreated,
+  PresenceUpdated,
   MessageDeleted,
   MessageEdited,
   WSResponse,
@@ -14,6 +15,7 @@ type Handlers = {
   onMessageDeleted: (deleted: MessageDeleted) => void
   onConversationDeleted: (deleted: ConversationDeleted) => void
   onGroupUpdated: (group: GroupUpdated) => void
+  onPresenceUpdated: (presence: PresenceUpdated) => void
   enabled: boolean
 }
 
@@ -28,6 +30,7 @@ export function useWebSocket({
   onMessageDeleted,
   onConversationDeleted,
   onGroupUpdated,
+  onPresenceUpdated,
   enabled,
 }: Handlers) {
   const onMessageRef = useRef(onMessage)
@@ -35,6 +38,7 @@ export function useWebSocket({
   const onMessageDeletedRef = useRef(onMessageDeleted)
   const onConversationDeletedRef = useRef(onConversationDeleted)
   const onGroupUpdatedRef = useRef(onGroupUpdated)
+  const onPresenceUpdatedRef = useRef(onPresenceUpdated)
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const shouldReconnectRef = useRef(false)
@@ -48,6 +52,7 @@ export function useWebSocket({
   onMessageDeletedRef.current = onMessageDeleted
   onConversationDeletedRef.current = onConversationDeleted
   onGroupUpdatedRef.current = onGroupUpdated
+  onPresenceUpdatedRef.current = onPresenceUpdated
 
   useEffect(() => {
     if (!enabled) {
@@ -142,6 +147,18 @@ export function useWebSocket({
                 name: updated.name,
                 avatar_url: updated.avatar_url,
                 bio: updated.bio,
+              })
+            }
+          } else if (
+            (type === 'user.online' || type === 'user.offline') &&
+            data
+          ) {
+            const presence = data as PresenceUpdated
+            if (presence.user_id) {
+              onPresenceUpdatedRef.current({
+                user_id: presence.user_id,
+                online: type === 'user.online',
+                last_seen: presence.last_seen,
               })
             }
           }

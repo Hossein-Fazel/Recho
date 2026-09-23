@@ -123,6 +123,7 @@ func (r *Conversation) GetConversationByID(ctx context.Context, userID uuid.UUID
 		Username:             conv.Username.String,
 		DisplayName:          conv.DisplayName.String,
 		AvatarKey:            conv.AvatarKey.String,
+		LastSeen:             conv.LastSeen.Time,
 		GroupName:            conv.GroupName.String,
 		GroupAvatarKey:       conv.GroupAvatarKey.String,
 		LastMessageID:        conv.LastMessageID.Int64,

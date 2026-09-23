@@ -8,4 +8,6 @@ const (
 	MessageDeleteEvent      Event = "message.delete"
 	ConversationDeleteEvent Event = "conversation.delete"
 	GroupUpdateEvent        Event = "group.update"
+	UserOnline              Event = "user.online"
+	UserOffline             Event = "user.offline"
 )

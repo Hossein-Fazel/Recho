@@ -84,6 +84,20 @@ type GroupUpdateResponse struct {
 	Bio       string    `json:"bio"`
 }
 
+type PresenceUpdateResponse struct {
+	UserID   uuid.UUID  `json:"user_id"`
+	Online   bool       `json:"online"`
+	LastSeen *time.Time `json:"last_seen,omitempty"`
+}
+
+func ToPresenceUpdateResponse(p model.UserPresence) PresenceUpdateResponse {
+	return PresenceUpdateResponse{
+		UserID:   p.UserID,
+		Online:   p.Online,
+		LastSeen: p.LastSeen,
+	}
+}
+
 type TextMessage struct {
 	Content string `json:"content,omitempty"`
 }

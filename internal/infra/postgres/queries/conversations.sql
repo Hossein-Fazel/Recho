@@ -78,6 +78,7 @@ SELECT
     u.username,
     u.display_name,
     u.avatar_key,
+    u.last_seen,
 
     -- group
     g.name AS group_name,

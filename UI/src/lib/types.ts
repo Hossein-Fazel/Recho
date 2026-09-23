@@ -6,6 +6,7 @@ export type User = {
   bio: string
   created_at: string
   updated_at: string
+  last_seen: string
 }
 
 export type AuthResponse = {
@@ -39,6 +40,7 @@ export type Conversation = {
   last_message_text: string
   last_message_created_at: string
   updated_at: string
+  last_seen: string
 }
 
 export type UserConversationsResponse = {
@@ -100,12 +102,29 @@ export type GroupUpdated = {
   bio: string
 }
 
+export type PresenceStatus = {
+  user_id: string
+  online: boolean
+}
+
+export type PresenceResponse = {
+  statuses: PresenceStatus[]
+}
+
+export type PresenceUpdated = {
+  user_id: string
+  online: boolean
+  last_seen?: string
+}
+
 export type WSEvent =
   | { type: 'message.create'; request_id: string; data: MessageCreated }
   | { type: 'message.edit'; request_id: string; data: MessageEdited }
   | { type: 'message.delete'; request_id: string; data: MessageDeleted }
   | { type: 'conversation.delete'; request_id: string; data: ConversationDeleted }
   | { type: 'group.update'; request_id: string; data: GroupUpdated }
+  | { type: 'user.online'; request_id: string; data: PresenceUpdated }
+  | { type: 'user.offline'; request_id: string; data: PresenceUpdated }
 
 export type ConversationInfo = {
   conversation_id: string

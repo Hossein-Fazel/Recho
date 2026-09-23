@@ -13,6 +13,7 @@ type UserConversation struct {
 	Username             string
 	DisplayName          string
 	AvatarKey            string
+	LastSeen             time.Time
 	GroupName            string
 	GroupAvatarKey       string
 	LastMessageID        int64
