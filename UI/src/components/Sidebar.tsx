@@ -20,6 +20,7 @@ type SidebarProps = {
   onJoinGroup: () => void
   onOpenProfile: () => void
   onLogout: () => void
+  onlineUserIds: ReadonlySet<string>
 }
 
 export function Sidebar({
@@ -32,6 +33,7 @@ export function Sidebar({
   onJoinGroup,
   onOpenProfile,
   onLogout,
+  onlineUserIds,
 }: SidebarProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<UserSearch[]>([])
@@ -180,7 +182,12 @@ export function Sidebar({
                   className={`conv-item ${activeId === conv.conversation_id ? 'active' : ''}`}
                   onClick={() => onSelect(conv)}
                 >
-                  <Avatar id={conv.user_id || conv.conversation_id} name={name} url={conv.avatar_url || conv.group_avatar_url} />
+                  <span className="conv-avatar-wrap">
+                    <Avatar id={conv.user_id || conv.conversation_id} name={name} url={conv.avatar_url || conv.group_avatar_url} />
+                    {conv.conversation_type === 'direct' && onlineUserIds.has(conv.user_id) ? (
+                      <span className="presence-dot" aria-label="Online" title="Online" />
+                    ) : null}
+                  </span>
                   <span className="conv-meta">
                     <span className="conv-name-row">
                       <span className="conv-name">{name}</span>

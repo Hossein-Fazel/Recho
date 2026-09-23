@@ -134,7 +134,7 @@ func Run() {
 		sender,
 	)
 
-	presenceService := application.NewPresenceService(presenceRepo, userRepo, sender)
+	presenceService := application.NewPresenceService(presenceRepo, userRepo)
 
 	// -------------------------------------------------------------------------
 	// WebSocket

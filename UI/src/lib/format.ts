@@ -119,3 +119,34 @@ export function formatDateTime(value: string): string {
     minute: '2-digit',
   })
 }
+
+
+export function formatLastSeen(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime()) || date.getFullYear() < 2) return 'recently'
+
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+
+  if (diff >= 0 && diff < minute) return 'just now'
+  if (diff >= 0 && diff < hour) {
+    const minutes = Math.max(1, Math.floor(diff / minute))
+    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+  }
+  if (diff >= 0 && diff < day) {
+    const hours = Math.floor(diff / hour)
+    return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  }
+
+  const sameYear = date.getFullYear() === now.getFullYear()
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
