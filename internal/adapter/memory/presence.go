@@ -134,6 +134,9 @@ func (p *PresenceRepo) GetSubscribers(userID uuid.UUID) uuid.UUIDs {
 }
 
 func (p *PresenceRepo) IsOnline(userID uuid.UUID) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	if _, exists := p.online[userID]; exists {
 		return true
 	}

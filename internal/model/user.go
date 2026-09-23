@@ -29,3 +29,9 @@ type UserStatus struct {
 	ID     uuid.UUID
 	Online bool
 }
+
+type PresenceUpdate struct {
+	UserID   uuid.UUID
+	Online   bool
+	LastSeen *time.Time
+}

@@ -49,6 +49,15 @@ func createResponse(v application.SendItem) []byte {
 				Bio:       group.Bio,
 			}
 		}
+
+	case model.UserOnline, model.UserOffline:
+		if presence, ok := toPresenceUpdate(v.Content); ok {
+			response.Data = dto.PresenceUpdateResponse{
+				UserID:   presence.UserID,
+				Online:   presence.Online,
+				LastSeen: presence.LastSeen,
+			}
+		}
 	}
 
 	res, _ := json.Marshal(response)
@@ -80,5 +89,19 @@ func toMessage(content any) (model.Message, bool) {
 		return *msg, true
 	default:
 		return model.Message{}, false
+	}
+}
+
+func toPresenceUpdate(content any) (model.PresenceUpdate, bool) {
+	switch presence := content.(type) {
+	case model.PresenceUpdate:
+		return presence, true
+	case *model.PresenceUpdate:
+		if presence == nil {
+			return model.PresenceUpdate{}, false
+		}
+		return *presence, true
+	default:
+		return model.PresenceUpdate{}, false
 	}
 }

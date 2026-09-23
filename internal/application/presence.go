@@ -35,6 +35,10 @@ func (p *PresenceService) Online(userID uuid.UUID) error {
 		p.sender.Broadcast(SendItem{
 			RequestID: uuid.New(),
 			Event:     model.UserOnline,
+			Content: model.PresenceUpdate{
+				UserID: userID,
+				Online: true,
+			},
 			Recievers: subscribers,
 		})
 	}
@@ -58,7 +62,11 @@ func (p *PresenceService) Offline(userID uuid.UUID) error {
 		p.sender.Broadcast(SendItem{
 			RequestID: uuid.New(),
 			Event:     model.UserOffline,
-			Content:   lastSeen,
+			Content: model.PresenceUpdate{
+				UserID:   userID,
+				Online:   false,
+				LastSeen: &lastSeen,
+			},
 			Recievers: subscribers,
 		})
 	}
