@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/Hossein-Fazel/Recho/internal/application"
+	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
 )
 
@@ -23,6 +24,8 @@ type PresenceRepo struct {
 var _ application.PresenceRepo = (*PresenceRepo)(nil)
 
 func NewPresenceRepo() *PresenceRepo {
+	pkg.Logger.Info().Msg("Initializing presence Repository")
+
 	return &PresenceRepo{
 		watchers:      make(map[uuid.UUID]map[uuid.UUID]struct{}),
 		subscriptions: make(map[uuid.UUID]map[uuid.UUID]struct{}),

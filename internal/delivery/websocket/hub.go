@@ -13,18 +13,21 @@ type Hub struct {
 	unregister chan *Client
 	deliver    <-chan application.SendItem
 
+	presenceServie *application.PresenceService
+
 	ctx  context.Context
 	done chan struct{}
 }
 
-func NewHub(ctx context.Context, deliver <-chan application.SendItem) *Hub {
+func NewHub(ctx context.Context, deliver <-chan application.SendItem, presenceServie *application.PresenceService) *Hub {
 	return &Hub{
-		clients:    make(map[uuid.UUID][]*Client),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		deliver:    deliver,
-		ctx:        ctx,
-		done:       make(chan struct{}),
+		clients:        make(map[uuid.UUID][]*Client),
+		register:       make(chan *Client),
+		unregister:     make(chan *Client),
+		deliver:        deliver,
+		presenceServie: presenceServie,
+		ctx:            ctx,
+		done:           make(chan struct{}),
 	}
 }
 
@@ -100,6 +103,7 @@ func (h *Hub) registerClient(client *Client) {
 		h.clients[client.UserID],
 		client,
 	)
+	h.presenceServie.Online(client.UserID)
 }
 
 func (h *Hub) unregisterClient(client *Client) {
@@ -117,6 +121,7 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	if len(h.clients[client.UserID]) == 0 {
 		delete(h.clients, client.UserID)
+		h.presenceServie.Offline(client.UserID)
 	}
 
 	client.Close()

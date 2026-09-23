@@ -5,6 +5,7 @@ import (
 
 	"github.com/Hossein-Fazel/Recho/internal/apperr"
 	"github.com/Hossein-Fazel/Recho/internal/model"
+	"github.com/Hossein-Fazel/Recho/pkg"
 	"github.com/google/uuid"
 )
 
@@ -15,6 +16,8 @@ type PresenceService struct {
 }
 
 func NewPresenceService(presenceRepo PresenceRepo, userRepo UserRepo, sender Sender) *PresenceService {
+	pkg.Logger.Info().Msg("Initializing presence service")
+
 	return &PresenceService{
 		presenceRepo: presenceRepo,
 		userRepo:     userRepo,
@@ -103,7 +106,7 @@ func (p *PresenceService) GetStatuses(targetUserIDs uuid.UUIDs) ([]model.UserSta
 
 	for _, target := range targetUserIDs {
 		statuses = append(statuses, model.UserStatus{
-			ID: target,
+			ID:     target,
 			Online: p.presenceRepo.IsOnline(target),
 		})
 	}

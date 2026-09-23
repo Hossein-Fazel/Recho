@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Hossein-Fazel/Recho/internal/adapter/memory"
 	postgres_repo "github.com/Hossein-Fazel/Recho/internal/adapter/postgres"
 	"github.com/Hossein-Fazel/Recho/internal/adapter/storage"
 	"github.com/Hossein-Fazel/Recho/internal/application"
@@ -64,29 +65,27 @@ func Run() {
 	convRepo := postgres_repo.NewConversationRepo(queries, database)
 	groupRepo := postgres_repo.NewGroupRepo(queries, database)
 	msgRepo := postgres_repo.NewMessageRepo(queries, database)
+	presenceRepo := memory.NewPresenceRepo()
 
 	// -------------------------------------------------------------------------
-	// WebSocket
+	// Sender
 	// -------------------------------------------------------------------------
 
-	pkg.Logger.Info().Msg("Initializing websocket")
+	pkg.Logger.Info().Msg("Initializing sender")
 
 	sender := websocket.NewSender(ctx)
 
-	hub := websocket.NewHub(ctx, sender.Channel())
-	go hub.Run()
-	
 	// -------------------------------------------------------------------------
 	// Storage
 	// -------------------------------------------------------------------------
-	
+
 	pkg.Logger.Info().Msg("Initializing storage")
-	
+
 	store, err := storage.New(ctx, conf.Storage)
 	if err != nil {
 		pkg.Logger.Fatal().
-		AnErr("error", err).
-		Msg("error in creating storage")
+			AnErr("error", err).
+			Msg("error in creating storage")
 	}
 
 	// -------------------------------------------------------------------------
@@ -135,13 +134,25 @@ func Run() {
 		sender,
 	)
 
-	ws := websocket.NewWSHandler(hub, msgDelivery)
+	presenceService := application.NewPresenceService(presenceRepo, userRepo, sender)
 
+	// -------------------------------------------------------------------------
+	// WebSocket
+	// -------------------------------------------------------------------------
+
+	pkg.Logger.Info().Msg("Initializing websocket")
+
+	hub := websocket.NewHub(ctx, sender.Channel(), presenceService)
+	go hub.Run()
+
+	
 	// -------------------------------------------------------------------------
 	// HTTP Server
 	// -------------------------------------------------------------------------
-
+	
 	pkg.Logger.Info().Msg("Starting server")
+	
+	ws := websocket.NewWSHandler(hub, msgDelivery)
 
 	e := web.Init(web.Services{
 		Auth:         authService,
@@ -149,6 +160,7 @@ func Run() {
 		Conversation: convService,
 		User:         userService,
 		Group:        groupService,
+		Presence:     presenceService,
 	}, conf.Server, conf.Storage)
 
 	wsGroup := e.Group(
@@ -172,7 +184,6 @@ func Run() {
 		Str("port", conf.Server.Port).
 		Msg("server started")
 
-	
 	// -------------------------------------------------------------------------
 	// Graceful Shutdown
 	// -------------------------------------------------------------------------
