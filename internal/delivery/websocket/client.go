@@ -55,8 +55,8 @@ func (c *Client) ReadPump() {
 			Msg("websocket read pump stopped")
 
 		select {
-		case c.Hub.Unregister <- c:
-		case <-c.Hub.stop:
+		case c.Hub.ClientUnregisterChannel() <- c:
+		case <-c.Hub.ctx.Done():
 		}
 
 		_ = c.Conn.Close()

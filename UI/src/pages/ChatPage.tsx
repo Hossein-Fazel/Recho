@@ -21,6 +21,7 @@ import type {
   Message,
   UpdateGroupResponse,
   UserSearch,
+  PresenceUpdated,
 } from '../lib/types'
 
 type ChatPageProps = {
@@ -32,6 +33,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const { user, logout } = useAuth()
 
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set())
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [nextMessageCursor, setNextMessageCursor] = useState('')
@@ -61,6 +63,20 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
       ) ?? null,
     [conversations, activeId],
   )
+
+  const directUserIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          conversations
+            .filter((conversation) => conversation.conversation_type === 'direct' && conversation.user_id)
+            .map((conversation) => conversation.user_id),
+        ),
+      ),
+    [conversations],
+  )
+
+  const directUserIdsKey = directUserIds.join(',')
 
   // Keep the sender details (name, username, avatar) for every group member
   // so group messages can be labeled like Telegram. Reloaded whenever the
@@ -152,6 +168,34 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     })
 
   }, [activeId, loadThread])
+
+  // The conversation summary contains the peer's last_seen. Fetch it when a
+  // direct chat opens so the header uses the freshest server value instead of
+  // relying on the sidebar cache.
+  useEffect(() => {
+    if (!activeId || active?.conversation_type !== 'direct') return
+
+    let cancelled = false
+
+    api.conversation(activeId)
+      .then((conversation) => {
+        if (cancelled) return
+        setConversations((current) =>
+          current.map((item) =>
+            item.conversation_id === activeId
+              ? { ...item, last_seen: conversation.last_seen }
+              : item,
+          ),
+        )
+      })
+      .catch(() => {
+        // The message thread can still be used if the summary refresh fails.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeId, active?.conversation_type])
 
   const loadMore = useCallback(async () => {
     if (!activeId || !nextMessageCursor || loadingMessages) {
@@ -266,6 +310,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     sendMessage,
     sendEditMessage,
     sendDeleteMessage,
+    status: webSocketStatus,
   } = useWebSocket({
     enabled: Boolean(user),
 
@@ -421,7 +466,75 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         setGroupInfoVersion((version) => version + 1)
       }
     },
+
+    onPresenceUpdated: (presence: PresenceUpdated) => {
+      setOnlineUserIds((current) => {
+        const next = new Set(current)
+
+        if (presence.online) {
+          next.add(presence.user_id)
+        } else {
+          next.delete(presence.user_id)
+        }
+
+        return next
+      })
+
+      if (!presence.online && presence.last_seen) {
+        setConversations((current) =>
+          current.map((conversation) =>
+            conversation.user_id === presence.user_id
+              ? { ...conversation, last_seen: presence.last_seen! }
+              : conversation,
+          ),
+        )
+      }
+    },
   })
+
+  // Subscribe to every direct-chat peer. Subscriptions are server-side, so
+  // repeat this after every WebSocket reconnect: the backend removes the
+  // subscriber's subscriptions when its socket disconnects.
+  useEffect(() => {
+    if (!user || directUserIds.length === 0) {
+      setOnlineUserIds(new Set())
+      return
+    }
+
+    let cancelled = false
+    const ids = directUserIdsKey.split(',').filter(Boolean)
+
+    async function syncPresence() {
+      try {
+        if (webSocketStatus === 'connected') {
+          await api.subscribePresence(ids)
+        }
+
+        const response = await api.presence(ids)
+
+        if (cancelled) return
+
+        setOnlineUserIds(
+          new Set(
+            response.statuses
+              .filter((status) => status.online)
+              .map((status) => status.user_id),
+          ),
+        )
+      } catch {
+        // Presence is supplemental; chat remains usable if this request fails.
+      }
+    }
+
+    void syncPresence()
+
+    return () => {
+      cancelled = true
+      if (webSocketStatus === 'connected') {
+        void api.unsubscribePresence(ids)
+      }
+    }
+  }, [user, directUserIdsKey, webSocketStatus])
 
   function selectConversation(conversation: Conversation) {
     setActiveId(conversation.conversation_id)
@@ -458,6 +571,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         last_message_text: '',
         last_message_created_at: '',
         updated_at: new Date().toISOString(),
+        last_seen: '',
       }
 
       return [created, ...current]
@@ -494,6 +608,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         last_message_text: '',
         last_message_created_at: '',
         updated_at: group.updated_at || new Date().toISOString(),
+        last_seen: '',
       }
 
       return [created, ...current]
@@ -718,6 +833,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         }}
         onOpenProfile={() => setProfileOpen(true)}
         onLogout={() => void logout()}
+        onlineUserIds={onlineUserIds}
       />
 
       <main className="main">
@@ -744,6 +860,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
             setJoinCode(code)
             setJoinOpen(true)
           }}
+          isPeerOnline={Boolean(active && active.conversation_type === 'direct' && onlineUserIds.has(active.user_id))}
         />
 
         <Composer

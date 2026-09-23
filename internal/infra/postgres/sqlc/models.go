@@ -209,4 +209,5 @@ type User struct {
 	PasswordHash string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	LastSeen     pgtype.Timestamptz
 }

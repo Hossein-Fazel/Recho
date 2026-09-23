@@ -17,6 +17,7 @@ func conv2convRes(conv *model.UserConversation) *dto.Conversation {
 		Username:             conv.Username,
 		DisplayName:          conv.DisplayName,
 		AvatarUrl:            conv.AvatarKey,
+		LastSeen:             conv.LastSeen,
 		GroupName:            conv.GroupName,
 		GroupAvatarUrl:       conv.GroupAvatarKey,
 		LastMessageID:        conv.LastMessageID,
@@ -75,6 +76,7 @@ func user2dtoUser(user *model.User) *dto.User {
 		DisplayName: user.DisplayName,
 		AvatarURL:   user.AvatarKey,
 		Bio:         user.Bio,
+		LastSeen:    user.LastSeen,
 		CreatedAt:   user.CreatedAt,
 		UpdatedAt:   user.UpdatedAt,
 	}

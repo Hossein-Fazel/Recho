@@ -49,6 +49,11 @@ func createResponse(v application.SendItem) []byte {
 				Bio:       group.Bio,
 			}
 		}
+
+	case model.UserOnline, model.UserOffline:
+		if presence, ok := v.Content.(model.UserPresence); ok {
+			response.Data = dto.ToPresenceUpdateResponse(presence)
+		}
 	}
 
 	res, _ := json.Marshal(response)

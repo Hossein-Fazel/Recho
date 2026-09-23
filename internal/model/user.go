@@ -13,6 +13,7 @@ type User struct {
 	DisplayName string
 	AvatarKey   string
 	Bio         string
+	LastSeen    time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -22,4 +23,10 @@ type UserSearch struct {
 	Username    string
 	DisplayName string
 	AvatarKey   string
+}
+
+type UserPresence struct {
+	UserID   uuid.UUID
+	Online   bool
+	LastSeen *time.Time
 }

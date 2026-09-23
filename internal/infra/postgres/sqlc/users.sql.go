@@ -16,11 +16,13 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     username,
-    password_hash
+    password_hash,
+    last_seen
 )
 VALUES (
     $1,
-    $2
+    $2,
+    NOW()
 )
 RETURNING
     id,
@@ -29,6 +31,7 @@ RETURNING
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at
 `
@@ -45,6 +48,7 @@ type CreateUserRow struct {
 	DisplayName  pgtype.Text
 	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
+	LastSeen     pgtype.Timestamptz
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -59,6 +63,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.DisplayName,
 		&i.AvatarKey,
 		&i.Bio,
+		&i.LastSeen,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -73,6 +78,7 @@ SELECT
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at
 FROM users
@@ -87,6 +93,7 @@ type GetUserByIDRow struct {
 	DisplayName  pgtype.Text
 	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
+	LastSeen     pgtype.Timestamptz
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -101,6 +108,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow
 		&i.DisplayName,
 		&i.AvatarKey,
 		&i.Bio,
+		&i.LastSeen,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -115,6 +123,7 @@ SELECT
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at
 FROM users
@@ -129,6 +138,7 @@ type GetUserByUsernameRow struct {
 	DisplayName  pgtype.Text
 	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
+	LastSeen     pgtype.Timestamptz
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -143,6 +153,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 		&i.DisplayName,
 		&i.AvatarKey,
 		&i.Bio,
+		&i.LastSeen,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -193,6 +204,20 @@ func (q *Queries) SearchUsers(ctx context.Context, query pgtype.Text) ([]SearchU
 	return items, nil
 }
 
+const updateLastSeen = `-- name: UpdateLastSeen :one
+UPDATE users
+SET last_seen = NOW()
+WHERE id = $1
+RETURNING last_seen
+`
+
+func (q *Queries) UpdateLastSeen(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, updateLastSeen, id)
+	var last_seen pgtype.Timestamptz
+	err := row.Scan(&last_seen)
+	return last_seen, err
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
@@ -209,6 +234,7 @@ RETURNING
     display_name,
     avatar_key,
     bio,
+    last_seen,
     created_at,
     updated_at
 `
@@ -228,6 +254,7 @@ type UpdateUserRow struct {
 	DisplayName  pgtype.Text
 	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
+	LastSeen     pgtype.Timestamptz
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -248,6 +275,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		&i.DisplayName,
 		&i.AvatarKey,
 		&i.Bio,
+		&i.LastSeen,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

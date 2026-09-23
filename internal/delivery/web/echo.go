@@ -33,6 +33,7 @@ type Services struct {
 	Conversation *application.ConversationService
 	User         *application.UserService
 	Group        *application.GroupService
+	Presence     *application.PresenceService
 }
 
 // @title Recho
@@ -101,6 +102,10 @@ func Init(svcs Services, conf Config, storageConf storageAdapter.Config) *echo.E
 	groupGroup := apiGroup.Group("/group", accessMidleware)
 	groupHandler := api.NewGroupHandler(svcs.Group)
 	groupHandler.RegisterRoutes(groupGroup)
+
+	presenceGroup := apiGroup.Group("/presence", accessMidleware)
+	presenceHandler := api.NewPresenceHandler(svcs.Presence)
+	presenceHandler.RegisterRoutes(presenceGroup)
 
 	mountLocalStorage(webServer, storageConf)
 

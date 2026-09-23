@@ -16,6 +16,7 @@ import type {
   User,
   UserConversationsResponse,
   UserSearch,
+  PresenceResponse,
 } from './types'
 
 export type UpdateProfileInput = {
@@ -120,6 +121,27 @@ export const api = {
 
   getUser(userId: string) {
     return request<User>(`/api/user/${encodeURIComponent(userId)}`)
+  },
+
+  presence(userIds: string[]) {
+    const params = new URLSearchParams({
+      user_ids: userIds.join(','),
+    })
+    return request<PresenceResponse>(`/api/presence?${params}`)
+  },
+
+  subscribePresence(userIds: string[]) {
+    return request<{ message: string }>('/api/presence/subscription', {
+      method: 'POST',
+      body: JSON.stringify({ user_ids: userIds }),
+    })
+  },
+
+  unsubscribePresence(userIds: string[]) {
+    return request<{ message: string }>('/api/presence/subscription', {
+      method: 'DELETE',
+      body: JSON.stringify({ user_ids: userIds }),
+    })
   },
 
   updateProfile(patch: UpdateProfileInput) {
