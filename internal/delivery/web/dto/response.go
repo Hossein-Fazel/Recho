@@ -157,3 +157,12 @@ type GroupMember struct {
 type RotateInviteCodeResponse struct {
 	NewInviteCode string `json:"new_invite_code"`
 }
+
+type Presence struct {
+	UserID uuid.UUID `json:"user_id"`
+	Online bool      `json:"online"`
+}
+
+type PresenceResponse struct {
+	Statuses []Presence `json:"statuses"`
+}

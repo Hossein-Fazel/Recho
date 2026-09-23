@@ -30,7 +30,7 @@ func NewPresenceRepo() *PresenceRepo {
 	}
 }
 
-func (p *PresenceRepo) Subscribe(subscriberID, targetUserID uuid.UUID) bool {
+func (p *PresenceRepo) Subscribe(subscriberID, targetUserID uuid.UUID) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -43,16 +43,11 @@ func (p *PresenceRepo) Subscribe(subscriberID, targetUserID uuid.UUID) bool {
 	}
 
 	if _, exists := p.subscriptions[subscriberID][targetUserID]; exists {
-		_, online := p.online[targetUserID]
-		return online
+		return
 	}
 
 	p.watchers[targetUserID][subscriberID] = struct{}{}
 	p.subscriptions[subscriberID][targetUserID] = struct{}{}
-
-	_, online := p.online[targetUserID]
-
-	return online
 }
 
 func (p *PresenceRepo) Unsubscribe(subscriberID, targetUserID uuid.UUID) {
@@ -133,4 +128,11 @@ func (p *PresenceRepo) GetSubscribers(userID uuid.UUID) uuid.UUIDs {
 	}
 
 	return subscribers
+}
+
+func (p *PresenceRepo) IsOnline(userID uuid.UUID) bool {
+	if _, exists := p.online[userID]; exists {
+		return true
+	}
+	return false
 }

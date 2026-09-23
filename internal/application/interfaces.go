@@ -75,12 +75,13 @@ type MessaageRepo interface {
 }
 
 type PresenceRepo interface {
-	Subscribe(subscriberID, targetUserID uuid.UUID) bool
+	Subscribe(subscriberID, targetUserID uuid.UUID)
 	Unsubscribe(subscriberID, targetUserID uuid.UUID)
 	RemoveSubscriber(subscriberID uuid.UUID)
 
 	SetOnline(userID uuid.UUID)
 	SetOffline(userID uuid.UUID)
+	IsOnline(userID uuid.UUID) bool
 
 	GetSubscribers(userID uuid.UUID) uuid.UUIDs
 }

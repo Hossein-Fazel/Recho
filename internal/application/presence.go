@@ -64,28 +64,22 @@ func (p *PresenceService) Offline(userID uuid.UUID) error {
 	return nil
 }
 
-func (p *PresenceService) Subscribe(subscriberID uuid.UUID, targetUserIDs uuid.UUIDs) ([]model.UserStatus, error) {
+func (p *PresenceService) Subscribe(subscriberID uuid.UUID, targetUserIDs uuid.UUIDs) error {
 	if subscriberID == uuid.Nil {
-		return []model.UserStatus{}, apperr.InvalidInput("presence service", "user id is required", nil)
+		return apperr.InvalidInput("presence service", "user id is required", nil)
 	}
 
-	statusList := make([]model.UserStatus, 0, len(targetUserIDs))
 	for _, targetUserID := range targetUserIDs {
 		if subscriberID == targetUserID {
-			return []model.UserStatus{}, apperr.Conflict("presence service", "subscriber id and target userid should be different", nil)
+			return apperr.Conflict("presence service", "subscriber id and target userid should be different", nil)
 		}
-		isOnline := p.presenceRepo.Subscribe(subscriberID, targetUserID)
-
-		statusList = append(statusList, model.UserStatus{
-			ID:     targetUserID,
-			Online: isOnline,
-		})
+		p.presenceRepo.Subscribe(subscriberID, targetUserID)
 	}
 
-	return statusList, nil
+	return nil
 }
 
-func (p *PresenceService) UnSubscribe(subscriberID uuid.UUID, targetUserIDs uuid.UUIDs) error {
+func (p *PresenceService) Unsubscribe(subscriberID uuid.UUID, targetUserIDs uuid.UUIDs) error {
 	if subscriberID == uuid.Nil {
 		return apperr.InvalidInput("presence service", "user id is required", nil)
 	}
@@ -99,4 +93,20 @@ func (p *PresenceService) UnSubscribe(subscriberID uuid.UUID, targetUserIDs uuid
 	}
 
 	return nil
+}
+
+func (p *PresenceService) GetStatuses(targetUserIDs uuid.UUIDs) ([]model.UserStatus, error) {
+	if len(targetUserIDs) == 0 {
+		return []model.UserStatus{}, apperr.InvalidInput("presence service", "user ids required", nil)
+	}
+	statuses := make([]model.UserStatus, 0, len(targetUserIDs))
+
+	for _, target := range targetUserIDs {
+		statuses = append(statuses, model.UserStatus{
+			ID: target,
+			Online: p.presenceRepo.IsOnline(target),
+		})
+	}
+
+	return statuses, nil
 }
