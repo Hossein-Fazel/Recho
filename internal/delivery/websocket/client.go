@@ -91,16 +91,41 @@ func (c *Client) ReadPump() {
 			var msg dto.MessageCreateRequest
 			_ = json.Unmarshal(income.Payload, &msg)
 
+			var file *model.FileMessage
+			if msg.File != nil {
+				file = &model.FileMessage{
+					Key:         msg.File.Key,
+					Category:    msg.File.Category,
+					ContentType: msg.File.ContentType,
+					Size:        msg.File.Size,
+					FileName:    msg.File.FileName,
+					Caption:     msg.File.Caption,
+				}
+			}
+
 			c.MessageDelivery.HandleCreateMessage(income.RequestID, model.Message{
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
 				Type:           msg.Type,
 				Text:           (*model.TextMessage)(msg.Text),
+				File:           file,
 			})
 
 		case string(model.MessageEditEvent):
 			var msg dto.MessageUpdateRequest
 			_ = json.Unmarshal(income.Payload, &msg)
+
+			var file *model.FileMessage
+			if msg.File != nil {
+				file = &model.FileMessage{
+					Key:         msg.File.Key,
+					Category:    msg.File.Category,
+					ContentType: msg.File.ContentType,
+					Size:        msg.File.Size,
+					FileName:    msg.File.FileName,
+					Caption:     msg.File.Caption,
+				}
+			}
 
 			c.MessageDelivery.HandleEditMessage(income.RequestID, model.Message{
 				ID:             msg.MessageID,
@@ -108,6 +133,7 @@ func (c *Client) ReadPump() {
 				SenderID:       c.UserID,
 				Type:           msg.Type,
 				Text:           (*model.TextMessage)(msg.Text),
+				File:           file,
 			})
 
 		case string(model.MessageDeleteEvent):

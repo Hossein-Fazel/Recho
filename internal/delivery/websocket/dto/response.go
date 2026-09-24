@@ -13,21 +13,24 @@ type WSResponse struct {
 	Data      any       `json:"data"`
 }
 type MessageCreateResponse struct {
-	ID             int64             `json:"id"`
-	ConversationID uuid.UUID         `json:"conversation_id"`
-	SenderID       uuid.UUID         `json:"sender_id"`
-	Type           model.MessageType `json:"type"`
-	Text           *TextMessage      `json:"text,omitempty"`
-	CreatedAt      time.Time         `json:"created_at"`
-	UpdatedAt      time.Time         `json:"updated_at"`
+	ID             int64                `json:"id"`
+	ConversationID uuid.UUID            `json:"conversation_id"`
+	SenderID       uuid.UUID            `json:"sender_id"`
+	Type           model.MessageType    `json:"type"`
+	Text           *TextMessage         `json:"text,omitempty"`
+	File           *FileMessageResponse `json:"file,omitempty"`
+	CreatedAt      time.Time            `json:"created_at"`
+	UpdatedAt      time.Time            `json:"updated_at"`
 }
 
 func ToMessageCreateResponse(msg model.Message) MessageCreateResponse {
 	var text *TextMessage
 	if msg.Type == model.MessageTypeText && msg.Text != nil {
-		text = &TextMessage{
-			Content: msg.Text.Content,
-		}
+		text = &TextMessage{Content: msg.Text.Content}
+	}
+	var file *FileMessageResponse
+	if msg.Type == model.MessageTypeFile && msg.File != nil {
+		file = toFileMessageResponse(msg.File)
 	}
 	return MessageCreateResponse{
 		ID:             msg.ID,
@@ -35,19 +38,21 @@ func ToMessageCreateResponse(msg model.Message) MessageCreateResponse {
 		SenderID:       msg.SenderID,
 		Type:           msg.Type,
 		Text:           text,
+		File:           file,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
 }
 
 type MessageEditResponse struct {
-	ID             int64             `json:"id"`
-	ConversationID uuid.UUID         `json:"conversation_id"`
-	SenderID       uuid.UUID         `json:"sender_id"`
-	Type           model.MessageType `json:"type"`
-	Text           *TextMessage      `json:"text,omitempty"`
-	CreatedAt      time.Time         `json:"created_at"`
-	UpdatedAt      time.Time         `json:"updated_at"`
+	ID             int64                `json:"id"`
+	ConversationID uuid.UUID            `json:"conversation_id"`
+	SenderID       uuid.UUID            `json:"sender_id"`
+	Type           model.MessageType    `json:"type"`
+	Text           *TextMessage         `json:"text,omitempty"`
+	File           *FileMessageResponse `json:"file,omitempty"`
+	CreatedAt      time.Time            `json:"created_at"`
+	UpdatedAt      time.Time            `json:"updated_at"`
 }
 
 func ToMessageEditResponse(msg model.Message) MessageEditResponse {
@@ -57,12 +62,17 @@ func ToMessageEditResponse(msg model.Message) MessageEditResponse {
 			Content: msg.Text.Content,
 		}
 	}
+	var file *FileMessageResponse
+	if msg.Type == model.MessageTypeFile && msg.File != nil {
+		file = toFileMessageResponse(msg.File)
+	}
 	return MessageEditResponse{
 		ID:             msg.ID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
 		Type:           msg.Type,
 		Text:           text,
+		File:           file,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
@@ -100,4 +110,25 @@ func ToPresenceUpdateResponse(p model.UserPresence) PresenceUpdateResponse {
 
 type TextMessage struct {
 	Content string `json:"content,omitempty"`
+}
+type FileMessageResponse struct {
+	Key         string              `json:"key"`
+	URL         string              `json:"url,omitempty"`
+	Category    model.MediaCategory `json:"category"`
+	ContentType string              `json:"content_type"`
+	Size        int64               `json:"size"`
+	FileName    string              `json:"file_name"`
+	Caption     string              `json:"caption,omitempty"`
+}
+
+func toFileMessageResponse(file *model.FileMessage) *FileMessageResponse {
+	return &FileMessageResponse{
+		Key:         file.Key,
+		URL:         file.URL,
+		Category:    file.Category,
+		ContentType: file.ContentType,
+		Size:        file.Size,
+		FileName:    file.FileName,
+		Caption:     file.Caption,
+	}
 }

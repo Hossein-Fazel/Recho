@@ -48,53 +48,14 @@ func (m *Message) Create(ctx context.Context, msg model.Message) (*model.Message
 			return nil, apperr.InvalidInput("message repo", "invalid message", nil)
 		}
 
-		newMsg, err := qtx.CreateMessage(ctx, sqlc.CreateMessageParams{
-			ConversationID: msg.ConversationID,
-			SenderID:       msg.SenderID,
-			MessageType:    sqlc.MessageType(msg.Type),
-		})
-		if err != nil {
-			return nil, apperr.Internal("message repo", err)
+		return m.createTextMessage(ctx, qtx, tx, msg)
+
+	case model.MessageTypeFile:
+		if msg.File == nil {
+			return nil, apperr.InvalidInput("message repo", "invalid file message", nil)
 		}
 
-		msg.ID = newMsg.MessageID
-		msg.CreatedAt = newMsg.CreatedAt
-		msg.UpdatedAt = newMsg.UpdatedAt
-
-		err = qtx.CreateTextMessage(ctx, sqlc.CreateTextMessageParams{
-			ConversationID: msg.ConversationID,
-			MessageID:      msg.ID,
-			Content:        msg.Text.Content,
-		})
-		if err != nil {
-			return nil, apperr.Internal("message repo", err)
-		}
-
-		err = qtx.InsertConversationLastMessage(ctx, sqlc.InsertConversationLastMessageParams{
-			CreatedAt: msg.CreatedAt,
-			MessageID: pgtype.Int8{
-				Int64: msg.ID,
-				Valid: msg.ID != 0,
-			},
-			MessageType: sqlc.NullMessageType{
-				MessageType: sqlc.MessageType(msg.Type),
-				Valid:       true,
-			},
-			MessageText: pgtype.Text{
-				String: msg.Text.Content,
-				Valid:  true,
-			},
-			ConversationID: msg.ConversationID,
-		})
-		if err != nil {
-			return nil, apperr.Internal("message repo", err)
-		}
-
-		if err := tx.Commit(ctx); err != nil {
-			return nil, apperr.Internal("message repo", err)
-		}
-
-		return &msg, nil
+		return m.createFileMessage(ctx, qtx, tx, msg)
 
 	default:
 		return nil, apperr.InvalidInput(
@@ -122,55 +83,14 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 			return nil, apperr.InvalidInput("message repo", "invalid message", nil)
 		}
 
-		newTime, err := qtx.UpdateMessage(ctx, sqlc.UpdateMessageParams{
-			ConversationID: msg.ConversationID,
-			MessageID:      msg.ID,
-			UserID:         msg.SenderID,
-		})
+		return m.updateTextMessage(ctx, qtx, tx, msg)
 
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return nil, apperr.NotFound("message repo", "message not found", err)
-			}
-
-			return nil, apperr.Internal("message repo", err)
-		}
-		msg.UpdatedAt = newTime
-
-		err = qtx.UpdateTextMessage(ctx, sqlc.UpdateTextMessageParams{
-			MsgText:        msg.Text.Content,
-			MessageID:      msg.ID,
-			ConversationID: msg.ConversationID,
-			UserID:         msg.SenderID,
-		})
-		if err != nil {
-			return nil, apperr.Internal("message repo", err)
+	case model.MessageTypeFile:
+		if msg.File == nil {
+			return nil, apperr.InvalidInput("message repo", "invalid file message", nil)
 		}
 
-		err = qtx.UpdateConversationLastMessageContent(ctx, sqlc.UpdateConversationLastMessageContentParams{
-			MessageID: pgtype.Int8{
-				Int64: msg.ID,
-				Valid: msg.ID != 0,
-			},
-			MessageType: sqlc.NullMessageType{
-				MessageType: sqlc.MessageType(msg.Type),
-				Valid:       true,
-			},
-			MessageText: pgtype.Text{
-				String: msg.Text.Content,
-				Valid:  true,
-			},
-			ConversationID: msg.ConversationID,
-		})
-		if err != nil {
-			return nil, apperr.Internal("message repo", err)
-		}
-
-		if err := tx.Commit(ctx); err != nil {
-			return nil, apperr.Internal("message repo", err)
-		}
-
-		return &msg, nil
+		return m.updateFileMessage(ctx, qtx, tx, msg)
 
 	default:
 		return nil, apperr.InvalidInput("message repo", "unsupported message type", nil)
@@ -188,4 +108,198 @@ func (m *Message) Delete(ctx context.Context, msg model.Message) error {
 		return apperr.Internal("message repo", err)
 	}
 	return nil
+}
+
+func (m *Message) createTextMessage(ctx context.Context, qtx *sqlc.Queries, tx pgx.Tx, msg model.Message) (*model.Message, error) {
+	newMsg, err := qtx.CreateMessage(ctx, sqlc.CreateMessageParams{
+		ConversationID: msg.ConversationID,
+		SenderID:       msg.SenderID,
+		MessageType:    sqlc.MessageType(msg.Type),
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	msg.ID = newMsg.MessageID
+	msg.CreatedAt = newMsg.CreatedAt
+	msg.UpdatedAt = newMsg.UpdatedAt
+
+	err = qtx.CreateTextMessage(ctx, sqlc.CreateTextMessageParams{
+		ConversationID: msg.ConversationID,
+		MessageID:      msg.ID,
+		Content:        msg.Text.Content,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	err = qtx.InsertConversationLastMessage(ctx, sqlc.InsertConversationLastMessageParams{
+		CreatedAt: msg.CreatedAt,
+		MessageID: pgtype.Int8{
+			Int64: msg.ID,
+			Valid: msg.ID != 0,
+		},
+		MessageType: sqlc.NullMessageType{
+			MessageType: sqlc.MessageType(msg.Type),
+			Valid:       true,
+		},
+		MessageText: pgtype.Text{
+			String: msg.Text.Content,
+			Valid:  true,
+		},
+		ConversationID: msg.ConversationID,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	return &msg, nil
+}
+
+func (m *Message) createFileMessage(ctx context.Context, qtx *sqlc.Queries, tx pgx.Tx, msg model.Message) (*model.Message, error) {
+	newMsg, err := qtx.CreateMessage(ctx, sqlc.CreateMessageParams{
+		ConversationID: msg.ConversationID,
+		SenderID:       msg.SenderID,
+		MessageType:    sqlc.MessageType(msg.Type),
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	msg.ID = newMsg.MessageID
+	msg.CreatedAt = newMsg.CreatedAt
+	msg.UpdatedAt = newMsg.UpdatedAt
+
+	err = qtx.CreateFileMessage(ctx, sqlc.CreateFileMessageParams{
+		ConversationID: msg.ConversationID,
+		MessageID:      msg.ID,
+		FileKey:        msg.File.Key,
+		Category:       msg.File.Category.String(),
+		ContentType:    msg.File.ContentType,
+		SizeBytes:      msg.File.Size,
+		FileName:       msg.File.FileName,
+		Caption:        msg.File.Caption,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	err = qtx.InsertConversationLastMessage(ctx, sqlc.InsertConversationLastMessageParams{
+		CreatedAt: msg.CreatedAt,
+		MessageID: pgtype.Int8{
+			Int64: msg.ID,
+			Valid: msg.ID != 0,
+		},
+		MessageType: sqlc.NullMessageType{
+			MessageType: sqlc.MessageType(msg.Type),
+			Valid:       true,
+		},
+		MessageText:    pgtype.Text{String: msg.File.Caption, Valid: msg.File.Caption != ""},
+		ConversationID: msg.ConversationID,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	return &msg, nil
+}
+
+func (m *Message) updateTextMessage(ctx context.Context, qtx *sqlc.Queries, tx pgx.Tx, msg model.Message) (*model.Message, error) {
+	newTime, err := qtx.UpdateMessage(ctx, sqlc.UpdateMessageParams{
+		ConversationID: msg.ConversationID,
+		MessageID:      msg.ID,
+		UserID:         msg.SenderID,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound("message repo", "message not found", err)
+		}
+
+		return nil, apperr.Internal("message repo", err)
+	}
+	msg.UpdatedAt = newTime
+
+	err = qtx.UpdateTextMessage(ctx, sqlc.UpdateTextMessageParams{
+		MsgText:        msg.Text.Content,
+		MessageID:      msg.ID,
+		ConversationID: msg.ConversationID,
+		UserID:         msg.SenderID,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	err = qtx.UpdateConversationLastMessageContent(ctx, sqlc.UpdateConversationLastMessageContentParams{
+		MessageID: pgtype.Int8{
+			Int64: msg.ID,
+			Valid: msg.ID != 0,
+		},
+		MessageType: sqlc.NullMessageType{
+			MessageType: sqlc.MessageType(msg.Type),
+			Valid:       true,
+		},
+		MessageText: pgtype.Text{
+			String: msg.Text.Content,
+			Valid:  true,
+		},
+		ConversationID: msg.ConversationID,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	return &msg, nil
+}
+
+func (m *Message) updateFileMessage(ctx context.Context, qtx *sqlc.Queries, tx pgx.Tx, msg model.Message) (*model.Message, error) {
+	newTime, err := qtx.UpdateMessage(ctx, sqlc.UpdateMessageParams{
+		ConversationID: msg.ConversationID,
+		MessageID:      msg.ID,
+		UserID:         msg.SenderID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.NotFound("message repo", "message not found", err)
+		}
+		return nil, apperr.Internal("message repo", err)
+	}
+	msg.UpdatedAt = newTime
+
+	err = qtx.UpdateFileMessage(ctx, sqlc.UpdateFileMessageParams{
+		Caption:        msg.File.Caption,
+		ConversationID: msg.ConversationID,
+		MessageID:      msg.ID,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	err = qtx.UpdateConversationLastMessageContent(ctx, sqlc.UpdateConversationLastMessageContentParams{
+		MessageID:      pgtype.Int8{Int64: msg.ID, Valid: msg.ID != 0},
+		MessageType:    sqlc.NullMessageType{MessageType: sqlc.MessageType(msg.Type), Valid: true},
+		MessageText:    pgtype.Text{String: msg.File.Caption, Valid: msg.File.Caption != ""},
+		ConversationID: msg.ConversationID,
+	})
+	if err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, apperr.Internal("message repo", err)
+	}
+
+	return &msg, nil
 }

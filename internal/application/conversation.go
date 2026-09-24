@@ -130,6 +130,22 @@ func (c *ConversationService) GetOrCreateDC(ctx context.Context, userOneID uuid.
 	return ConversationID, nil
 }
 
+func (c *ConversationService) UploadMessageMedia(ctx context.Context, userID, conversationID uuid.UUID, category model.MediaCategory, file model.UploadedFile) (*model.Media, error) {
+	if userID == uuid.Nil || conversationID == uuid.Nil {
+		return nil, apperr.InvalidInput("conversation service", "invalid user or conversation id", nil)
+	}
+
+	isMember, err := c.conversationRepo.IsConversationMember(ctx, userID, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, apperr.NotFound("conversation service", "Conversation not found", nil)
+	}
+
+	return c.storage.UploadMessageMedia(ctx, conversationID, category, file)
+}
+
 type GetConversationMessagesParams struct {
 	ConversationID  uuid.UUID
 	CursorCreatedAt time.Time
@@ -164,6 +180,14 @@ func (c *ConversationService) GetConversationMessages(ctx context.Context, userI
 	})
 	if err != nil {
 		return []*model.Message{}, "", err
+	}
+
+	for _, message := range list {
+		if message.File != nil && message.File.Key != "" {
+			if url, err := c.storage.URL(ctx, message.File.Key); err == nil {
+				message.File.URL = url
+			}
+		}
 	}
 
 	var newCursor string

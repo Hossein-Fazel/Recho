@@ -16,7 +16,17 @@ type Incomming struct {
 type MessageCreateRequest struct {
 	Type           model.MessageType `json:"type"`
 	Text           *TextMessage      `json:"text,omitempty"`
+	File           *FileMessage      `json:"file,omitempty"`
 	ConversationID uuid.UUID         `json:"conversation_id"`
+}
+
+type FileMessage struct {
+	Key         string              `json:"key"`
+	Category    model.MediaCategory `json:"category"`
+	ContentType string              `json:"content_type"`
+	Size        int64               `json:"size"`
+	FileName    string              `json:"file_name"`
+	Caption     string              `json:"caption,omitempty"`
 }
 
 type MessageUpdateRequest struct {
@@ -24,6 +34,7 @@ type MessageUpdateRequest struct {
 	ConversationID uuid.UUID         `json:"conversation_id"`
 	Type           model.MessageType `json:"type"`
 	Text           *TextMessage      `json:"text,omitempty"`
+	File           *FileMessage      `json:"file,omitempty"`
 }
 
 type MessageDeleteRequest struct {

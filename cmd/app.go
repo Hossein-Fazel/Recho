@@ -126,6 +126,7 @@ func Run() {
 	msgService := application.NewMessageService(
 		msgRepo,
 		convRepo,
+		storageService,
 	)
 
 	msgDelivery := application.NewMessageDelivery(
@@ -145,13 +146,12 @@ func Run() {
 	hub := websocket.NewHub(ctx, sender.Channel(), presenceService)
 	go hub.Run()
 
-	
 	// -------------------------------------------------------------------------
 	// HTTP Server
 	// -------------------------------------------------------------------------
-	
+
 	pkg.Logger.Info().Msg("Starting server")
-	
+
 	ws := websocket.NewWSHandler(hub, msgDelivery)
 
 	e := web.Init(web.Services{

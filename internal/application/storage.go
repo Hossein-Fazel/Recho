@@ -93,6 +93,41 @@ func (s *StorageService) UploadMessageMedia(
 	return s.upload(ctx, prefix, category, file)
 }
 
+func (s *StorageService) ValidateMessageMedia(ctx context.Context, conversationID uuid.UUID, media model.FileMessage) error {
+	if conversationID == uuid.Nil {
+		return apperr.InvalidInput(storageModule, "conversation id is required", nil)
+	}
+	rule, ok := mediaRules[media.Category]
+	if media.Category == model.MediaCategoryAvatar || !media.Category.IsValid() || !ok {
+		return apperr.InvalidInput(storageModule, "invalid message media category", nil)
+	}
+	if media.Size <= 0 || media.Size > rule.MaxSize {
+		return apperr.InvalidInput(storageModule, sizeLimitMessage(media.Category, rule.MaxSize), nil)
+	}
+	if !rule.Allows(media.ContentType) {
+		return apperr.InvalidInput(storageModule, "unsupported media content type", nil)
+	}
+
+	key := strings.TrimSpace(media.Key)
+	prefix := path.Join(conversationPrefix, conversationID.String(), media.Category.String()) + "/"
+	if err := validateKey(key); err != nil {
+		return err
+	}
+	if !strings.HasPrefix(key, prefix) {
+		return apperr.InvalidInput(storageModule, "file does not belong to conversation", nil)
+	}
+
+	exists, err := s.storage.Exists(ctx, key)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return apperr.InvalidInput(storageModule, "file does not exist", nil)
+	}
+
+	return nil
+}
+
 func (s *StorageService) Delete(ctx context.Context, key string) error {
 	if err := validateKey(key); err != nil {
 		return err

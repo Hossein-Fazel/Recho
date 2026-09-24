@@ -28,6 +28,7 @@ func (h *ConversationHandler) RegisterRoutes(g *echo.Group) {
 	g.POST("/", h.GetorCreateDirectConversation)
 	g.GET("/:id", h.GetConversationByID)
 	g.GET("/:id/messages", h.GetConversationMessages)
+	g.POST("/:id/media", h.UploadMessageMedia)
 	g.GET("/:id/info", h.GetConversationInfo)
 	g.GET("/:id/members", h.GetGroupMembers)
 }
@@ -225,26 +226,99 @@ func (h *ConversationHandler) GetConversationMessages(c echo.Context) error {
 	for _, message := range messages {
 		var text *dto.TextMessage
 		if message.Type == model.MessageTypeText && message.Text != nil {
-			text = &dto.TextMessage{
-				Content: message.Text.Content,
+			text = &dto.TextMessage{Content: message.Text.Content}
+		}
+
+		var file *dto.FileMessage
+		if message.Type == model.MessageTypeFile && message.File != nil {
+			file = &dto.FileMessage{
+				Key:         message.File.Key,
+				URL:         message.File.URL,
+				Category:    message.File.Category,
+				ContentType: message.File.ContentType,
+				Size:        message.File.Size,
+				FileName:    message.File.FileName,
+				Caption:     message.File.Caption,
 			}
 		}
 
-		response.Messages = append(
-			response.Messages,
-			&dto.Message{
-				ID:             message.ID,
-				ConversationID: message.ConversationID,
-				SenderID:       message.SenderID,
-				Type:           message.Type,
-				Text:           text,
-				CreatedAt:      message.CreatedAt,
-				UpdatedAt:      message.UpdatedAt,
-			},
-		)
+		response.Messages = append(response.Messages, &dto.Message{
+			ID:             message.ID,
+			ConversationID: message.ConversationID,
+			SenderID:       message.SenderID,
+			Type:           message.Type,
+			Text:           text,
+			File:           file,
+			CreatedAt:      message.CreatedAt,
+			UpdatedAt:      message.UpdatedAt,
+		})
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+// UploadMessageMedia godoc
+// @Summary Upload conversation media
+// @Description Uploads an image, voice recording, video, or generic file for a conversation. The returned key is then sent in a WebSocket message.create request.
+// @Tags conversation
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Conversation ID"
+// @Param category formData string true "Media category: image, voice, video, or file"
+// @Param file formData file true "media file"
+// @Success 200 {object} dto.MessageMediaUploadResponse
+// @Failure 400 {object} dto.ErrResponse
+// @Failure 401 {object} dto.ErrResponse
+// @Failure 404 {object} dto.ErrResponse
+// @Failure 500 {object} dto.ErrResponse
+// @Router /api/conversation/{id}/media [post]
+func (h *ConversationHandler) UploadMessageMedia(c echo.Context) error {
+	userID, ok := c.Get(CtxUserID).(uuid.UUID)
+	if !ok {
+		return echo.ErrUnauthorized
+	}
+
+	conversationID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return apperr.InvalidInput("web", "invalid conversation id", err)
+	}
+
+	category := model.MediaCategory(c.FormValue("category"))
+	if !category.IsValid() || category == model.MediaCategoryAvatar {
+		return apperr.InvalidInput("web", "invalid media category", nil)
+	}
+
+	header, err := c.FormFile("file")
+	if err != nil {
+		return apperr.InvalidInput("web", "file is required", err)
+	}
+
+	file, err := header.Open()
+	if err != nil {
+		return apperr.Internal("web", err)
+	}
+	defer file.Close()
+
+	media, err := h.convSvc.UploadMessageMedia(
+		c.Request().Context(),
+		userID,
+		conversationID,
+		category,
+		model.UploadedFile{Content: file, Size: header.Size, FileName: header.Filename},
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, dto.MessageMediaUploadResponse{
+		Key:         media.Key,
+		URL:         media.URL,
+		Category:    media.Category,
+		ContentType: media.ContentType,
+		Size:        media.Size,
+		FileName:    media.FileName,
+	})
 }
 
 // GetConversationInfo godoc

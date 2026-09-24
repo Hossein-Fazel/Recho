@@ -21,22 +21,31 @@ func pgUserSearch2modeUserSearch(user sqlc.SearchUsersRow) *model.UserSearch {
 }
 
 func toModelMessage(msg sqlc.GetConversationMessagesRow) *model.Message {
-	var text *model.TextMessage
-	if msg.Type == sqlc.MessageTypeText {
-		text = &model.TextMessage{
-			Content: msg.Content.String,
-		}
-	}
-
-	return &model.Message{
+	result := &model.Message{
 		ID:             msg.MessageID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
 		Type:           model.MessageType(msg.Type),
-		Text:           text,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 	}
+
+	if msg.Type == sqlc.MessageTypeText {
+		result.Text = &model.TextMessage{Content: msg.Content.String}
+	}
+
+	if msg.Type == sqlc.MessageTypeFile && msg.FileKey.Valid {
+		result.File = &model.FileMessage{
+			Key:         msg.FileKey.String,
+			Category:    model.MediaCategory(msg.Category.String),
+			ContentType: msg.ContentType.String,
+			Size:        msg.SizeBytes.Int64,
+			FileName:    msg.FileName.String,
+			Caption:     msg.Caption.String,
+		}
+	}
+
+	return result
 }
 
 func toModelGroupMember(member sqlc.GetGroupMembersRow) *model.GroupMember {

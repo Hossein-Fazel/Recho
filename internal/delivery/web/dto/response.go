@@ -16,6 +16,14 @@ type ErrResponse struct {
 type MessageResponse struct {
 	Message string `json:"message"`
 }
+type MessageMediaUploadResponse struct {
+	Key         string              `json:"key"`
+	URL         string              `json:"url,omitempty"`
+	Category    model.MediaCategory `json:"category"`
+	ContentType string              `json:"content_type"`
+	Size        int64               `json:"size"`
+	FileName    string              `json:"file_name"`
+}
 
 type AuthResponse struct {
 	Message string `json:"message"`
@@ -81,8 +89,19 @@ type Message struct {
 	SenderID       uuid.UUID         `json:"sender_id"`
 	Type           model.MessageType `json:"type"`
 	Text           *TextMessage      `json:"text,omitempty"`
+	File           *FileMessage      `json:"file,omitempty"`
 	CreatedAt      time.Time         `json:"created_at"`
 	UpdatedAt      time.Time         `json:"updated_at"`
+}
+
+type FileMessage struct {
+	Key         string              `json:"key"`
+	URL         string              `json:"url,omitempty"`
+	Category    model.MediaCategory `json:"category"`
+	ContentType string              `json:"content_type"`
+	Size        int64               `json:"size"`
+	FileName    string              `json:"file_name"`
+	Caption     string              `json:"caption,omitempty"`
 }
 
 type TextMessage struct {

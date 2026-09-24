@@ -10,6 +10,7 @@ type MessageType string
 
 const (
 	MessageTypeText MessageType = "text"
+	MessageTypeFile MessageType = "file"
 )
 
 func DefaultMessageType() MessageType {
@@ -18,7 +19,7 @@ func DefaultMessageType() MessageType {
 
 func (t MessageType) IsValid() bool {
 	switch t {
-	case MessageTypeText:
+	case MessageTypeText, MessageTypeFile:
 		return true
 	default:
 		return false
@@ -38,8 +39,19 @@ type Message struct {
 	UpdatedAt      time.Time
 
 	Text *TextMessage
+	File *FileMessage
 }
 
 type TextMessage struct {
 	Content string
+}
+
+type FileMessage struct {
+	Key         string
+	URL         string
+	Category    MediaCategory
+	ContentType string
+	Size        int64
+	FileName    string
+	Caption     string
 }
