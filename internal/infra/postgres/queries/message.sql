@@ -51,3 +51,30 @@ WHERE tm.conversation_id = sqlc.arg(conversation_id)
 -- name: DeleteMessage :exec
 DELETE FROM messages
 WHERE message_id = sqlc.arg(message_id) and conversation_id = sqlc.arg(conversation_id) and sender_id = sqlc.arg(user_id);
+
+-- name: CreateFileMessage :exec
+INSERT INTO file_messages (
+    conversation_id,
+    message_id,
+    file_key,
+    category,
+    content_type,
+    size_bytes,
+    file_name,
+    caption
+)
+VALUES (
+    sqlc.arg(conversation_id),
+    sqlc.arg(message_id),
+    sqlc.arg(file_key),
+    sqlc.arg(category),
+    sqlc.arg(content_type),
+    sqlc.arg(size_bytes),
+    sqlc.arg(file_name),
+    sqlc.arg(caption)
+);
+
+-- name: UpdateFileMessage :exec
+UPDATE file_messages
+SET caption = sqlc.arg(caption)
+WHERE conversation_id = sqlc.arg(conversation_id) AND message_id = sqlc.arg(message_id);

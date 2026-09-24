@@ -12,6 +12,54 @@ import (
 	"github.com/google/uuid"
 )
 
+const createFileMessage = `-- name: CreateFileMessage :exec
+INSERT INTO file_messages (
+    conversation_id,
+    message_id,
+    file_key,
+    category,
+    content_type,
+    size_bytes,
+    file_name,
+    caption
+)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+`
+
+type CreateFileMessageParams struct {
+	ConversationID uuid.UUID
+	MessageID      int64
+	FileKey        string
+	Category       string
+	ContentType    string
+	SizeBytes      int64
+	FileName       string
+	Caption        string
+}
+
+func (q *Queries) CreateFileMessage(ctx context.Context, arg CreateFileMessageParams) error {
+	_, err := q.db.Exec(ctx, createFileMessage,
+		arg.ConversationID,
+		arg.MessageID,
+		arg.FileKey,
+		arg.Category,
+		arg.ContentType,
+		arg.SizeBytes,
+		arg.FileName,
+		arg.Caption,
+	)
+	return err
+}
+
 const createMessage = `-- name: CreateMessage :one
 INSERT INTO messages (
     conversation_id,
@@ -92,6 +140,23 @@ type DeleteMessageParams struct {
 
 func (q *Queries) DeleteMessage(ctx context.Context, arg DeleteMessageParams) error {
 	_, err := q.db.Exec(ctx, deleteMessage, arg.MessageID, arg.ConversationID, arg.UserID)
+	return err
+}
+
+const updateFileMessage = `-- name: UpdateFileMessage :exec
+UPDATE file_messages
+SET caption = $1
+WHERE conversation_id = $2 AND message_id = $3
+`
+
+type UpdateFileMessageParams struct {
+	Caption        string
+	ConversationID uuid.UUID
+	MessageID      int64
+}
+
+func (q *Queries) UpdateFileMessage(ctx context.Context, arg UpdateFileMessageParams) error {
+	_, err := q.db.Exec(ctx, updateFileMessage, arg.Caption, arg.ConversationID, arg.MessageID)
 	return err
 }
 

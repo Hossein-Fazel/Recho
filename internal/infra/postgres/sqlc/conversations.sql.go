@@ -258,12 +258,21 @@ SELECT
     m.sender_id,
     m.type,
     tm.content,
+    fm.file_key,
+    fm.category,
+    fm.content_type,
+    fm.size_bytes,
+    fm.file_name,
+    fm.caption,
     m.created_at,
     m.updated_at
 FROM messages m
 LEFT JOIN text_messages tm
     ON tm.conversation_id = m.conversation_id
     AND tm.message_id = m.message_id
+LEFT JOIN file_messages fm
+    ON fm.conversation_id = m.conversation_id
+    AND fm.message_id = m.message_id
 WHERE m.conversation_id = $1
   AND (
       $2::timestamptz IS NULL
@@ -289,6 +298,12 @@ type GetConversationMessagesRow struct {
 	SenderID       uuid.UUID
 	Type           MessageType
 	Content        pgtype.Text
+	FileKey        pgtype.Text
+	Category       pgtype.Text
+	ContentType    pgtype.Text
+	SizeBytes      pgtype.Int8
+	FileName       pgtype.Text
+	Caption        pgtype.Text
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -313,6 +328,12 @@ func (q *Queries) GetConversationMessages(ctx context.Context, arg GetConversati
 			&i.SenderID,
 			&i.Type,
 			&i.Content,
+			&i.FileKey,
+			&i.Category,
+			&i.ContentType,
+			&i.SizeBytes,
+			&i.FileName,
+			&i.Caption,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

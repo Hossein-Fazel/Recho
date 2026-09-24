@@ -102,6 +102,7 @@ type MessageType string
 
 const (
 	MessageTypeText MessageType = "text"
+	MessageTypeFile MessageType = "file"
 )
 
 func (e *MessageType) Scan(src interface{}) error {
@@ -156,6 +157,17 @@ type DirectConversation struct {
 	UserOneID      uuid.UUID
 	UserTwoID      uuid.UUID
 	CreatedAt      time.Time
+}
+
+type FileMessage struct {
+	ConversationID uuid.UUID
+	MessageID      int64
+	FileKey        string
+	Category       string
+	ContentType    string
+	SizeBytes      int64
+	FileName       string
+	Caption        string
 }
 
 type Group struct {
