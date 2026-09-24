@@ -254,7 +254,7 @@ WHERE gm.group_id = sqlc.arg(conversation_id) AND (
 ORDER BY u.id
 LIMIT sqlc.arg(cursor_limit);
 
--- name: UpdateConversationLastMessage :exec
+-- name: InsertConversationLastMessage :exec
 UPDATE conversations 
 SET updated_at = sqlc.arg(created_at),
     last_message_id = sqlc.arg(message_id),
@@ -262,3 +262,10 @@ SET updated_at = sqlc.arg(created_at),
     last_message_text = sqlc.arg(message_text),
     last_message_created_at = sqlc.arg(created_at)
 WHERE id = sqlc.arg(conversation_id);
+
+-- name: UpdateConversationLastMessageContent :exec
+UPDATE conversations
+SET last_message_type = sqlc.arg(message_type),
+    last_message_text = sqlc.arg(message_text)
+WHERE id = sqlc.arg(conversation_id)
+  AND last_message_id = sqlc.arg(message_id);

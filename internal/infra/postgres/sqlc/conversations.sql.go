@@ -543,6 +543,35 @@ func (q *Queries) InsertConversation(ctx context.Context, conversationType Conve
 	return id, err
 }
 
+const insertConversationLastMessage = `-- name: InsertConversationLastMessage :exec
+UPDATE conversations 
+SET updated_at = $1,
+    last_message_id = $2,
+    last_message_type = $3,
+    last_message_text = $4,
+    last_message_created_at = $1
+WHERE id = $5
+`
+
+type InsertConversationLastMessageParams struct {
+	CreatedAt      time.Time
+	MessageID      pgtype.Int8
+	MessageType    NullMessageType
+	MessageText    pgtype.Text
+	ConversationID uuid.UUID
+}
+
+func (q *Queries) InsertConversationLastMessage(ctx context.Context, arg InsertConversationLastMessageParams) error {
+	_, err := q.db.Exec(ctx, insertConversationLastMessage,
+		arg.CreatedAt,
+		arg.MessageID,
+		arg.MessageType,
+		arg.MessageText,
+		arg.ConversationID,
+	)
+	return err
+}
+
 const insertDirectConversation = `-- name: InsertDirectConversation :one
 INSERT INTO direct_conversations(
     conversation_id,
@@ -596,31 +625,27 @@ func (q *Queries) IsConversationMember(ctx context.Context, arg IsConversationMe
 	return exists, err
 }
 
-const updateConversationLastMessage = `-- name: UpdateConversationLastMessage :exec
-UPDATE conversations 
-SET updated_at = $1,
-    last_message_id = $2,
-    last_message_type = $3,
-    last_message_text = $4,
-    last_message_created_at = $1
-WHERE id = $5
+const updateConversationLastMessageContent = `-- name: UpdateConversationLastMessageContent :exec
+UPDATE conversations
+SET last_message_type = $1,
+    last_message_text = $2
+WHERE id = $3
+  AND last_message_id = $4
 `
 
-type UpdateConversationLastMessageParams struct {
-	CreatedAt      time.Time
-	MessageID      pgtype.Int8
+type UpdateConversationLastMessageContentParams struct {
 	MessageType    NullMessageType
 	MessageText    pgtype.Text
 	ConversationID uuid.UUID
+	MessageID      pgtype.Int8
 }
 
-func (q *Queries) UpdateConversationLastMessage(ctx context.Context, arg UpdateConversationLastMessageParams) error {
-	_, err := q.db.Exec(ctx, updateConversationLastMessage,
-		arg.CreatedAt,
-		arg.MessageID,
+func (q *Queries) UpdateConversationLastMessageContent(ctx context.Context, arg UpdateConversationLastMessageContentParams) error {
+	_, err := q.db.Exec(ctx, updateConversationLastMessageContent,
 		arg.MessageType,
 		arg.MessageText,
 		arg.ConversationID,
+		arg.MessageID,
 	)
 	return err
 }

@@ -70,7 +70,7 @@ func (m *Message) Create(ctx context.Context, msg model.Message) (*model.Message
 			return nil, apperr.Internal("message repo", err)
 		}
 
-		err = qtx.UpdateConversationLastMessage(ctx, sqlc.UpdateConversationLastMessageParams{
+		err = qtx.InsertConversationLastMessage(ctx, sqlc.InsertConversationLastMessageParams{
 			CreatedAt: msg.CreatedAt,
 			MessageID: pgtype.Int8{
 				Int64: msg.ID,
@@ -147,8 +147,7 @@ func (m *Message) Update(ctx context.Context, msg model.Message) (*model.Message
 			return nil, apperr.Internal("message repo", err)
 		}
 
-		err = qtx.UpdateConversationLastMessage(ctx, sqlc.UpdateConversationLastMessageParams{
-			CreatedAt: msg.CreatedAt,
+		err = qtx.UpdateConversationLastMessageContent(ctx, sqlc.UpdateConversationLastMessageContentParams{
 			MessageID: pgtype.Int8{
 				Int64: msg.ID,
 				Valid: msg.ID != 0,
