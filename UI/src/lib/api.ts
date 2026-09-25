@@ -5,11 +5,13 @@ import type {
   ConversationInfo,
   CreateGroupResponse,
   ErrResponse,
+  FileCategory,
   GetConversationMessagesResponse,
   GroupMember,
   GroupMembersResponse,
   GroupPreview,
   Message,
+  MessageFile,
   RotateInviteCodeResponse,
   UpdateGroupInput,
   UpdateGroupResponse,
@@ -66,6 +68,82 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await res.json()) as T
+}
+
+/**
+ * Multipart upload via XMLHttpRequest so upload progress is observable.
+ * `fetch` still can't report request-body progress, and a file upload is the
+ * one place where a progress bar meaningfully improves the UX.
+ */
+function uploadMedia(
+  path: string,
+  category: FileCategory,
+  file: File,
+  options?: {
+    onProgress?: (percent: number) => void
+    signal?: AbortSignal
+  },
+): Promise<MessageFile> {
+  return new Promise((resolve, reject) => {
+    const body = new FormData()
+    body.append('category', category)
+    body.append('file', file)
+
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', path)
+    // Auth is cookie-based, same as `request()`.
+    xhr.withCredentials = true
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable || !options?.onProgress) return
+      options.onProgress(
+        Math.min(100, Math.round((event.loaded / event.total) * 100)),
+      )
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText) as MessageFile)
+        } catch {
+          reject(
+            new ApiError(
+              'Upload succeeded but the server response was invalid',
+              xhr.status,
+            ),
+          )
+        }
+        return
+      }
+
+      let message = xhr.statusText || 'Upload failed'
+      try {
+        const parsed = JSON.parse(xhr.responseText) as ErrResponse
+        if (parsed.error) message = parsed.error
+      } catch {
+        // Not JSON; keep the status text.
+      }
+
+      reject(new ApiError(message, xhr.status))
+    }
+
+    xhr.onerror = () =>
+      reject(new ApiError('Upload failed. Check your connection.', 0))
+    xhr.onabort = () =>
+      reject(new DOMException('Upload cancelled', 'AbortError'))
+    xhr.ontimeout = () => reject(new ApiError('Upload timed out', 0))
+
+    const signal = options?.signal
+    if (signal) {
+      if (signal.aborted) {
+        xhr.abort()
+        return
+      }
+      signal.addEventListener('abort', () => xhr.abort(), { once: true })
+    }
+
+    xhr.send(body)
+  })
 }
 
 export const api = {
@@ -169,6 +247,28 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ user_id: userId }),
     })
+  },
+
+  /**
+   * Uploads a file to a conversation. Call the returned payload's `key` in the
+   * `message.create` / `message.edit` WebSocket frame afterwards — the backend
+   * builds the public URL itself and ignores any URL sent from the client.
+   */
+  uploadMessageMedia(
+    conversationId: string,
+    category: FileCategory,
+    file: File,
+    options?: {
+      onProgress?: (percent: number) => void
+      signal?: AbortSignal
+    },
+  ) {
+    return uploadMedia(
+      `/api/conversation/${encodeURIComponent(conversationId)}/media`,
+      category,
+      file,
+      options,
+    )
   },
 
   async messages(conversationId: string, cursor = firstMessageCursor, limit = 30) {

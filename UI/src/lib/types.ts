@@ -20,10 +20,27 @@ export type ErrResponse = {
   module?: string
 }
 
-export type MessageType = 'text'
+export type MessageType = 'text' | 'file'
+
+/** File categories accepted by the backend media upload endpoint. */
+export type FileCategory = 'image' | 'video' | 'voice' | 'file'
 
 export type MessageText = {
   content: string
+}
+
+/**
+ * File payload attached to a `file` message. Field names match the backend
+ * JSON exactly (snake_case) — see `dto.FileMessage` / `dto.MessageMediaUploadResponse`.
+ */
+export type MessageFile = {
+  key: string
+  url?: string
+  category: FileCategory
+  content_type: string
+  size: number
+  file_name?: string
+  caption?: string
 }
 
 export type Conversation = {
@@ -37,6 +54,12 @@ export type Conversation = {
   group_avatar_url: string
   last_message_id: number
   last_message_type?: MessageType
+  /**
+   * Category of the latest message when it is a file, sent by the backend
+   * (`image`/`video`/`voice`/`file`). Empty or absent when the latest message
+   * is not a file.
+   */
+  last_file_category?: FileCategory
   last_message_text: string
   last_message_created_at: string
   updated_at: string
@@ -62,10 +85,15 @@ export type Message = {
   sender_id: string
   type: MessageType
   text?: MessageText | null
+  file?: MessageFile | null
   created_at: string
   updated_at: string
   request_id?: string
   edited?: boolean
+  /** Local-only fields used by optimistic file uploads. */
+  upload_status?: 'uploading' | 'sending'
+  upload_progress?: number
+  local_preview_url?: string
 }
 
 export type GetConversationMessagesResponse = {

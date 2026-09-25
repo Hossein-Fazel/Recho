@@ -1,4 +1,4 @@
-import type { Message } from './types'
+import type { FileCategory, Message } from './types'
 
 export const UNKNOWN_USER = 'Unknown user'
 export const UNNAMED_GROUP = 'Unnamed group'
@@ -6,6 +6,53 @@ export const UNNAMED_GROUP = 'Unnamed group'
 /** Text content of a message, or '' for non-text/missing payloads. */
 export function messageText(message: Message): string {
   return message.text?.content ?? ''
+}
+
+/**
+ * Human-readable label for a file message's category, shown in the chat list
+ * preview. Unknown or missing categories fall back to a generic document so a
+ * row never leaks a filename, MIME type, size, key, or URL.
+ */
+export function fileCategoryLabel(category?: FileCategory): string {
+  switch (category) {
+    case 'image':
+      return 'Photo'
+    case 'video':
+      return 'Video'
+    case 'voice':
+      return 'Audio'
+    default:
+      return 'Document'
+  }
+}
+
+/**
+ * Short preview for a conversation list / sidebar row. File messages show the
+ * category (e.g. `Photo`) instead of the caption, filename, or raw payload.
+ */
+export function messagePreview(message: Message): string {
+  if (message.type === 'file') {
+    return fileCategoryLabel(message.file?.category)
+  }
+
+  return messageText(message)
+}
+
+/** Human-readable file size, e.g. `2.4 MB`. */
+export function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  )
+  const value = bytes / 1024 ** exponent
+
+  // Keep whole bytes whole, one decimal for everything else below 10.
+  const digits = exponent === 0 ? 0 : value >= 10 ? 0 : 1
+
+  return `${value.toFixed(digits)} ${units[exponent]}`
 }
 
 type NameFields = {

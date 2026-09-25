@@ -11,14 +11,16 @@ import { useAuth } from '../context/AuthContext'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { api } from '../lib/api'
 import { firstGroupMemberCursor } from '../lib/cursor'
-import { messageText } from '../lib/format'
+import { messagePreview } from '../lib/format'
 import { newRequestId } from '../lib/id'
 import { clearInvitePath } from '../lib/invite'
 import type {
   Conversation,
+  FileCategory,
   CreateGroupResponse,
   GroupMember,
   Message,
+  MessageFile,
   UpdateGroupResponse,
   UserSearch,
   PresenceUpdated,
@@ -41,7 +43,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const [mobileChat, setMobileChat] = useState(false)
   const [notice, setNotice] = useState('')
   const [messageStatuses, setMessageStatuses] = useState<Map<number, 'sending' | 'sent'>>(new Map())
-  const [editing, setEditing] = useState<{ id: number; content: string } | null>(null)
+  const [editing, setEditing] = useState<{ id: number; content: string; file: MessageFile | null } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Message | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
   const [memberProfileId, setMemberProfileId] = useState<string | null>(null)
@@ -51,6 +53,16 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
   const [joinCode, setJoinCode] = useState(inviteCode)
   const [groupSenders, setGroupSenders] = useState<Map<string, GroupMember>>(new Map())
   const [groupInfoVersion, setGroupInfoVersion] = useState(0)
+  const [uploadStates, setUploadStates] = useState<Map<string, { conversationId: string; message: Message; progress: number; status: 'uploading' | 'sending'; caption: string; socketSent: boolean }>>(new Map())
+  const [selectedFiles, setSelectedFiles] = useState<Map<string, { conversationId: string; file: File; category: FileCategory; caption: string }>>(new Map())
+
+  const uploadControllers = useRef<Map<string, AbortController>>(new Map())
+  const uploadPreviews = useRef<Map<string, string>>(new Map())
+  const optimisticId = useRef(-1)
+  const uploadStatesRef = useRef(uploadStates)
+  uploadStatesRef.current = uploadStates
+  const selectedFilesRef = useRef(selectedFiles)
+  selectedFilesRef.current = selectedFiles
 
   const loadedFor = useRef<string | null>(null)
   const pendingConvFetches = useRef<Set<string>>(new Set())
@@ -236,7 +248,11 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
             ...conversation,
             last_message_id: incoming.id,
             last_message_type: incoming.type,
-            last_message_text: messageText(incoming),
+            last_file_category:
+              incoming.type === 'file'
+                ? incoming.file?.category
+                : undefined,
+            last_message_text: messagePreview(incoming),
             last_message_created_at:
               incoming.created_at,
             updated_at:
@@ -308,7 +324,9 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
 
   const {
     sendMessage,
+    sendFileMessage,
     sendEditMessage,
+    sendEditFileMessage,
     sendDeleteMessage,
     status: webSocketStatus,
   } = useWebSocket({
@@ -330,6 +348,21 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         return applyIncomingToList(current, incoming)
       })
 
+      const requestId = incoming.request_id
+      if (requestId) {
+        const pending = uploadStatesRef.current.get(requestId)
+        if (pending) {
+          const preview = uploadPreviews.current.get(requestId)
+          if (preview) URL.revokeObjectURL(preview)
+          uploadPreviews.current.delete(requestId)
+          setUploadStates((states) => {
+            const next = new Map(states)
+            next.delete(requestId)
+            return next
+          })
+        }
+      }
+
       if (incoming.conversation_id !== loadedFor.current) {
         return
       }
@@ -340,19 +373,10 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         }
 
         const withoutPending = incoming.request_id
-          ? current.filter(
-            (message) => message.request_id !== incoming.request_id,
-          )
+          ? current.filter((message) => message.request_id !== incoming.request_id)
           : current
 
-        return [
-          ...withoutPending.filter(
-            (message) =>
-              message.id > 0 ||
-              messageText(message) !== messageText(incoming),
-          ),
-          incoming,
-        ]
+        return [...withoutPending, incoming]
       })
 
       setMessageStatuses((statuses) => {
@@ -371,7 +395,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
               ? {
                 ...message,
                 type: edited.type,
-                text: edited.text,
+                text: edited.type === 'text' ? edited.text : null,
+                file: edited.type === 'file' ? edited.file : null,
                 updated_at: edited.updated_at,
                 edited: true,
               }
@@ -388,7 +413,11 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
             ? {
               ...conversation,
               last_message_type: edited.type,
-              last_message_text: messageText(edited),
+              last_file_category:
+                edited.type === 'file'
+                  ? edited.file?.category
+                  : undefined,
+              last_message_text: messagePreview(edited),
             }
             : conversation,
         ),
@@ -411,7 +440,11 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
                     ...conversation,
                     last_message_id: last.id,
                     last_message_type: last.type,
-                    last_message_text: messageText(last),
+                    last_file_category:
+                      last.type === 'file'
+                        ? last.file?.category
+                        : undefined,
+                    last_message_text: messagePreview(last),
                     last_message_created_at: last.created_at,
                     updated_at: last.updated_at,
                   }
@@ -673,6 +706,188 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     )
   }
 
+  const pendingUploadMessages = useMemo(() => {
+    const pending: Message[] = []
+    for (const upload of uploadStates.values()) {
+      if (upload.conversationId === activeId) pending.push(upload.message)
+    }
+    return pending
+  }, [uploadStates, activeId])
+
+  const displayedMessages = useMemo(() => {
+    const merged = [...messages, ...pendingUploadMessages]
+    return merged.sort((a, b) => {
+      const byTime = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      if (byTime !== 0) return byTime
+      return a.id - b.id
+    })
+  }, [messages, pendingUploadMessages])
+
+  function removeUpload(clientMessageId: string) {
+    const controller = uploadControllers.current.get(clientMessageId)
+    controller?.abort()
+    uploadControllers.current.delete(clientMessageId)
+
+    const preview = uploadPreviews.current.get(clientMessageId)
+    if (preview) URL.revokeObjectURL(preview)
+    uploadPreviews.current.delete(clientMessageId)
+
+    setUploadStates((current) => {
+      const next = new Map(current)
+      next.delete(clientMessageId)
+      return next
+    })
+  }
+
+  function updateUpload(clientMessageId: string, updater: (current: { conversationId: string; message: Message; progress: number; status: 'uploading' | 'sending'; caption: string; socketSent: boolean }) => { conversationId: string; message: Message; progress: number; status: 'uploading' | 'sending'; caption: string; socketSent: boolean }) {
+    setUploadStates((current) => {
+      const upload = current.get(clientMessageId)
+      if (!upload) return current
+      const next = new Map(current)
+      next.set(clientMessageId, updater(upload))
+      return next
+    })
+  }
+
+  function onFileSelected(file: File, category: FileCategory): string | null {
+    if (!activeId || !user) return null
+
+    const requestId = newRequestId()
+    setSelectedFiles((current) => {
+      const next = new Map(current)
+      next.set(requestId, { conversationId: activeId, file, category, caption: '' })
+      return next
+    })
+
+    return requestId
+  }
+
+  function onFileCaptionChange(clientMessageId: string, caption: string) {
+    setSelectedFiles((current) => {
+      const selected = current.get(clientMessageId)
+      if (!selected) return current
+      const next = new Map(current)
+      next.set(clientMessageId, { ...selected, caption })
+      return next
+    })
+
+    updateUpload(clientMessageId, (current) => ({
+      ...current,
+      caption,
+      message: {
+        ...current.message,
+        file: current.message.file ? { ...current.message.file, caption } : current.message.file,
+      },
+    }))
+  }
+
+  function onFileSend(clientMessageId: string) {
+    const selected = selectedFilesRef.current.get(clientMessageId)
+    if (!selected || !activeId || !user) return
+
+    setSelectedFiles((current) => {
+      const next = new Map(current)
+      next.delete(clientMessageId)
+      return next
+    })
+
+    const { file, category, caption } = selected
+    const requestId = clientMessageId
+    const previewUrl = URL.createObjectURL(file)
+    uploadPreviews.current.set(requestId, previewUrl)
+
+    const now = new Date().toISOString()
+    const optimisticMessage: Message = {
+      id: optimisticId.current--,
+      conversation_id: activeId,
+      sender_id: user.id,
+      type: 'file',
+      file: {
+        key: '',
+        url: category === 'image' || category === 'video' ? previewUrl : undefined,
+        category,
+        content_type: file.type,
+        size: file.size,
+        file_name: file.name,
+        caption,
+      },
+      created_at: now,
+      updated_at: now,
+      request_id: requestId,
+      upload_status: 'uploading',
+      upload_progress: 0,
+      local_preview_url: previewUrl,
+    }
+
+    setUploadStates((current) => {
+      const next = new Map(current)
+      next.set(requestId, {
+        conversationId: activeId,
+        message: optimisticMessage,
+        progress: 0,
+        status: 'uploading',
+        caption,
+        socketSent: false,
+      })
+      return next
+    })
+
+    const controller = new AbortController()
+    uploadControllers.current.set(requestId, controller)
+
+    void api.uploadMessageMedia(activeId, category, file, {
+      signal: controller.signal,
+      onProgress: (progress) => updateUpload(requestId, (current) => ({
+        ...current,
+        progress,
+        message: { ...current.message, upload_progress: progress },
+      })),
+    }).then((uploaded) => {
+      const current = uploadStatesRef.current.get(requestId)
+      if (!current) return
+
+      updateUpload(requestId, (state) => ({
+        ...state,
+        status: 'sending',
+        progress: 100,
+        message: {
+          ...state.message,
+          file: { ...uploaded, caption: state.caption },
+          upload_status: 'sending',
+          upload_progress: 100,
+        },
+      }))
+
+      const sent = sendFileMessage(current.conversationId, uploaded, current.caption, requestId)
+      updateUpload(requestId, (state) => ({ ...state, socketSent: sent }))
+      if (!sent) setNotice('Connecting to Recho…')
+    }).catch((error) => {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      setNotice(error instanceof Error ? error.message : 'Upload failed')
+      removeUpload(requestId)
+    }).finally(() => {
+      uploadControllers.current.delete(requestId)
+    })
+
+  }
+
+  useEffect(() => {
+    if (webSocketStatus !== 'connected') return
+
+    for (const [requestId, upload] of uploadStatesRef.current) {
+      if (upload.status !== 'sending' || upload.socketSent || !upload.message.file?.key) continue
+      const sent = sendFileMessage(
+        upload.conversationId,
+        upload.message.file,
+        upload.caption,
+        requestId,
+      )
+      if (sent) {
+        updateUpload(requestId, (state) => ({ ...state, socketSent: true }))
+      }
+    }
+  }, [webSocketStatus])
+
   function send(content: string) {
     if (!activeId || !user) {
       return
@@ -684,29 +899,49 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     if (editing) {
       setNotice('')
 
-      const sent = sendEditMessage(
-        activeId,
-        editing.id,
-        content,
-        requestId,
-      )
+      const editingFile = editing.file
+
+      const sent = editingFile
+        ? sendEditFileMessage(
+          activeId,
+          editing.id,
+          editingFile,
+          content,
+          requestId,
+        )
+        : sendEditMessage(
+          activeId,
+          editing.id,
+          content,
+          requestId,
+        )
 
       if (!sent) {
         setNotice('Connecting to Recho…')
         return
       }
 
+      const editedAt = new Date().toISOString()
+
       // Optimistically update the edited message in place.
       setMessages((current) =>
         current.map((message) =>
           message.id === editing.id
-            ? {
-              ...message,
-              type: 'text',
-              text: { content },
-              updated_at: new Date().toISOString(),
-              edited: true,
-            }
+            ? editingFile
+              ? {
+                ...message,
+                type: 'file',
+                file: { ...editingFile, caption: content },
+                updated_at: editedAt,
+                edited: true,
+              }
+              : {
+                ...message,
+                type: 'text',
+                text: { content },
+                updated_at: editedAt,
+                edited: true,
+              }
             : message,
         ),
       )
@@ -717,7 +952,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
             conversation.last_message_id === editing.id
             ? {
               ...conversation,
-              last_message_type: 'text',
+              last_message_type: editingFile ? 'file' : 'text',
+              last_file_category: editingFile?.category,
               last_message_text: content,
             }
             : conversation,
@@ -765,6 +1001,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
           ? {
             ...conversation,
             last_message_type: 'text',
+            last_file_category: undefined,
             last_message_text: content,
             updated_at: now,
           }
@@ -778,7 +1015,21 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
 
   function startEdit(message: Message) {
     if (message.id < 0 || message.sender_id !== user?.id) return
-    setEditing({ id: message.id, content: messageText(message) })
+
+    if (message.type === 'file') {
+      setEditing({
+        id: message.id,
+        content: message.file?.caption ?? '',
+        file: message.file ?? null,
+      })
+      return
+    }
+
+    setEditing({
+      id: message.id,
+      content: messagePreview(message),
+      file: null,
+    })
   }
 
   function cancelEdit() {
@@ -846,7 +1097,7 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
         <Thread
           user={user}
           conversation={active}
-          messages={messages}
+          messages={displayedMessages}
           messageStatuses={messageStatuses}
           senders={groupSenders}
           hasMore={Boolean(nextMessageCursor)}
@@ -860,12 +1111,19 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
             setJoinCode(code)
             setJoinOpen(true)
           }}
+          onCancelUpload={removeUpload}
           isPeerOnline={Boolean(active && active.conversation_type === 'direct' && onlineUserIds.has(active.user_id))}
         />
 
         <Composer
           disabled={!activeId}
+          conversationId={activeId}
           onSend={send}
+          onFileSelected={onFileSelected}
+          onFileSend={onFileSend}
+          onFileCaptionChange={onFileCaptionChange}
+          selectedFile={Array.from(selectedFiles.values()).find((file) => file.conversationId === activeId) ?? null}
+          fileSelected={Array.from(selectedFiles.values()).some((file) => file.conversationId === activeId)}
           editing={editing}
           onCancelEdit={cancelEdit}
         />

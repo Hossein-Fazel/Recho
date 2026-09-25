@@ -7,6 +7,9 @@ import {
   type CSSProperties,
 } from 'react'
 import { Avatar } from './Avatar'
+import { DocumentMessage } from './DocumentMessage'
+import { FileMessage } from './FileMessage'
+import { ImageLightbox } from './ImageLightbox'
 import { LinkedText } from './LinkedText'
 import { copyText } from '../lib/clipboard'
 import {
@@ -20,6 +23,7 @@ import type {
   Conversation,
   GroupMember,
   Message,
+  MessageFile,
   User,
 } from '../lib/types'
 
@@ -39,6 +43,7 @@ type ThreadProps = {
   /** Opens the join flow for an invite link tapped inside a message. */
   onOpenInvite: (code: string) => void
   isPeerOnline: boolean
+  onCancelUpload: (clientMessageId: string) => void
 }
 
 type MenuState = {
@@ -71,11 +76,13 @@ export function Thread({
   onOpenInfo,
   onOpenInvite,
   isPeerOnline,
+  onCancelUpload,
 }: ThreadProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const [menu, setMenu] = useState<MenuState>(null)
+  const [lightbox, setLightbox] = useState<MessageFile | null>(null)
 
   // Resolved viewport coordinates for the open menu. Kept separate from the
   // pointer position because the menu has to be measured first to know
@@ -109,6 +116,8 @@ export function Thread({
       previousConversation.current = conversationId
       stickToBottom.current = true
       loadingOlder.current = false
+      setMenu(null)
+      setLightbox(null)
     }
 
   }, [conversation?.conversation_id])
@@ -282,11 +291,19 @@ export function Thread({
     }
   }
 
+  /** Text a file message copies is its caption; nothing to copy when empty. */
+  function copyableText(message: Message): string {
+    if (message.type === 'file') {
+      return message.file?.caption?.trim() ?? ''
+    }
+    return messageText(message)
+  }
+
   function copyMessage(message: Message) {
     // Close first: copying can fail (insecure origin, denied permission) and
     // the menu must not be left stuck open when it does.
     setMenu(null)
-    void copyText(messageText(message))
+    void copyText(copyableText(message))
   }
 
   type MessageRun = {
@@ -330,6 +347,10 @@ export function Thread({
   ) {
     const mine = message.sender_id === user.id
 
+    const isFile = message.type === 'file'
+    const file = isFile ? message.file : null
+    const caption = file?.caption?.trim() ?? ''
+
     const status = mine
       ? message.id < 0
         ? 'sending'
@@ -340,7 +361,7 @@ export function Thread({
       <article
         key={message.id}
         className={`bubble ${mine ? 'mine' : ''} ${stacked ? 'stacked' : ''
-          }`}
+          } ${isFile ? 'has-file' : ''}`}
         onContextMenu={(event) => openMenu(event, message)}
         onPointerDown={(event) => startLongPress(event, message)}
         onPointerMove={trackLongPress}
@@ -348,15 +369,48 @@ export function Thread({
         onPointerCancel={cancelLongPress}
         onClickCapture={onBubbleClick}
       >
-        <p>
-          <LinkedText
-            text={messageText(message)}
-            onInvite={onOpenInvite}
-          />
-          {message.edited ? (
-            <span className="edited-tag"> edited</span>
-          ) : null}
-        </p>
+        {isFile ? (
+          file ? (
+            <FileMessage
+              file={file}
+              onOpenImage={setLightbox}
+              uploadStatus={message.upload_status}
+              uploadProgress={message.upload_progress}
+              localPreviewUrl={message.local_preview_url}
+              onCancelUpload={() => {
+                if (message.request_id) onCancelUpload(message.request_id)
+              }}
+            />
+          ) : (
+            <DocumentMessage />
+          )
+        ) : null}
+
+        {isFile ? (
+          caption || message.edited ? (
+            <p className="bubble-caption">
+              {caption ? (
+                <LinkedText
+                  text={caption}
+                  onInvite={onOpenInvite}
+                />
+              ) : null}
+              {message.edited ? (
+                <span className="edited-tag"> edited</span>
+              ) : null}
+            </p>
+          ) : null
+        ) : (
+          <p>
+            <LinkedText
+              text={messageText(message)}
+              onInvite={onOpenInvite}
+            />
+            {message.edited ? (
+              <span className="edited-tag"> edited</span>
+            ) : null}
+          </p>
+        )}
 
         <time className="bubble-time">
           {status !== 'sending' && (
@@ -556,18 +610,20 @@ export function Thread({
             } as CSSProperties
           }
         >
-          <button
-            type="button"
-            className="context-item"
-            role="menuitem"
-            onClick={() => copyMessage(menu.message)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="9" y="9" width="11" height="11" rx="2" />
-              <path d="M5 15V6a1 1 0 0 1 1-1h9" />
-            </svg>
-            Copy message
-          </button>
+          {copyableText(menu.message) ? (
+            <button
+              type="button"
+              className="context-item"
+              role="menuitem"
+              onClick={() => copyMessage(menu.message)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="9" width="11" height="11" rx="2" />
+                <path d="M5 15V6a1 1 0 0 1 1-1h9" />
+              </svg>
+              Copy message
+            </button>
+          ) : null}
 
           {menu.message.sender_id === user.id ? (
             <button
@@ -607,6 +663,13 @@ export function Thread({
           ) : null}
         </div>
       </>
+    ) : null}
+
+    {lightbox ? (
+      <ImageLightbox
+        file={lightbox}
+        onClose={() => setLightbox(null)}
+      />
     ) : null}
   </section>
 

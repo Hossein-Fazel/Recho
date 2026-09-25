@@ -620,6 +620,23 @@ textarea:focus {
   white-space: nowrap;
 }
 
+.conv-preview-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.conv-preview-file svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .conv-name-row time {
   flex: 0 0 auto;
   color: var(--muted-2);
@@ -2485,5 +2502,919 @@ button.info-member {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* -------------------------------------------------- */
+/* File messages                                      */
+/* -------------------------------------------------- */
+
+.bubble.has-file {
+  padding: 5px;
+}
+
+.bubble.has-file .bubble-caption {
+  padding: 6px 7px 0;
+}
+
+.bubble.has-file time {
+  padding: 0 7px 3px;
+}
+
+.file-image {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.file-image img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.file-video {
+  max-width: 100%;
+}
+
+.file-video video {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: 12px;
+  background: #000;
+}
+
+.audio-player {
+  display: flex;
+  min-width: 250px;
+  max-width: 360px;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 12px 8px 9px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.bubble.mine .audio-player {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.audio-player-toggle {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.audio-player-toggle:hover {
+  background: var(--accent-hover);
+}
+
+.audio-player-toggle:active {
+  transform: scale(0.94);
+}
+
+.bubble.mine .audio-player-toggle {
+  background: #fff;
+  color: var(--accent);
+}
+
+.bubble.mine .audio-player-toggle:hover {
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.audio-player-toggle svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+.audio-player-body {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 6px;
+}
+
+.audio-player-head {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.audio-player-name {
+  overflow: hidden;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audio-player-time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.71rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bubble.mine .audio-player-time {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.audio-player-seek {
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Firefox draws its own dotted focus rectangle around the whole input
+   (independent of `outline`), which is what shows up as a stray border that
+   toggles in and out as the slider gains/loses focus on click. */
+.audio-player-seek::-moz-focus-outer {
+  border: 0;
+}
+
+.audio-player-seek:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.audio-player-seek::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0,
+    var(--accent) var(--audio-progress, 0%),
+    rgba(148, 163, 184, 0.4) var(--audio-progress, 0%),
+    rgba(148, 163, 184, 0.4) 100%
+  );
+}
+
+.audio-player-seek::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+.audio-player-seek::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.4);
+}
+
+.audio-player-seek::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.audio-player-seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Keyboard focus only (not a mouse click), so seeking with the pointer never
+   flashes a ring on and off. */
+.audio-player-seek:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.32);
+}
+
+.audio-player-seek:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.32);
+}
+
+.bubble.mine .audio-player-seek::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    #fff 0,
+    #fff var(--audio-progress, 0%),
+    rgba(255, 255, 255, 0.38) var(--audio-progress, 0%),
+    rgba(255, 255, 255, 0.38) 100%
+  );
+}
+
+.bubble.mine .audio-player-seek::-webkit-slider-thumb {
+  background: #fff;
+  box-shadow: none;
+}
+
+.bubble.mine .audio-player-seek:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+.bubble.mine .audio-player-seek:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+.bubble.mine .audio-player-seek::-moz-range-track {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.bubble.mine .audio-player-seek::-moz-range-progress {
+  background: #fff;
+}
+
+.bubble.mine .audio-player-seek::-moz-range-thumb {
+  background: #fff;
+}
+
+.file-card {
+  display: flex;
+  min-width: 220px;
+  max-width: 340px;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.14);
+  color: inherit;
+  text-decoration: none;
+}
+
+.file-card:not(.unavailable):hover {
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.bubble.mine .file-card {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.bubble.mine .file-card:not(.unavailable):hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.file-card.unavailable {
+  opacity: 0.75;
+}
+
+.file-card-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.bubble.mine .file-card-icon {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.file-card-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.file-card-meta {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 2px;
+}
+
+.file-card-name {
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-card-size {
+  color: var(--muted-2);
+  font-size: 0.72rem;
+}
+
+.bubble.mine .file-card-size {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.file-card-action {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 9px;
+  color: inherit;
+}
+
+.file-card-action svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+/* -------------------------------------------------- */
+/* Image lightbox                                     */
+/* -------------------------------------------------- */
+
+.lightbox-overlay {
+  cursor: zoom-out;
+}
+
+.lightbox {
+  position: relative;
+  display: flex;
+  max-width: min(1100px, 100%);
+  max-height: 100%;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  cursor: default;
+}
+
+.lightbox img {
+  max-width: 100%;
+  max-height: calc(100vh - 170px);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.25);
+  object-fit: contain;
+}
+
+.lightbox-caption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.lightbox-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightbox-size {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.lightbox-open {
+  color: var(--accent);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(4, 8, 16, 0.62);
+  color: #fff;
+  transition: 150ms ease;
+}
+
+.lightbox-close:hover {
+  background: rgba(4, 8, 16, 0.82);
+}
+
+.lightbox-close svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+/* -------------------------------------------------- */
+/* Composer attachment draft                          */
+/* -------------------------------------------------- */
+
+.attach-toggle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  margin: 0 0 0 6px;
+  place-items: center;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  transition: 150ms ease;
+}
+
+.attach-toggle:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.attach-toggle:disabled {
+  opacity: 0.4;
+}
+
+.attach-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+/* Popover opened by the `+` button, offering the attachment categories.
+   Positioned the same way as .emoji-picker-wrap (absolute within the
+   .composer, anchored above the row) but pinned to the left, over the `+`
+   button, so it never collides with the emoji popover on the right. */
+.attach-menu-wrap {
+  position: absolute;
+  z-index: 40;
+  left: 10px;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  min-width: 190px;
+  max-width: calc(100% - 20px);
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  animation: emoji-pop 170ms ease;
+}
+
+:root[data-theme='light'] .attach-menu-wrap {
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+}
+
+.attach-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.86rem;
+  text-align: left;
+  transition: background 120ms ease;
+}
+
+.attach-menu-item:hover,
+.attach-menu-item:focus-visible {
+  background: var(--surface-3);
+}
+
+.attach-menu-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+.attach-menu-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+/* Touch input: match the context menu's comfortable tap targets. */
+@media (hover: none) and (pointer: coarse) {
+  .attach-menu-item {
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+  }
+
+  .attach-menu-item:hover {
+    background: transparent;
+  }
+
+  .attach-menu-item:active {
+    background: var(--surface-3);
+  }
+}
+
+.composer-error {
+  margin: 0 4px 8px;
+  color: var(--danger);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.attachment {
+  margin: 0 0 8px;
+}
+
+.attachment-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.attachment-thumb,
+.attachment-icon {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 10px;
+  background: var(--surface-3);
+}
+
+.attachment-thumb {
+  object-fit: cover;
+}
+
+.attachment-icon {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.attachment-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.attachment-audio {
+  flex: 0 0 auto;
+}
+
+.attachment-audio audio {
+  height: 40px;
+  max-width: 220px;
+}
+
+.attachment-meta {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 3px;
+}
+
+.attachment-name {
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-size {
+  color: var(--muted-2);
+  font-size: 0.74rem;
+}
+
+.attachment-progress {
+  display: block;
+  height: 4px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.attachment-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 180ms ease;
+}
+
+.attachment-error {
+  color: var(--danger);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.attachment-retry {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.attachment-retry:hover {
+  background: var(--border);
+}
+
+.attachment-remove {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  transition: 150ms ease;
+}
+
+.attachment-remove:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.attachment-remove svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
+@media (max-width: 560px) {
+  .file-card {
+    min-width: 190px;
+  }
+
+  .audio-player {
+    min-width: 200px;
+  }
+
+  .attachment-audio audio {
+    max-width: 150px;
+  }
+}
+.file-uploading {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.file-uploading-preview {
+  display: block;
+  width: min(280px, 100%);
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.file-upload-progress {
+  --upload-progress: 0%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, .68);
+  color: white;
+  cursor: pointer;
+}
+
+.file-upload-progress-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: conic-gradient(currentColor var(--upload-progress), rgba(255,255,255,.28) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+}
+
+.file-upload-progress svg {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.audio-player-uploading .audio-player-toggle:disabled {
+  opacity: .65;
+  cursor: default;
+}
+
+.audio-player-seek-disabled {
+  height: 4px;
+  margin-top: 9px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .22;
+}
+
+.composer-file-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 420px);
+  margin: 0 0 8px 44px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.composer-file-preview-media {
+  display: block;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.composer-file-preview-audio {
+  width: 240px;
+  max-width: 100%;
+}
+
+.composer-file-preview-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+.composer-file-preview-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer-file-preview-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.composer-file-preview-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-file-preview-size {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .composer-file-preview {
+    margin-left: 0;
+  }
+}
+
+.composer-file-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 420px);
+  margin: 0 0 8px 44px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.composer-file-preview-media {
+  display: block;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.composer-file-preview-audio {
+  width: 240px;
+  max-width: 100%;
+}
+
+.composer-file-preview-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+.composer-file-preview-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer-file-preview-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.composer-file-preview-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-file-preview-size {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .composer-file-preview {
+    margin-left: 0;
   }
 }

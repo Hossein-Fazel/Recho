@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from './Avatar'
+import { FileTypeIcon } from './FileTypeIcon'
 import { ThemeToggle } from './ThemeToggle'
 import {
   conversationTitle,
+  fileCategoryLabel,
   formatTime,
   handle,
   personName,
@@ -193,7 +195,16 @@ export function Sidebar({
                       <span className="conv-name">{name}</span>
                       <time>{formatTime(conv.last_message_created_at || conv.updated_at)}</time>
                     </span>
-                    <span className="conv-preview">{conv.last_message_text || 'No messages yet'}</span>
+                    <span className="conv-preview">
+                      {conv.last_message_type === 'file' ? (
+                        <span className="conv-preview-file">
+                          <FileTypeIcon category={conv.last_file_category} />
+                          {fileCategoryLabel(conv.last_file_category)}
+                        </span>
+                      ) : (
+                        conv.last_message_text || 'No messages yet'
+                      )}
+                    </span>
                   </span>
                 </button>
               </li>

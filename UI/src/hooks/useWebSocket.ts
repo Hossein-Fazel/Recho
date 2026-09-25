@@ -3,6 +3,7 @@ import type {
   ConversationDeleted,
   GroupUpdated,
   MessageCreated,
+  MessageFile,
   PresenceUpdated,
   MessageDeleted,
   MessageEdited,
@@ -23,6 +24,18 @@ export type WebSocketStatus =
   | 'connecting'
   | 'connected'
   | 'disconnected'
+
+/** Wire shape of the file payload expected by `message.create`/`message.edit`. */
+function filePayload(file: MessageFile, caption: string) {
+  return {
+    key: file.key,
+    category: file.category,
+    content_type: file.content_type,
+    size: file.size,
+    file_name: file.file_name ?? '',
+    caption,
+  }
+}
 
 export function useWebSocket({
   onMessage,
@@ -109,7 +122,10 @@ export function useWebSocket({
 
           if (type === 'message.create' && data) {
             const message = data as MessageCreated
-            if (message.conversation_id && message.text?.content) {
+            if (
+              message.conversation_id &&
+              (message.text?.content || message.file)
+            ) {
               onMessageRef.current({
                 ...message,
                 request_id: payload.request_id,
@@ -117,7 +133,10 @@ export function useWebSocket({
             }
           } else if (type === 'message.edit' && data) {
             const message = data as MessageEdited
-            if (message.conversation_id && message.text?.content) {
+            if (
+              message.conversation_id &&
+              (message.text?.content || message.file)
+            ) {
               onMessageEditedRef.current({
                 ...message,
                 request_id: payload.request_id,
@@ -227,6 +246,29 @@ export function useWebSocket({
     )
   }
 
+  /**
+   * `file` must be the payload returned by the upload endpoint. The backend
+   * derives the public URL from `key` and ignores any URL sent here.
+   */
+  function sendFileMessage(
+    conversationId: string,
+    file: MessageFile,
+    caption: string,
+    requestId: string,
+  ): boolean {
+    return send(
+      {
+        type: 'message.create',
+        request_id: requestId,
+        payload: {
+          type: 'file',
+          conversation_id: conversationId,
+          file: filePayload(file, caption),
+        },
+      },
+    )
+  }
+
   function sendEditMessage(
     conversationId: string,
     messageId: number,
@@ -242,6 +284,28 @@ export function useWebSocket({
           conversation_id: conversationId,
           type: 'text',
           text: { content },
+        },
+      },
+    )
+  }
+
+  /** Edits a file message's caption; the file itself is immutable. */
+  function sendEditFileMessage(
+    conversationId: string,
+    messageId: number,
+    file: MessageFile,
+    caption: string,
+    requestId: string,
+  ): boolean {
+    return send(
+      {
+        type: 'message.edit',
+        request_id: requestId,
+        payload: {
+          message_id: messageId,
+          conversation_id: conversationId,
+          type: 'file',
+          file: filePayload(file, caption),
         },
       },
     )
@@ -277,7 +341,9 @@ export function useWebSocket({
 
   return {
     sendMessage,
+    sendFileMessage,
     sendEditMessage,
+    sendEditFileMessage,
     sendDeleteMessage,
     status,
     isConnected: status === 'connected',
