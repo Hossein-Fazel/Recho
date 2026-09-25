@@ -48,6 +48,6 @@ RUN mkdir -p /app/uploads && chown -R recho:recho /app/uploads
 
 USER recho
 
-EXPOSE 8000
+EXPOSE 8080
 
 ENTRYPOINT ["./recho"]

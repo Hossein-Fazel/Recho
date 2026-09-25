@@ -152,7 +152,7 @@ func (m *MessageService) Delete(ctx context.Context, msg model.Message) error {
 	if err := m.msgRepo.Delete(ctx, msg); err != nil {
 		return err
 	}
-	
+
 	if msg.Type == model.MessageTypeFile && msg.File != nil {
 		if msg.File.Key != "" {
 			m.storage.Delete(ctx, msg.File.Key)

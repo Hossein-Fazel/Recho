@@ -139,10 +139,25 @@ func (c *Client) ReadPump() {
 		case string(model.MessageDeleteEvent):
 			var msg dto.MessageDeleteRequest
 			_ = json.Unmarshal(income.Payload, &msg)
+
+			var file *model.FileMessage
+			if msg.File != nil {
+				file = &model.FileMessage{
+					Key:         msg.File.Key,
+					Category:    msg.File.Category,
+					ContentType: msg.File.ContentType,
+					Size:        msg.File.Size,
+					FileName:    msg.File.FileName,
+					Caption:     msg.File.Caption,
+				}
+			}
+
 			c.MessageDelivery.HandleDeleteMessage(income.RequestID, model.Message{
 				ID:             msg.MessageID,
 				ConversationID: msg.ConversationID,
 				SenderID:       c.UserID,
+				Type:           msg.Type,
+				File:           file,
 			})
 
 		default:

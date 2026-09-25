@@ -1046,6 +1046,8 @@ export function ChatPage({ inviteCode = '' }: ChatPageProps) {
     const sent = sendDeleteMessage(
       activeId,
       pendingDelete.id,
+      pendingDelete.type,
+      pendingDelete.file,
       requestId,
     )
 

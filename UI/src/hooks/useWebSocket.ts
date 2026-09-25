@@ -3,6 +3,7 @@ import type {
   ConversationDeleted,
   GroupUpdated,
   MessageCreated,
+  Message,
   MessageFile,
   PresenceUpdated,
   MessageDeleted,
@@ -314,6 +315,8 @@ export function useWebSocket({
   function sendDeleteMessage(
     conversationId: string,
     messageId: number,
+    messageType: Message['type'],
+    file: MessageFile | null | undefined,
     requestId: string,
   ): boolean {
     return send(
@@ -323,6 +326,10 @@ export function useWebSocket({
         payload: {
           message_id: messageId,
           conversation_id: conversationId,
+          type: messageType,
+          ...(messageType === 'file' && file
+            ? { file: filePayload(file, file.caption ?? '') }
+            : {}),
         },
       },
     )

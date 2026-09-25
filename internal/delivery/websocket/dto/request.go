@@ -38,6 +38,8 @@ type MessageUpdateRequest struct {
 }
 
 type MessageDeleteRequest struct {
-	MessageID      int64     `json:"message_id"`
-	ConversationID uuid.UUID `json:"conversation_id"`
+	MessageID      int64             `json:"message_id"`
+	ConversationID uuid.UUID         `json:"conversation_id"`
+	Type           model.MessageType `json:"type"`
+	File           *FileMessage      `json:"file,omitempty"`
 }
