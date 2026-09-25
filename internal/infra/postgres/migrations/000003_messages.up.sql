@@ -22,6 +22,27 @@ CREATE TABLE text_messages (
     CONSTRAINT message_text_content_not_empty CHECK (length(trim(content)) > 0)
 );
 
+CREATE TABLE file_messages (
+    conversation_id UUID         NOT NULL,
+    message_id      BIGINT       NOT NULL,
+    file_key        TEXT         NOT NULL,
+    category        TEXT         NOT NULL,
+    content_type    TEXT         NOT NULL,
+    size_bytes      BIGINT       NOT NULL,
+    file_name       TEXT         NOT NULL DEFAULT '',
+    caption         TEXT         NOT NULL DEFAULT '',
+
+    PRIMARY KEY (conversation_id, message_id),
+    FOREIGN KEY (conversation_id, message_id) REFERENCES messages(conversation_id, message_id) ON DELETE CASCADE,
+
+    CONSTRAINT file_message_category_not_empty CHECK (length(trim(category)) > 0),
+    CONSTRAINT file_message_content_type_not_empty CHECK (length(trim(content_type)) > 0),
+    CONSTRAINT file_message_size_positive CHECK (size_bytes > 0),
+    CONSTRAINT file_message_key_not_empty CHECK (length(trim(file_key)) > 0)
+);
+
+CREATE INDEX idx_file_messages_key ON file_messages(file_key);
+
 CREATE OR REPLACE FUNCTION set_message_id()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -45,9 +66,9 @@ DECLARE
     latest_message_id BIGINT;
     latest_message_type message_type;
     latest_message_text TEXT;
+    latest_file_category TEXT;
     latest_message_created_at TIMESTAMPTZ;
 BEGIN
-    -- Only refresh if the deleted message was the last message.
     IF OLD.message_id <> (
         SELECT last_message_id
         FROM conversations
@@ -69,15 +90,14 @@ BEGIN
     ORDER BY m.message_id DESC
     LIMIT 1;
 
-    -- FOUND is a special PL/pgSQL variable that is set to
-    -- true if the previous `SELECT INTO` found a row and
-    -- false otherwise.
     IF FOUND THEN
-
         IF latest_message_type = 'text' THEN
-            SELECT content
-            INTO latest_message_text
+            SELECT content INTO latest_message_text
             FROM text_messages
+            WHERE conversation_id = OLD.conversation_id AND message_id = latest_message_id;
+        ELSIF latest_message_type = 'file' THEN
+            SELECT caption, category INTO latest_message_text, latest_file_category
+            FROM file_messages
             WHERE conversation_id = OLD.conversation_id AND message_id = latest_message_id;
         ELSE
             latest_message_text := NULL;
@@ -88,22 +108,20 @@ BEGIN
             last_message_id = latest_message_id,
             last_message_type = latest_message_type,
             last_message_text = latest_message_text,
+            last_file_category = latest_file_category,
             last_message_created_at = latest_message_created_at,
             updated_at = latest_message_created_at
         WHERE id = OLD.conversation_id;
-
-    -- All message in this conversation was deleted
     ELSE
-
         UPDATE conversations
         SET
             last_message_id = NULL,
             last_message_type = NULL,
             last_message_text = NULL,
+            last_file_category = NULL,
             last_message_created_at = NULL,
             updated_at = NOW()
         WHERE id = OLD.conversation_id;
-
     END IF;
 
     RETURN OLD;

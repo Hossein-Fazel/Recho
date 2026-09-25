@@ -7,18 +7,19 @@ import (
 )
 
 type UserConversation struct {
-	ConversationID       uuid.UUID
-	ConversationType     string
-	UserID               uuid.UUID
-	Username             string
-	DisplayName          string
-	AvatarKey            string
-	LastSeen             time.Time
-	GroupName            string
-	GroupAvatarKey       string
-	LastMessageID        int64
-	LastMessageType      MessageType
-	LastMessageText      string
+	ConversationID   uuid.UUID
+	ConversationType string
+	UserID           uuid.UUID
+	Username         string
+	DisplayName      string
+	AvatarKey        string
+	LastSeen         time.Time
+	GroupName        string
+	GroupAvatarKey   string
+	LastMessageID    int64
+	LastMessageType  MessageType
+	LastMessageText  string
+	LastFileCategory     MediaCategory
 	LastMessageCreatedAt time.Time
 	UpdatedAt            time.Time
 }

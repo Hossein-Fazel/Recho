@@ -42,20 +42,21 @@ type User struct {
 }
 
 type Conversation struct {
-	ConversationID       uuid.UUID         `json:"conversation_id"`
-	ConversationType     string            `json:"conversation_type"`
-	UserID               uuid.UUID         `json:"user_id"`
-	Username             string            `json:"username"`
-	DisplayName          string            `json:"display_name"`
-	AvatarUrl            string            `json:"avatar_url"`
-	LastSeen             time.Time         `json:"last_seen"`
-	GroupName            string            `json:"group_name"`
-	GroupAvatarUrl       string            `json:"group_avatar_url"`
-	LastMessageID        int64             `json:"last_message_id"`
-	LastMessageType      model.MessageType `json:"last_message_type,omitempty"`
-	LastMessageText      string            `json:"last_message_text"`
-	LastMessageCreatedAt time.Time         `json:"last_message_created_at"`
-	UpdatedAt            time.Time         `json:"updated_at"`
+	ConversationID       uuid.UUID           `json:"conversation_id"`
+	ConversationType     string              `json:"conversation_type"`
+	UserID               uuid.UUID           `json:"user_id"`
+	Username             string              `json:"username"`
+	DisplayName          string              `json:"display_name"`
+	AvatarUrl            string              `json:"avatar_url"`
+	LastSeen             time.Time           `json:"last_seen"`
+	GroupName            string              `json:"group_name"`
+	GroupAvatarUrl       string              `json:"group_avatar_url"`
+	LastMessageID        int64               `json:"last_message_id"`
+	LastMessageType      model.MessageType   `json:"last_message_type,omitempty"`
+	LastMessageText      string              `json:"last_message_text"`
+	LastFileCategory     model.MediaCategory `json:"last_file_category,omitempty"`
+	LastMessageCreatedAt time.Time           `json:"last_message_created_at"`
+	UpdatedAt            time.Time           `json:"updated_at"`
 }
 
 type UserConversationsResponse struct {

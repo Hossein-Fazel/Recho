@@ -85,6 +85,7 @@ func (c *Conversation) GetConversations(ctx context.Context, args application.Ge
 			LastMessageID:        lmID,
 			LastMessageType:      model.MessageType(conv.LastMessageType.MessageType),
 			LastMessageText:      conv.LastMessageText.String,
+			LastFileCategory:     model.MediaCategory(conv.LastFileCategory.String),
 			LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
 			UpdatedAt:            conv.UpdatedAt,
 		})
@@ -129,6 +130,7 @@ func (r *Conversation) GetConversationByID(ctx context.Context, userID uuid.UUID
 		LastMessageID:        conv.LastMessageID.Int64,
 		LastMessageType:      model.MessageType(conv.LastMessageType.MessageType),
 		LastMessageText:      conv.LastMessageText.String,
+		LastFileCategory:     model.MediaCategory(conv.LastFileCategory.String),
 		LastMessageCreatedAt: conv.LastMessageCreatedAt.Time,
 		UpdatedAt:            conv.UpdatedAt,
 	}, nil

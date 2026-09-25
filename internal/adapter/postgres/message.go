@@ -147,6 +147,7 @@ func (m *Message) createTextMessage(ctx context.Context, qtx *sqlc.Queries, tx p
 			String: msg.Text.Content,
 			Valid:  true,
 		},
+		FileCategory:   pgtype.Text{},
 		ConversationID: msg.ConversationID,
 	})
 	if err != nil {
@@ -199,6 +200,7 @@ func (m *Message) createFileMessage(ctx context.Context, qtx *sqlc.Queries, tx p
 			Valid:       true,
 		},
 		MessageText:    pgtype.Text{String: msg.File.Caption, Valid: msg.File.Caption != ""},
+		FileCategory:   pgtype.Text{String: msg.File.Category.String(), Valid: msg.File.Category != ""},
 		ConversationID: msg.ConversationID,
 	})
 	if err != nil {
@@ -251,6 +253,7 @@ func (m *Message) updateTextMessage(ctx context.Context, qtx *sqlc.Queries, tx p
 			String: msg.Text.Content,
 			Valid:  true,
 		},
+		FileCategory:   pgtype.Text{},
 		ConversationID: msg.ConversationID,
 	})
 	if err != nil {
@@ -291,6 +294,7 @@ func (m *Message) updateFileMessage(ctx context.Context, qtx *sqlc.Queries, tx p
 		MessageID:      pgtype.Int8{Int64: msg.ID, Valid: msg.ID != 0},
 		MessageType:    sqlc.NullMessageType{MessageType: sqlc.MessageType(msg.Type), Valid: true},
 		MessageText:    pgtype.Text{String: msg.File.Caption, Valid: msg.File.Caption != ""},
+		FileCategory:   pgtype.Text{String: msg.File.Category.String(), Valid: msg.File.Category != ""},
 		ConversationID: msg.ConversationID,
 	})
 	if err != nil {

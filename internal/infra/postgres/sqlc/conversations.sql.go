@@ -94,6 +94,7 @@ SELECT
     c.last_message_id,
     c.last_message_type,
     c.last_message_text,
+    c.last_file_category,
     c.last_message_created_at,
 
     c.updated_at
@@ -143,6 +144,7 @@ type GetConversationByIDRow struct {
 	LastMessageID        pgtype.Int8
 	LastMessageType      NullMessageType
 	LastMessageText      pgtype.Text
+	LastFileCategory     pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
 	UpdatedAt            time.Time
 }
@@ -163,6 +165,7 @@ func (q *Queries) GetConversationByID(ctx context.Context, arg GetConversationBy
 		&i.LastMessageID,
 		&i.LastMessageType,
 		&i.LastMessageText,
+		&i.LastFileCategory,
 		&i.LastMessageCreatedAt,
 		&i.UpdatedAt,
 	)
@@ -445,6 +448,7 @@ SELECT
     c.last_message_id,
     c.last_message_type,
     c.last_message_text,
+    c.last_file_category,
     c.last_message_created_at,
 
     c.updated_at
@@ -508,6 +512,7 @@ type GetUserConversationsRow struct {
 	LastMessageID        pgtype.Int8
 	LastMessageType      NullMessageType
 	LastMessageText      pgtype.Text
+	LastFileCategory     pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
 	UpdatedAt            time.Time
 }
@@ -538,6 +543,7 @@ func (q *Queries) GetUserConversations(ctx context.Context, arg GetUserConversat
 			&i.LastMessageID,
 			&i.LastMessageType,
 			&i.LastMessageText,
+			&i.LastFileCategory,
 			&i.LastMessageCreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -570,8 +576,9 @@ SET updated_at = $1,
     last_message_id = $2,
     last_message_type = $3,
     last_message_text = $4,
+    last_file_category = $5,
     last_message_created_at = $1
-WHERE id = $5
+WHERE id = $6
 `
 
 type InsertConversationLastMessageParams struct {
@@ -579,6 +586,7 @@ type InsertConversationLastMessageParams struct {
 	MessageID      pgtype.Int8
 	MessageType    NullMessageType
 	MessageText    pgtype.Text
+	FileCategory   pgtype.Text
 	ConversationID uuid.UUID
 }
 
@@ -588,6 +596,7 @@ func (q *Queries) InsertConversationLastMessage(ctx context.Context, arg InsertC
 		arg.MessageID,
 		arg.MessageType,
 		arg.MessageText,
+		arg.FileCategory,
 		arg.ConversationID,
 	)
 	return err
@@ -649,14 +658,16 @@ func (q *Queries) IsConversationMember(ctx context.Context, arg IsConversationMe
 const updateConversationLastMessageContent = `-- name: UpdateConversationLastMessageContent :exec
 UPDATE conversations
 SET last_message_type = $1,
-    last_message_text = $2
-WHERE id = $3
-  AND last_message_id = $4
+    last_message_text = $2,
+    last_file_category = $3
+WHERE id = $4
+  AND last_message_id = $5
 `
 
 type UpdateConversationLastMessageContentParams struct {
 	MessageType    NullMessageType
 	MessageText    pgtype.Text
+	FileCategory   pgtype.Text
 	ConversationID uuid.UUID
 	MessageID      pgtype.Int8
 }
@@ -665,6 +676,7 @@ func (q *Queries) UpdateConversationLastMessageContent(ctx context.Context, arg 
 	_, err := q.db.Exec(ctx, updateConversationLastMessageContent,
 		arg.MessageType,
 		arg.MessageText,
+		arg.FileCategory,
 		arg.ConversationID,
 		arg.MessageID,
 	)

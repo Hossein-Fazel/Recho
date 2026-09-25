@@ -21,6 +21,7 @@ SELECT
     c.last_message_id,
     c.last_message_type,
     c.last_message_text,
+    c.last_file_category,
     c.last_message_created_at,
 
     c.updated_at
@@ -88,6 +89,7 @@ SELECT
     c.last_message_id,
     c.last_message_type,
     c.last_message_text,
+    c.last_file_category,
     c.last_message_created_at,
 
     c.updated_at
@@ -269,12 +271,14 @@ SET updated_at = sqlc.arg(created_at),
     last_message_id = sqlc.arg(message_id),
     last_message_type = sqlc.arg(message_type),
     last_message_text = sqlc.arg(message_text),
+    last_file_category = sqlc.arg(file_category),
     last_message_created_at = sqlc.arg(created_at)
 WHERE id = sqlc.arg(conversation_id);
 
 -- name: UpdateConversationLastMessageContent :exec
 UPDATE conversations
 SET last_message_type = sqlc.arg(message_type),
-    last_message_text = sqlc.arg(message_text)
+    last_message_text = sqlc.arg(message_text),
+    last_file_category = sqlc.arg(file_category)
 WHERE id = sqlc.arg(conversation_id)
   AND last_message_id = sqlc.arg(message_id);

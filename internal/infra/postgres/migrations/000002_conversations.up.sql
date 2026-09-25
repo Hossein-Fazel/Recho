@@ -1,9 +1,6 @@
 CREATE TYPE message_type AS ENUM (
-    'text'
-    -- 'voice',
-    -- 'video',
-    -- 'picture'
-    -- etc
+    'text',
+    'file'
 );
 
 CREATE TYPE conversation_type AS ENUM (
@@ -18,6 +15,7 @@ CREATE TABLE conversations (
     last_message_type       message_type,
     last_message_text       TEXT,
     last_message_created_at TIMESTAMPTZ,
+    last_file_category      VARCHAR(20),
     message_id_counter      BIGINT            NOT NULL DEFAULT 0,
     created_at              TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
     updated_at              TIMESTAMPTZ       NOT NULL DEFAULT NOW()

@@ -11,6 +11,7 @@ CREATE TABLE users (
 
     password_hash TEXT          NOT NULL,
 
+    last_seen     TIMESTAMPTZ,
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
 

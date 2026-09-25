@@ -147,6 +147,7 @@ type Conversation struct {
 	LastMessageType      NullMessageType
 	LastMessageText      pgtype.Text
 	LastMessageCreatedAt pgtype.Timestamptz
+	LastFileCategory     pgtype.Text
 	MessageIDCounter     int64
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
@@ -219,7 +220,7 @@ type User struct {
 	AvatarKey    pgtype.Text
 	Bio          pgtype.Text
 	PasswordHash string
+	LastSeen     pgtype.Timestamptz
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	LastSeen     pgtype.Timestamptz
 }

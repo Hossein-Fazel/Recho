@@ -23,6 +23,7 @@ func conv2convRes(conv *model.UserConversation) *dto.Conversation {
 		LastMessageID:        conv.LastMessageID,
 		LastMessageType:      conv.LastMessageType,
 		LastMessageText:      conv.LastMessageText,
+		LastFileCategory:     conv.LastFileCategory,
 		LastMessageCreatedAt: conv.LastMessageCreatedAt,
 		UpdatedAt:            conv.UpdatedAt,
 	}
